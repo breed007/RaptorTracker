@@ -1,0 +1,200 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Ford Racing (default theme) ─────────────────────────── */
+[data-theme="ford-racing"] {
+  --rl-bg-base:     #F5F5F5;
+  --rl-bg-card:     #FFFFFF;
+  --rl-bg-elevated: #EEEEEE;
+  --rl-bg-input:    #FFFFFF;
+  --rl-border:      #E0E0E0;
+  --rl-border-light:#EBEBEB;
+  --rl-text-primary:   #0A0A0A;
+  --rl-text-secondary: #555555;
+  --rl-text-muted:     #888888;
+  --rl-accent:      #003478;
+  --rl-accent-hover:#0562D2;
+  --rl-ring-offset: #F5F5F5;
+  --rl-sidebar-bg:  #003478;
+  --rl-sidebar-active-bg: rgba(255,255,255,0.15);
+  --rl-font-sans:   'Inter', system-ui, sans-serif;
+  --rl-font-display:'Barlow Condensed', system-ui, sans-serif;
+  --rl-radius:      0.5rem;
+  --rl-radius-card: 0.75rem;
+}
+[data-theme="ford-racing"].dark {
+  --rl-bg-base:     #0F0F0F;
+  --rl-bg-card:     #1A1A1A;
+  --rl-bg-elevated: #222222;
+  --rl-bg-input:    #262626;
+  --rl-border:      #333333;
+  --rl-border-light:#444444;
+  --rl-text-primary:   #FFFFFF;
+  --rl-text-secondary: #AAAAAA;
+  --rl-text-muted:     #666666;
+  --rl-accent:      #FF6B00;
+  --rl-accent-hover:#CC5500;
+  --rl-ring-offset: #0F0F0F;
+}
+
+/* ─── FordRaptorForum (always dark) ───────────────────────── */
+[data-theme="fordraptorforum"] {
+  --rl-bg-base:     #252525;
+  --rl-bg-card:     #2B2B2B;
+  --rl-bg-elevated: #2f2f2f;
+  --rl-bg-input:    #343434;
+  --rl-border:      #303030;
+  --rl-border-light:#3a3a3a;
+  --rl-text-primary:   #d2d2d2;
+  --rl-text-secondary: #a5a5a5;
+  --rl-text-muted:     #666666;
+  --rl-accent:      #ba220a;
+  --rl-accent-hover:#d2260b;
+  --rl-ring-offset: #252525;
+  --rl-sidebar-bg:  #1f1f1f;
+  --rl-sidebar-active-bg: #ba220a;
+  --rl-font-sans:   Verdana, Geneva, 'Lucida Sans Unicode', Arial, sans-serif;
+  --rl-font-display:Verdana, Geneva, 'Lucida Sans Unicode', Arial, sans-serif;
+  --rl-radius:      0.375rem;
+  --rl-radius-card: 0.375rem;
+}
+
+/* ─── Raptor Assault ──────────────────────────────────────── */
+[data-theme="raptor-assault"] {
+  --rl-bg-base:     #eaeaea;
+  --rl-bg-card:     #ffffff;
+  --rl-bg-elevated: #f1f1f1;
+  --rl-bg-input:    #ffffff;
+  --rl-border:      #dedede;
+  --rl-border-light:#e8e8e8;
+  --rl-text-primary:   #1a1a1a;
+  --rl-text-secondary: #4a4a4a;
+  --rl-text-muted:     #888888;
+  --rl-accent:      #ff0000;
+  --rl-accent-hover:#cc0000;
+  --rl-ring-offset: #eaeaea;
+  --rl-sidebar-bg:  #353535;
+  --rl-sidebar-active-bg: #ff0000;
+  --rl-font-sans:   'Roboto', system-ui, sans-serif;
+  --rl-font-display:'Roboto', system-ui, sans-serif;
+  --rl-radius:      2px;
+  --rl-radius-card: 2px;
+}
+[data-theme="raptor-assault"].dark {
+  --rl-bg-base:     #0f172e;
+  --rl-bg-card:     #1a2035;
+  --rl-bg-elevated: #1f2848;
+  --rl-bg-input:    #243058;
+  --rl-border:      #2a3a5a;
+  --rl-border-light:#334470;
+  --rl-text-primary:   #f0f4ff;
+  --rl-text-secondary: #9aaac8;
+  --rl-text-muted:     #5a6a8a;
+  --rl-accent:      #ff0000;
+  --rl-accent-hover:#cc0000;
+  --rl-ring-offset: #0f172e;
+}
+
+/* ─── Font overrides — outside @layer, wins over Tailwind base ─ */
+body { font-family: var(--rl-font-sans); }
+.font-display, .page-title { font-family: var(--rl-font-display); }
+
+/* ─── Base ────────────────────────────────────────────────── */
+@layer base {
+  body {
+    @apply bg-raptor-base text-raptor-primary antialiased;
+  }
+
+  ::-webkit-scrollbar       { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--rl-bg-card); }
+  ::-webkit-scrollbar-thumb { background: var(--rl-border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--rl-accent); }
+}
+
+/* ─── Components ──────────────────────────────────────────── */
+@layer components {
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    border-radius: var(--rl-radius, 0.5rem);
+    color: #fff;
+    background-color: var(--rl-accent);
+    transition: background-color 150ms;
+    outline: none;
+  }
+  .btn-primary:hover  { background-color: var(--rl-accent-hover); }
+  .btn-primary:focus  {
+    box-shadow: 0 0 0 2px var(--rl-ring-offset), 0 0 0 4px var(--rl-accent);
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    border-radius: var(--rl-radius, 0.5rem);
+    color: var(--rl-text-primary);
+    background-color: var(--rl-bg-elevated);
+    border: 1px solid var(--rl-border);
+    transition: background-color 150ms, border-color 150ms;
+    outline: none;
+  }
+  .btn-secondary:hover { background-color: var(--rl-border); }
+
+  .btn-danger {
+    @apply inline-flex items-center justify-center px-4 py-2 font-semibold text-sm bg-red-700 hover:bg-red-600 text-white transition-colors;
+    border-radius: var(--rl-radius, 0.5rem);
+  }
+
+  .input-field {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: var(--rl-radius, 0.5rem);
+    color: var(--rl-text-primary);
+    background-color: var(--rl-bg-input);
+    border: 1px solid var(--rl-border);
+    transition: border-color 150ms;
+    outline: none;
+  }
+  .input-field::placeholder { color: var(--rl-text-muted); }
+  .input-field:focus {
+    border-color: var(--rl-accent);
+    box-shadow: 0 0 0 1px var(--rl-accent);
+  }
+  .input-field option { background-color: var(--rl-bg-input); color: var(--rl-text-primary); }
+
+  .card {
+    background-color: var(--rl-bg-card);
+    border: 1px solid var(--rl-border);
+    border-radius: var(--rl-radius-card, 0.75rem);
+  }
+
+  .section-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--rl-accent);
+  }
+
+  .label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    color: var(--rl-text-muted);
+  }
+
+  .page-title {
+    @apply font-bold text-2xl text-raptor-primary;
+  }
+}

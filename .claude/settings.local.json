@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Read(//opt/homebrew/**)",
+      "Read(//Users/breed/**)",
+      "Read(//usr/local/lib/node_modules/npm/**)",
+      "Bash(/bin/bash -l -c 'which node npm')",
+      "Bash(/bin/zsh -l -c 'which node npm')",
+      "Bash(mdfind -name \"node\" -onlyin /usr)",
+      "Bash(chmod +x \"/Users/breed/Claude Code/RaptorTracker/install.sh\" \"/Users/breed/Claude Code/RaptorTracker/uninstall.sh\")",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "WebFetch(domain:www.fordracing.com)",
+      "WebFetch(domain:www.ford.com)",
+      "Bash(npm run *)",
+      "Bash(export PATH=\"/usr/local/bin:/opt/homebrew/bin:$PATH\")",
+      "Bash(xargs -I{} sed -i '' 's/RaptorTracker/RaptorTracker/g; s/raptortracker/raptortracker/g' \"{}\")",
+      "Bash(/usr/local/bin/npm install *)",
+      "WebFetch(domain:www.fordraptorforum.com)",
+      "WebFetch(domain:www.raptorassault.com)",
+      "Bash(curl -s -L \"https://www.fordraptorforum.com/\" -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36\")",
+      "Bash(curl -s -L \"https://www.raptorassault.com\" -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36\")",
+      "Bash(curl -s -L \"https://www.raptorassault.com/wp-content/themes/modules/style.css\" -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36\")",
+      "Bash(curl -s -L \"https://www.fordraptorforum.com/css.php?css=public%3Anormalize.css%2Cpublic%3Afa.css%2Cpublic%3Acore.less%2Cpublic%3Aapp.less&s=10&l=1&d=1775587797&k=9a5d122a484823945790d891a31aa5862d95e0af\" -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36\")",
+      "Bash(grep -oE '\\(#[0-9a-fA-F]{3,8}|rgb[a]?\\\\\\([^\\)]+\\\\\\)|rgba?\\\\\\([^\\)]+\\\\\\)\\)')",
+      "Read(//tmp/**)",
+      "Bash(python3 -c ' *)"
+    ]
+  }
+}

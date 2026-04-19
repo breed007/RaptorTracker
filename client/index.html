@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RaptorTracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <script>
+      (function() {
+        var t = localStorage.getItem('theme') || 'ford-racing';
+        var validThemes = ['ford-racing', 'fordraptorforum', 'raptor-assault'];
+        if (!validThemes.includes(t)) t = 'ford-racing';
+        document.documentElement.dataset.theme = t;
+        var dark = t === 'fordraptorforum' || localStorage.getItem('darkMode') === 'true';
+        if (dark) document.documentElement.classList.add('dark');
+      })();
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
