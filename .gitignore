@@ -1,0 +1,10 @@
+node_modules/
+client/node_modules/
+.env
+data/raptortracker.db
+data/uploads/*
+!data/uploads/.gitkeep
+dist/
+client/dist/
+*.log
+.DS_Store
