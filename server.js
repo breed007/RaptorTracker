@@ -23,6 +23,9 @@ const exportRouter = require('./server/routes/export');
 const vinRouter        = require('./server/routes/vin');
 const modTransferRouter = require('./server/routes/modTransfer');
 const vehicleTransferRouter = require('./server/routes/vehicleTransfer');
+const { router: intervalsRouter } = require('./server/routes/intervals');
+const wishlistRouter = require('./server/routes/wishlist');
+const fuelRouter = require('./server/routes/fuel');
 
 const DATA_DIR = process.env.DATA_DIR || './data';
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
@@ -65,6 +68,9 @@ app.use('/api/export', exportRouter);
 app.use('/api/vin',    vinRouter);
 app.use('/api/mods',  modTransferRouter);
 app.use('/api/user-vehicles', vehicleTransferRouter);
+app.use('/api/intervals', intervalsRouter);
+app.use('/api/wishlist', wishlistRouter);
+app.use('/api/fuel', fuelRouter);
 
 // Serve React frontend in production
 const DIST_DIR = path.join(__dirname, 'dist');
