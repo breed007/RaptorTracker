@@ -2,7 +2,7 @@
 
 **Ford Raptor Build Tracker** — a self-hosted web application for tracking modifications, maintenance, AUX switch assignments, and build costs across your Ford Raptor.
 
-> Version `2026.04.19` · [GitHub](https://github.com/breed007/RaptorTracker)
+> Version `2026.04.20` · [GitHub](https://github.com/breed007/RaptorTracker)
 
 ---
 
@@ -16,10 +16,12 @@
 - Slide-out detail panel on the mod list — click any row for a quick view without leaving the page
 - AUX switch assignment per mod (Gen 2, Gen 3, Gen 3.5 layouts)
 
-### Maintenance Log
+### Maintenance Log, Reminders, Service Intervals (UPDATED)
 - Record service events with service type, date, mileage, vendor, cost, and notes
 - Attach invoices and receipts (JPEG, PNG, PDF) per maintenance record
 - 20+ service type presets (Oil Change, Spark Plugs, Differential Service, Transmission, Tires, Battery, and more)
+- Set mileage or time-based intervals for recurring services (oil every 5,000 mi, diff fluid every 30,000 mi, etc.).
+- The dashboard will show a "Due Soon" / "Overdue" alert card for anything approaching or past its interval, calculated against the last recorded maintenance entry for that service type.
 
 ### Dashboard
 - At-a-glance stats: installed mods, mod spend, in-transit, on-order
@@ -37,6 +39,15 @@
 - Support for multiple vehicles per account
 - Vehicle profile photo and window sticker upload
 - Per-vehicle data isolation
+
+### Wishlist (NEW)
+- A dedicated wishlist separate from the active mod tracker — a place to plan future purchases with a priority rank, target budget, vendor links, and notes.
+- A single "Mark as Purchased → Promote to Mod" button moves it into the real tracker when you pull the trigger.
+- Makes it easy to track your total planned spend vs. actual spend and gives you a shopping list to reference at the parts store or forum.
+
+### Fuel Log and MPG Tracker (NEW)
+- Log every fill-up (date, odometer, gallons, price per gallon, station). RaptorTracker calculates MPG per fill-up and plots the trend over time.
+- Useful for seeing how mods (tunes, intake, exhaust) impact real-world fuel economy, and how city vs. highway usage shifts over time. 
 
 ### Vehicle Import / Export
 - Export any vehicle to a ZIP archive (metadata, photos, window sticker, mods, maintenance)
