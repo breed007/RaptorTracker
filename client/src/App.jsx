@@ -11,6 +11,8 @@ import ModDetail from './pages/ModDetail'
 import AuxPanel from './pages/AuxPanel'
 import Maintenance from './pages/Maintenance'
 import Export from './pages/Export'
+import Wishlist from './pages/Wishlist'
+import FuelLog from './pages/FuelLog'
 
 function AppRoutes() {
   const { user, authLoading } = useApp()
@@ -38,6 +40,8 @@ function AppRoutes() {
         <Route path="/mods/:id" element={<ModDetail />} />
         <Route path="/aux" element={<AuxPanel />} />
         <Route path="/maintenance" element={<Maintenance />} />
+        <Route path="/wishlist" element={<Wishlist />} />
+        <Route path="/fuel" element={<FuelLog />} />
         <Route path="/export" element={<Export />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

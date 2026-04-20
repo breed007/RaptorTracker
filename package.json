@@ -1,6 +1,6 @@
 {
   "name": "raptortracker",
-  "version": "2026.04.19",
+  "version": "2026.04.20",
   "description": "Ford Raptor vehicle modification tracker",
   "main": "server.js",
   "scripts": {

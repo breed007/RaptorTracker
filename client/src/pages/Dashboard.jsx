@@ -5,10 +5,33 @@ import StatsCard from '../components/StatsCard'
 import SpendChart from '../components/SpendChart'
 import StatusBadge from '../components/StatusBadge'
 
+function calcIntervalStatus(interval, currentMileage) {
+  const statuses = []
+  if (interval.interval_miles && interval.last_mileage != null && currentMileage != null) {
+    const remaining = (interval.last_mileage + interval.interval_miles) - currentMileage
+    if (remaining <= 0) statuses.push('overdue')
+    else if (remaining <= Math.max(interval.interval_miles * 0.1, 500)) statuses.push('due_soon')
+    else statuses.push('ok')
+  }
+  if (interval.interval_months && interval.last_date) {
+    const due = new Date(interval.last_date + 'T12:00:00')
+    due.setMonth(due.getMonth() + interval.interval_months)
+    const daysLeft = Math.floor((due - new Date()) / 86400000)
+    if (daysLeft <= 0) statuses.push('overdue')
+    else if (daysLeft <= 30) statuses.push('due_soon')
+    else statuses.push('ok')
+  }
+  if (statuses.includes('overdue')) return 'overdue'
+  if (statuses.includes('due_soon')) return 'due_soon'
+  if (statuses.length === 0) return null
+  return 'ok'
+}
+
 export default function Dashboard() {
   const { selectedVehicleId, selectedVehicle } = useApp()
   const [summary, setSummary] = useState(null)
   const [maintenance, setMaintenance] = useState([])
+  const [intervals, setIntervals] = useState({ intervals: [], currentMileage: null })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -17,9 +40,11 @@ export default function Dashboard() {
     Promise.all([
       fetch(`/api/summary?vehicle_id=${selectedVehicleId}`).then(r => r.json()),
       fetch(`/api/maintenance?vehicle_id=${selectedVehicleId}`).then(r => r.json()),
-    ]).then(([sum, maint]) => {
+      fetch(`/api/intervals?vehicle_id=${selectedVehicleId}`).then(r => r.json()).catch(() => ({ intervals: [], currentMileage: null })),
+    ]).then(([sum, maint, intv]) => {
       setSummary(sum)
       setMaintenance(Array.isArray(maint) ? maint : [])
+      setIntervals(intv || { intervals: [], currentMileage: null })
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [selectedVehicleId])
@@ -40,6 +65,14 @@ export default function Dashboard() {
   const maintTotal = maintenance.reduce((s, r) => s + (r.cost || 0), 0)
   const lastService = maintenance[0]
 
+  const alertIntervals = (intervals.intervals || []).filter(i => {
+    const s = calcIntervalStatus(i, intervals.currentMileage)
+    return s === 'overdue' || s === 'due_soon'
+  }).sort((a, b) => {
+    const order = { overdue: 0, due_soon: 1 }
+    return (order[calcIntervalStatus(a, intervals.currentMileage)] ?? 2) - (order[calcIntervalStatus(b, intervals.currentMileage)] ?? 2)
+  })
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -59,6 +92,35 @@ export default function Dashboard() {
           Add Mod
         </Link>
       </div>
+
+      {/* Service Alerts */}
+      {alertIntervals.length > 0 && (
+        <div className="card p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <svg className="w-4 h-4 text-raptor-accent flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            <span className="section-title">Service Reminders</span>
+            <Link to="/maintenance" className="ml-auto text-xs text-raptor-accent hover:underline">View all →</Link>
+          </div>
+          <div className="space-y-2">
+            {alertIntervals.slice(0, 5).map(item => {
+              const s = calcIntervalStatus(item, intervals.currentMileage)
+              const isOverdue = s === 'overdue'
+              return (
+                <div key={item.id} className={`flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm ${isOverdue ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40' : 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900/40'}`}>
+                  <span className={`font-medium ${isOverdue ? 'text-red-700 dark:text-red-400' : 'text-yellow-700 dark:text-yellow-500'}`}>
+                    {item.service_type}
+                  </span>
+                  <span className={`text-xs font-semibold flex-shrink-0 ${isOverdue ? 'text-red-600 dark:text-red-400' : 'text-yellow-600 dark:text-yellow-500'}`}>
+                    {isOverdue ? 'Overdue' : 'Due Soon'}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
