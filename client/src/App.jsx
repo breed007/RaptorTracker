@@ -13,6 +13,7 @@ import Maintenance from './pages/Maintenance'
 import Export from './pages/Export'
 import Wishlist from './pages/Wishlist'
 import FuelLog from './pages/FuelLog'
+import Warranty from './pages/Warranty'
 
 function AppRoutes() {
   const { user, authLoading } = useApp()
@@ -42,6 +43,7 @@ function AppRoutes() {
         <Route path="/maintenance" element={<Maintenance />} />
         <Route path="/wishlist" element={<Wishlist />} />
         <Route path="/fuel" element={<FuelLog />} />
+        <Route path="/warranty" element={<Warranty />} />
         <Route path="/export" element={<Export />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

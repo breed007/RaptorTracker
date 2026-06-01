@@ -26,6 +26,7 @@ const vehicleTransferRouter = require('./server/routes/vehicleTransfer');
 const { router: intervalsRouter } = require('./server/routes/intervals');
 const wishlistRouter = require('./server/routes/wishlist');
 const fuelRouter = require('./server/routes/fuel');
+const warrantyRouter = require('./server/routes/warranty');
 
 const DATA_DIR = process.env.DATA_DIR || './data';
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
@@ -71,6 +72,7 @@ app.use('/api/user-vehicles', vehicleTransferRouter);
 app.use('/api/intervals', intervalsRouter);
 app.use('/api/wishlist', wishlistRouter);
 app.use('/api/fuel', fuelRouter);
+app.use('/api/warranty', warrantyRouter);
 
 // Serve React frontend in production
 const DIST_DIR = path.join(__dirname, 'dist');

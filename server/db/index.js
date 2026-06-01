@@ -56,8 +56,39 @@ function runMigrations(db) {
     db.prepare("UPDATE vehicles SET mpg_city=17, mpg_highway=19 WHERE model='Ranger Raptor' AND make='Ford'").run();
   }
 
+  // mods: warranty columns
+  const modCols = db.prepare('PRAGMA table_info(mods)').all().map(c => c.name);
+  const modWarrantyCols = [
+    ['warranty_months',     'ALTER TABLE mods ADD COLUMN warranty_months INTEGER'],
+    ['warranty_start_date', 'ALTER TABLE mods ADD COLUMN warranty_start_date TEXT'],
+    ['warranty_provider',   'ALTER TABLE mods ADD COLUMN warranty_provider TEXT'],
+    ['warranty_notes',      'ALTER TABLE mods ADD COLUMN warranty_notes TEXT'],
+  ];
+  for (const [col, sql] of modWarrantyCols) {
+    if (!modCols.includes(col)) db.prepare(sql).run();
+  }
+
   // New feature tables
   db.exec(`
+    CREATE TABLE IF NOT EXISTS vehicle_warranties (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_vehicle_id INTEGER NOT NULL REFERENCES user_vehicles(id) ON DELETE CASCADE,
+      warranty_name TEXT NOT NULL,
+      provider TEXT NOT NULL,
+      provider_url TEXT,
+      purchase_date TEXT,
+      start_date TEXT,
+      term_years INTEGER,
+      term_miles INTEGER,
+      expiration_date TEXT,
+      deductible REAL,
+      cost REAL,
+      contract_number TEXT,
+      claims_phone TEXT,
+      notes TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS service_intervals (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_vehicle_id INTEGER NOT NULL REFERENCES user_vehicles(id) ON DELETE CASCADE,
