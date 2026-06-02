@@ -5,13 +5,13 @@ import StatusBadge from '../components/StatusBadge'
 import PhotoGrid from '../components/PhotoGrid'
 import ConfirmModal from '../components/ConfirmModal'
 
-const CATEGORIES = ['Suspension','Tires_Wheels','Lighting','Bumpers','Armor','Engine','Performance','Interior','Audio','Electrical','Recovery','Bed_Accessories','Other']
+const CATEGORIES = ['Armor','Audio','Bed_Accessories','Bumpers','Electrical','Engine','Interior','Lighting','Performance','Recovery','Suspension','Tires_Wheels','Other']
 const STATUSES = ['Researching','Ordered','In_Transit','Installed','Removed']
 
 const EMPTY_FORM = {
   part_name: '', part_number: '', brand: '', vendor: '', vendor_url: '',
   category: 'Other', status: 'Researching', purchase_date: '', install_date: '',
-  cost: '', mileage_at_install: '', aux_switch: '', aux_label: '',
+  cost: '', mileage_at_install: '', aux_switches: [],
   install_notes: '', wiring_notes: '', photos: []
 }
 
@@ -21,7 +21,7 @@ export default function ModDetail({ isNew }) {
   const [searchParams] = useSearchParams()
   const { selectedVehicleId, selectedVehicle } = useApp()
 
-  const [form, setForm] = useState(EMPTY_FORM)
+  const [form, setForm] = useState({ ...EMPTY_FORM })
   const [loading, setLoading] = useState(!isNew)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -32,12 +32,33 @@ export default function ModDetail({ isNew }) {
     if (isNew) {
       const preAux = searchParams.get('aux')
       const preAuxLabel = searchParams.get('aux_label')
-      setForm({ ...EMPTY_FORM, aux_switch: preAux || '', aux_label: preAuxLabel || '', user_vehicle_id: selectedVehicleId })
+      // Keep switch_number as a string — must match the string option values in the <select>
+      const preAssignment = preAux
+        ? [{ switch_number: String(preAux), label: preAuxLabel || '' }]
+        : []
+      setForm({ ...EMPTY_FORM, aux_switches: preAssignment, user_vehicle_id: selectedVehicleId })
       return
     }
     fetch(`/api/mods/${id}`)
       .then(r => r.ok ? r.json() : Promise.reject())
-      .then(data => { setForm({ ...data, cost: data.cost ?? '', mileage_at_install: data.mileage_at_install ?? '', aux_switch: data.aux_switch ?? '', photos: data.photos || [] }); setLoading(false) })
+      .then(data => {
+        // Normalize aux_switches: prefer the array, fall back to legacy single-switch field.
+        // Always store switch_number as a STRING so React's controlled <select> matching works
+        // (option values are strings; a numeric value wouldn't match and the select shows "—").
+        const rawSwitches = Array.isArray(data.aux_switches) ? data.aux_switches : []
+        const auxSwitches = rawSwitches.length > 0
+          ? rawSwitches.map(s => ({ ...s, switch_number: String(s.switch_number) }))
+          : (data.aux_switch ? [{ switch_number: String(data.aux_switch), label: data.aux_label || '' }] : [])
+        setForm({
+          ...EMPTY_FORM,           // start clean so no unexpected fields leak in
+          ...data,                 // overlay API fields
+          cost: data.cost ?? '',
+          mileage_at_install: data.mileage_at_install ?? '',
+          aux_switches: auxSwitches,
+          photos: Array.isArray(data.photos) ? data.photos : [],
+        })
+        setLoading(false)
+      })
       .catch(() => { navigate('/mods') })
   }, [id, isNew, selectedVehicleId])
 
@@ -47,12 +68,17 @@ export default function ModDetail({ isNew }) {
     e.preventDefault()
     setError('')
     setSaving(true)
+    // Filter out incomplete entries (switch number not yet selected)
+    const validSwitches = (Array.isArray(form.aux_switches) ? form.aux_switches : [])
+      .filter(s => s.switch_number !== '' && s.switch_number != null && !isNaN(parseInt(s.switch_number)))
+      .map(s => ({ switch_number: parseInt(s.switch_number), label: s.label || '' }))
+
     const payload = {
       ...form,
       user_vehicle_id: isNew ? selectedVehicleId : form.user_vehicle_id,
       cost: form.cost !== '' ? parseFloat(form.cost) : null,
       mileage_at_install: form.mileage_at_install !== '' ? parseInt(form.mileage_at_install) : null,
-      aux_switch: form.aux_switch !== '' ? parseInt(form.aux_switch) : null,
+      aux_switches: validSwitches,
     }
     try {
       const url = isNew ? '/api/mods' : `/api/mods/${id}`
@@ -181,24 +207,84 @@ export default function ModDetail({ isNew }) {
 
         {auxCount > 0 && (
           <div className="card p-5 space-y-4">
-            <div className="section-title">AUX Switch Assignment</div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="label">AUX Switch #</label>
-                <select value={form.aux_switch} onChange={e => set('aux_switch', e.target.value)} className="input-field">
-                  <option value="">Not assigned</option>
-                  {Array.from({ length: auxCount }, (_, i) => i + 1).map(n => (
-                    <option key={n} value={n}>AUX {n}</option>
-                  ))}
-                </select>
+            <div className="section-title">AUX Switch Assignments</div>
+
+            {/* Existing switch rows */}
+            {Array.isArray(form.aux_switches) && form.aux_switches.length > 0 && (
+              <div className="space-y-3">
+                {form.aux_switches.map((sw, idx) => {
+                  const usedByOthers = form.aux_switches
+                    .filter((_, i) => i !== idx)
+                    .map(s => parseInt(s.switch_number))
+                    .filter(n => !isNaN(n))
+                  return (
+                    <div key={idx} className="flex items-end gap-3">
+                      <div className="flex-shrink-0">
+                        <label className="label">Switch</label>
+                        <select
+                          value={sw.switch_number != null ? String(sw.switch_number) : ''}
+                          onChange={e => {
+                            const updated = form.aux_switches.map((s, i) =>
+                              i === idx ? { ...s, switch_number: e.target.value } : s
+                            )
+                            set('aux_switches', updated)
+                          }}
+                          className="input-field w-28"
+                        >
+                          <option value="">—</option>
+                          {Array.from({ length: auxCount }, (_, i) => i + 1).map(n => (
+                            <option key={n} value={String(n)} disabled={usedByOthers.includes(n)}>
+                              AUX {n}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex-1">
+                        <label className="label">
+                          Label <span className="font-normal text-raptor-muted">(what this switch controls)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={sw.label ?? ''}
+                          onChange={e => {
+                            const updated = form.aux_switches.map((s, i) =>
+                              i === idx ? { ...s, label: e.target.value } : s
+                            )
+                            set('aux_switches', updated)
+                          }}
+                          className="input-field"
+                          placeholder={idx === 0 ? 'e.g. Power' : 'e.g. Color Change'}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => set('aux_switches', form.aux_switches.filter((_, i) => i !== idx))}
+                        className="flex-shrink-0 mb-0.5 text-raptor-muted hover:text-red-500 p-2 rounded-lg hover:bg-raptor-elevated transition-colors"
+                        title="Remove this switch"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  )
+                })}
               </div>
-              {form.aux_switch && (
-                <div>
-                  <label className="label">AUX Label</label>
-                  <input type="text" value={form.aux_label} onChange={e => set('aux_label', e.target.value)} className="input-field" placeholder="e.g. Baja Designs LP6" />
-                </div>
-              )}
-            </div>
+            )}
+
+            {/* Add / assign button — shown when under the max */}
+            {(!Array.isArray(form.aux_switches) || form.aux_switches.length < auxCount) && (
+              <button
+                type="button"
+                onClick={() => set('aux_switches', [...(Array.isArray(form.aux_switches) ? form.aux_switches : []), { switch_number: '', label: '' }])}
+                className="btn-secondary text-sm flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                {Array.isArray(form.aux_switches) && form.aux_switches.length > 0 ? 'Add Another Switch' : 'Assign an AUX Switch'}
+              </button>
+            )}
           </div>
         )}
 

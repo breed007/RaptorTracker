@@ -8,6 +8,18 @@ const router = express.Router();
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
 
+// Apply per-vehicle aux warning dismissals to a layout coming from the reference vehicle
+function applyAuxDismissals(auxLayoutStr, dismissedJson) {
+  const layout = JSON.parse(auxLayoutStr || '[]');
+  const dismissed = JSON.parse(dismissedJson || '[]');
+  if (!dismissed.length) return layout;
+  return layout.map(slot =>
+    dismissed.includes(slot.switch_number)
+      ? { ...slot, warning_note: null }
+      : slot
+  );
+}
+
 const vehiclePhotoStorage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOAD_DIR),
   filename: (req, file, cb) => {
@@ -59,7 +71,7 @@ router.get('/', (req, res) => {
   `).all();
   res.json(rows.map(uv => ({
     ...uv,
-    aux_switch_layout: JSON.parse(uv.aux_switch_layout || '[]'),
+    aux_switch_layout: applyAuxDismissals(uv.aux_switch_layout, uv.dismissed_aux_warnings),
     vehicle_photos: JSON.parse(uv.vehicle_photos || '[]')
   })));
 });
@@ -70,7 +82,9 @@ router.post('/', (req, res) => {
     vehicle_id, nickname, model_year, color, vin, purchase_date,
     mileage_at_purchase, package_options, notes,
     purchase_price, seller_name, seller_contact,
-    service_dealership, service_dealership_contact
+    service_dealership, service_dealership_contact,
+    registration_expiry, inspection_expiry,
+    insurance_provider, insurance_policy, insurance_phone, insurance_expiry
   } = req.body;
   if (!vehicle_id || !nickname || !model_year) {
     return res.status(400).json({ error: 'vehicle_id, nickname, and model_year are required' });
@@ -83,15 +97,19 @@ router.post('/', (req, res) => {
       (vehicle_id, nickname, model_year, color, vin, purchase_date,
        mileage_at_purchase, package_options, notes,
        purchase_price, seller_name, seller_contact,
-       service_dealership, service_dealership_contact)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       service_dealership, service_dealership_contact,
+       registration_expiry, inspection_expiry,
+       insurance_provider, insurance_policy, insurance_phone, insurance_expiry)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     vehicle_id, nickname, model_year,
     color || null, vin || null, purchase_date || null,
     mileage_at_purchase || null, package_options || null, notes || null,
     purchase_price != null ? parseFloat(purchase_price) : null,
     seller_name || null, seller_contact || null,
-    service_dealership || null, service_dealership_contact || null
+    service_dealership || null, service_dealership_contact || null,
+    registration_expiry || null, inspection_expiry || null,
+    insurance_provider || null, insurance_policy || null, insurance_phone || null, insurance_expiry || null
   );
 
   const created = db.prepare('SELECT * FROM user_vehicles WHERE id = ?').get(result.lastInsertRowid);
@@ -114,7 +132,7 @@ router.get('/:id', (req, res) => {
   if (!uv) return res.status(404).json({ error: 'Not found' });
   res.json({
     ...uv,
-    aux_switch_layout: JSON.parse(uv.aux_switch_layout || '[]'),
+    aux_switch_layout: applyAuxDismissals(uv.aux_switch_layout, uv.dismissed_aux_warnings),
     engine_options: JSON.parse(uv.engine_options || '[]'),
     vehicle_photos: JSON.parse(uv.vehicle_photos || '[]')
   });
@@ -126,7 +144,9 @@ router.put('/:id', (req, res) => {
     nickname, color, vin, purchase_date, mileage_at_purchase,
     package_options, notes,
     purchase_price, seller_name, seller_contact,
-    service_dealership, service_dealership_contact
+    service_dealership, service_dealership_contact,
+    registration_expiry, inspection_expiry,
+    insurance_provider, insurance_policy, insurance_phone, insurance_expiry
   } = req.body;
   const existing = db.prepare('SELECT id FROM user_vehicles WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
@@ -135,13 +155,17 @@ router.put('/:id', (req, res) => {
       nickname=?, color=?, vin=?, purchase_date=?,
       mileage_at_purchase=?, package_options=?, notes=?,
       purchase_price=?, seller_name=?, seller_contact=?,
-      service_dealership=?, service_dealership_contact=?
+      service_dealership=?, service_dealership_contact=?,
+      registration_expiry=?, inspection_expiry=?,
+      insurance_provider=?, insurance_policy=?, insurance_phone=?, insurance_expiry=?
     WHERE id=?
   `).run(
     nickname, color, vin, purchase_date, mileage_at_purchase, package_options, notes,
     purchase_price != null ? parseFloat(purchase_price) : null,
     seller_name || null, seller_contact || null,
     service_dealership || null, service_dealership_contact || null,
+    registration_expiry || null, inspection_expiry || null,
+    insurance_provider || null, insurance_policy || null, insurance_phone || null, insurance_expiry || null,
     req.params.id
   );
   res.json({ ok: true });
@@ -234,6 +258,66 @@ router.put('/:id/profile-photo', (req, res) => {
 
   db.prepare('UPDATE user_vehicles SET profile_photo = ? WHERE id = ?').run(photoPath, req.params.id);
   res.json({ ok: true, profile_photo: photoPath });
+});
+
+// PUT /api/user-vehicles/:id/aux-warning-dismiss
+// Dismiss (or restore) a factory warning note on a specific AUX switch slot
+router.put('/:id/aux-warning-dismiss', (req, res) => {
+  const { switch_number, dismiss = true } = req.body;
+  if (switch_number == null) return res.status(400).json({ error: 'switch_number required' });
+
+  const db = getDb();
+  const uv = db.prepare('SELECT id, dismissed_aux_warnings FROM user_vehicles WHERE id = ?').get(req.params.id);
+  if (!uv) return res.status(404).json({ error: 'Not found' });
+
+  let dismissed = JSON.parse(uv.dismissed_aux_warnings || '[]');
+  if (dismiss) {
+    if (!dismissed.includes(switch_number)) dismissed.push(switch_number);
+  } else {
+    dismissed = dismissed.filter(n => n !== switch_number);
+  }
+
+  db.prepare('UPDATE user_vehicles SET dismissed_aux_warnings = ? WHERE id = ?')
+    .run(JSON.stringify(dismissed), req.params.id);
+
+  res.json({ ok: true, dismissed_aux_warnings: dismissed });
+});
+
+// PUT /api/user-vehicles/:id/financing — update ownership/financing only
+router.put('/:id/financing', (req, res) => {
+  const db = getDb();
+  const existing = db.prepare('SELECT id FROM user_vehicles WHERE id = ?').get(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'Not found' });
+
+  const {
+    ownership_type, purchase_price,
+    loan_lender, loan_amount, loan_apr, loan_term_months, loan_start_date,
+    loan_monthly_payment, loan_down_payment,
+    lease_lender, lease_monthly_payment, lease_term_months, lease_start_date,
+    lease_down_payment, lease_mileage_allowance, lease_buyout,
+  } = req.body;
+
+  const num = (x) => (x != null && x !== '' ? parseFloat(x) : null);
+  const int = (x) => (x != null && x !== '' ? parseInt(x, 10) : null);
+  const type = ['owned', 'loan', 'lease'].includes(ownership_type) ? ownership_type : 'owned';
+
+  db.prepare(`
+    UPDATE user_vehicles SET
+      ownership_type=?, purchase_price=?,
+      loan_lender=?, loan_amount=?, loan_apr=?, loan_term_months=?, loan_start_date=?,
+      loan_monthly_payment=?, loan_down_payment=?,
+      lease_lender=?, lease_monthly_payment=?, lease_term_months=?, lease_start_date=?,
+      lease_down_payment=?, lease_mileage_allowance=?, lease_buyout=?
+    WHERE id=?
+  `).run(
+    type, num(purchase_price),
+    loan_lender || null, num(loan_amount), num(loan_apr), int(loan_term_months), loan_start_date || null,
+    num(loan_monthly_payment), num(loan_down_payment),
+    lease_lender || null, num(lease_monthly_payment), int(lease_term_months), lease_start_date || null,
+    num(lease_down_payment), int(lease_mileage_allowance), num(lease_buyout),
+    req.params.id
+  );
+  res.json(db.prepare('SELECT * FROM user_vehicles WHERE id = ?').get(req.params.id));
 });
 
 router.use((err, req, res, next) => {

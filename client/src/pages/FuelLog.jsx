@@ -183,7 +183,7 @@ export default function FuelLog() {
       total_cost: entry.total_cost ?? '',
       station: entry.station || '',
       trip_type: entry.trip_type || 'mixed',
-      full_tank: entry.full_tank !== false,
+      full_tank: Boolean(entry.full_tank),
       notes: entry.notes || '',
     })
     setFormError('')
@@ -685,7 +685,7 @@ function FuelEntryRow({ entry, factoryHwy, onEdit, onDelete }) {
                 {entry.trip_type}
               </span>
             )}
-            {entry.full_tank === false && (
+            {!entry.full_tank && (
               <span className="text-xs text-raptor-muted px-1.5 py-0.5 rounded bg-raptor-elevated border border-raptor-border">
                 partial
               </span>

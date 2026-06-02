@@ -44,6 +44,24 @@ export default function Export() {
     }
   }
 
+  const csvTypes = [
+    { type: 'mods', label: 'Modifications' },
+    { type: 'maintenance', label: 'Maintenance' },
+    { type: 'fuel', label: 'Fuel Log' },
+    { type: 'warranties', label: 'Warranties' },
+    { type: 'tires', label: 'Tire Sets' },
+    { type: 'wishlist', label: 'Wishlist' },
+  ]
+
+  const handleCsv = (type) => {
+    if (!selectedVehicleId) return
+    const date = new Date().toISOString().slice(0, 10)
+    const a = document.createElement('a')
+    a.href = `/api/export/csv/${type}/${selectedVehicleId}`
+    a.download = `RaptorTracker-${type}-${date}.csv`
+    a.click()
+  }
+
   if (!selectedVehicleId) {
     return (
       <div className="flex flex-col items-center justify-center min-h-64 gap-4">
@@ -142,6 +160,28 @@ export default function Export() {
       <p className="text-xs text-raptor-muted text-center">
         File: RaptorTracker-{(selectedVehicle?.nickname || 'Raptor').replace(/[^a-z0-9]/gi, '-')}-{new Date().toISOString().slice(0, 10)}.pdf
       </p>
+
+      {/* CSV export */}
+      <div className="card p-5 space-y-3">
+        <div className="section-title">Export Records as CSV</div>
+        <p className="text-sm text-raptor-secondary">
+          Download spreadsheet-ready CSV files for any record type — useful for taxes, resale, or your own analysis.
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {csvTypes.map(({ type, label }) => (
+            <button
+              key={type}
+              onClick={() => handleCsv(type)}
+              className="btn-secondary text-sm flex items-center justify-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

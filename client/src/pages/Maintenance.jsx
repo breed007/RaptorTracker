@@ -345,7 +345,21 @@ const SERVICE_TYPES = [
 ]
 
 const EMPTY_FORM = {
-  service_type: '', custom_type: '', date_performed: '', mileage: '', cost: '', vendor: '', notes: ''
+  service_type: '', custom_type: '', date_performed: '', mileage: '', cost: '', vendor: '', notes: '',
+  service_provider_type: ''
+}
+
+const PROVIDER_TYPES = [
+  { value: '', label: 'Not specified' },
+  { value: 'dealership', label: 'Dealership' },
+  { value: 'independent', label: 'Independent Shop' },
+  { value: 'owner', label: 'Owner / DIY' },
+]
+
+const PROVIDER_LABELS = {
+  dealership: 'Dealership',
+  independent: 'Independent',
+  owner: 'Owner / DIY',
 }
 
 function AttachmentThumb({ src, onRemove }) {
@@ -429,7 +443,8 @@ export default function Maintenance() {
       mileage: record.mileage ?? '',
       cost: record.cost ?? '',
       vendor: record.vendor || '',
-      notes: record.notes || ''
+      notes: record.notes || '',
+      service_provider_type: record.service_provider_type || ''
     })
     setError('')
     setShowForm(true)
@@ -447,7 +462,8 @@ export default function Maintenance() {
       mileage: form.mileage !== '' ? form.mileage : null,
       cost: form.cost !== '' ? form.cost : null,
       vendor: form.vendor || null,
-      notes: form.notes || null
+      notes: form.notes || null,
+      service_provider_type: form.service_provider_type || null
     }
     try {
       const url = editId ? `/api/maintenance/${editId}` : '/api/maintenance'
@@ -611,12 +627,23 @@ export default function Maintenance() {
               />
             </div>
             <div>
+              <label className="label">Serviced By</label>
+              <select
+                value={form.service_provider_type}
+                onChange={e => setForm(f => ({ ...f, service_provider_type: e.target.value }))}
+                className="input-field"
+              >
+                {PROVIDER_TYPES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+              </select>
+            </div>
+            <div>
               <label className="label">Vendor / Shop</label>
               <input
                 type="text"
                 value={form.vendor}
                 onChange={e => setForm(f => ({ ...f, vendor: e.target.value }))}
                 className="input-field"
+                placeholder={form.service_provider_type === 'owner' ? 'Optional for DIY' : 'e.g. dealership or shop name'}
               />
             </div>
             <div className="sm:col-span-2">
@@ -677,7 +704,16 @@ export default function Maintenance() {
                           </span>
                         )}
                       </div>
-                      {r.vendor && <div className="text-xs text-raptor-muted mt-0.5">{r.vendor}</div>}
+                      {(r.vendor || r.service_provider_type) && (
+                        <div className="text-xs text-raptor-muted mt-0.5 flex items-center gap-2 flex-wrap">
+                          {r.service_provider_type && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-raptor-elevated border border-raptor-border">
+                              {PROVIDER_LABELS[r.service_provider_type] || r.service_provider_type}
+                            </span>
+                          )}
+                          {r.vendor && <span>{r.vendor}</span>}
+                        </div>
+                      )}
                       {r.notes && <div className="text-sm text-raptor-secondary mt-1 whitespace-pre-wrap">{r.notes}</div>}
                     </div>
 

@@ -80,19 +80,23 @@ router.get('/', (req, res) => {
   if (!vehicle_id) return res.status(400).json({ error: 'vehicle_id required' });
   const db = getDb();
 
+  // last_date and last_mileage must come from the SAME (latest) maintenance row.
+  // A naive MAX(date)/MAX(mileage) pair can mix a date from one row with the
+  // mileage from another, corrupting the due/overdue math — so use correlated
+  // subqueries that both read from the single most-recent record.
   const intervals = db.prepare(`
     SELECT si.*,
-      ml.last_date,
-      ml.last_mileage
+      (SELECT ml.date_performed FROM maintenance_log ml
+         WHERE ml.user_vehicle_id = si.user_vehicle_id
+           AND ml.service_type = si.service_type
+         ORDER BY ml.date_performed DESC, ml.id DESC
+         LIMIT 1) as last_date,
+      (SELECT ml.mileage FROM maintenance_log ml
+         WHERE ml.user_vehicle_id = si.user_vehicle_id
+           AND ml.service_type = si.service_type
+         ORDER BY ml.date_performed DESC, ml.id DESC
+         LIMIT 1) as last_mileage
     FROM service_intervals si
-    LEFT JOIN (
-      SELECT user_vehicle_id, service_type,
-        MAX(date_performed) as last_date,
-        MAX(mileage)        as last_mileage
-      FROM maintenance_log
-      GROUP BY user_vehicle_id, service_type
-    ) ml ON ml.user_vehicle_id = si.user_vehicle_id
-         AND ml.service_type = si.service_type
     WHERE si.user_vehicle_id = ?
     ORDER BY si.is_factory DESC, si.service_type ASC
   `).all(vehicle_id);

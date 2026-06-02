@@ -53,7 +53,7 @@ export default function Layout({ children }) {
             rel="noopener noreferrer"
             className="text-xs text-raptor-muted hover:text-raptor-accent transition-colors flex-shrink-0"
           >
-            v{__APP_VERSION__}
+            v{__APP_VERSION__} · {__BUILD_DATE__}
           </a>
         </footer>
       </div>

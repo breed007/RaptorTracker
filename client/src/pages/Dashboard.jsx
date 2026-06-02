@@ -32,6 +32,8 @@ export default function Dashboard() {
   const [summary, setSummary] = useState(null)
   const [maintenance, setMaintenance] = useState([])
   const [intervals, setIntervals] = useState({ intervals: [], currentMileage: null })
+  const [warrantySummary, setWarrantySummary] = useState(null)
+  const [recalls, setRecalls] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -41,12 +43,24 @@ export default function Dashboard() {
       fetch(`/api/summary?vehicle_id=${selectedVehicleId}`).then(r => r.json()),
       fetch(`/api/maintenance?vehicle_id=${selectedVehicleId}`).then(r => r.json()),
       fetch(`/api/intervals?vehicle_id=${selectedVehicleId}`).then(r => r.json()).catch(() => ({ intervals: [], currentMileage: null })),
-    ]).then(([sum, maint, intv]) => {
+      fetch(`/api/warranty/summary?vehicle_id=${selectedVehicleId}`).then(r => r.ok ? r.json() : null).catch(() => null),
+    ]).then(([sum, maint, intv, wsummary]) => {
       setSummary(sum)
       setMaintenance(Array.isArray(maint) ? maint : [])
       setIntervals(intv || { intervals: [], currentMileage: null })
+      setWarrantySummary(wsummary)
       setLoading(false)
     }).catch(() => setLoading(false))
+  }, [selectedVehicleId])
+
+  // Recalls fetched separately — it hits an external API and may be slower
+  useEffect(() => {
+    if (!selectedVehicleId) { setRecalls(null); return }
+    setRecalls(null)
+    fetch(`/api/recalls?vehicle_id=${selectedVehicleId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(setRecalls)
+      .catch(() => {})
   }, [selectedVehicleId])
 
   if (!selectedVehicleId) {
@@ -119,6 +133,67 @@ export default function Dashboard() {
               )
             })}
           </div>
+        </div>
+      )}
+
+      {/* Warranty Alerts */}
+      {warrantySummary && (warrantySummary.expired > 0 || warrantySummary.expiringSoon > 0) && (
+        <div className="card p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <svg className="w-4 h-4 text-raptor-accent flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+            <span className="section-title">Warranty Alerts</span>
+            <Link to="/warranty" className="ml-auto text-xs text-raptor-accent hover:underline">View all →</Link>
+          </div>
+          <div className="space-y-2">
+            {warrantySummary.expired > 0 && (
+              <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40">
+                <span className="font-medium text-red-700 dark:text-red-400">
+                  {warrantySummary.expired} warrant{warrantySummary.expired === 1 ? 'y' : 'ies'} expired
+                </span>
+                <span className="text-xs font-semibold text-red-600 dark:text-red-400 flex-shrink-0">Expired</span>
+              </div>
+            )}
+            {warrantySummary.expiringSoon > 0 && (
+              <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900/40">
+                <span className="font-medium text-yellow-700 dark:text-yellow-500">
+                  {warrantySummary.expiringSoon} warrant{warrantySummary.expiringSoon === 1 ? 'y' : 'ies'} expiring within 90 days
+                </span>
+                <span className="text-xs font-semibold text-yellow-600 dark:text-yellow-500 flex-shrink-0">Expiring Soon</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Open Recalls (NHTSA) */}
+      {recalls && recalls.recalls && recalls.recalls.length > 0 && (
+        <div className="card p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4a2 2 0 00-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
+            </svg>
+            <span className="section-title">Open Recalls</span>
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+              {recalls.recalls.length}
+            </span>
+            <span className="ml-auto text-xs text-raptor-muted">{recalls.make} {recalls.model} {recalls.year}</span>
+          </div>
+          <div className="space-y-2">
+            {recalls.recalls.slice(0, 5).map((r, i) => (
+              <div key={i} className="px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-medium text-red-700 dark:text-red-400">{r.component}</span>
+                  {r.campaign && <span className="text-xs text-raptor-muted">#{r.campaign}</span>}
+                </div>
+                {r.summary && <p className="text-xs text-raptor-secondary mt-1 line-clamp-2">{r.summary}</p>}
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-raptor-muted mt-2">
+            Source: NHTSA, matched by model &amp; year. Confirm applicability against your VIN at nhtsa.gov.
+          </p>
         </div>
       )}
 

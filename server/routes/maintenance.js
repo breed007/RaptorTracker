@@ -43,17 +43,18 @@ router.get('/', (req, res) => {
 
 router.post('/', (req, res) => {
   const db = getDb();
-  const { user_vehicle_id, service_type, date_performed, mileage, cost, vendor, notes } = req.body;
+  const { user_vehicle_id, service_type, date_performed, mileage, cost, vendor, notes, service_provider_type } = req.body;
   if (!user_vehicle_id || !service_type || !date_performed) {
     return res.status(400).json({ error: 'user_vehicle_id, service_type, and date_performed are required' });
   }
+  const provider = ['dealership', 'independent', 'owner'].includes(service_provider_type) ? service_provider_type : null;
   const result = db.prepare(`
-    INSERT INTO maintenance_log (user_vehicle_id, service_type, date_performed, mileage, cost, vendor, notes, attachments)
-    VALUES (?,?,?,?,?,?,?,'[]')
+    INSERT INTO maintenance_log (user_vehicle_id, service_type, date_performed, mileage, cost, vendor, notes, service_provider_type, attachments)
+    VALUES (?,?,?,?,?,?,?,?,'[]')
   `).run(user_vehicle_id, service_type, date_performed,
          mileage ? parseInt(mileage) : null,
          cost != null ? parseFloat(cost) : null,
-         vendor || null, notes || null);
+         vendor || null, notes || null, provider);
   const created = db.prepare('SELECT * FROM maintenance_log WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json(parseRow(created));
 });
@@ -62,14 +63,15 @@ router.put('/:id', (req, res) => {
   const db = getDb();
   const existing = db.prepare('SELECT id FROM maintenance_log WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
-  const { service_type, date_performed, mileage, cost, vendor, notes } = req.body;
+  const { service_type, date_performed, mileage, cost, vendor, notes, service_provider_type } = req.body;
+  const provider = ['dealership', 'independent', 'owner'].includes(service_provider_type) ? service_provider_type : null;
   db.prepare(`
-    UPDATE maintenance_log SET service_type=?, date_performed=?, mileage=?, cost=?, vendor=?, notes=?
+    UPDATE maintenance_log SET service_type=?, date_performed=?, mileage=?, cost=?, vendor=?, notes=?, service_provider_type=?
     WHERE id=?
   `).run(service_type, date_performed,
          mileage ? parseInt(mileage) : null,
          cost != null ? parseFloat(cost) : null,
-         vendor || null, notes || null, req.params.id);
+         vendor || null, notes || null, provider, req.params.id);
   res.json({ ok: true });
 });
 

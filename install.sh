@@ -7,7 +7,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MIN_NODE_MAJOR=20
+# Node 22 LTS — Vite 5 needs a recent Node; 22 avoids the 20.16-vs-20.19 trap.
+MIN_NODE_MAJOR=22
 STATE_FILE="/etc/raptortracker-install.conf"
 
 ###############################################################################
@@ -214,7 +215,7 @@ install_build_tools() {
 }
 
 ###############################################################################
-# Install Node.js 20+
+# Install Node.js (LTS — see MIN_NODE_MAJOR)
 ###############################################################################
 install_nodejs() {
   section "Node.js"
@@ -408,6 +409,15 @@ ADMIN_PASSWORD=${ADMIN_PASS}
 DATA_DIR=${DATA_DIR}
 UPLOAD_DIR=${DATA_DIR}/uploads
 NODE_ENV=production
+
+# Optional — email reminders. Fill in to enable, then turn reminders on
+# under Notifications in the app. Leave SMTP_HOST blank to keep email off.
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=
 EOF
 
   chmod 600 "$env_file"
@@ -741,7 +751,7 @@ verify_npm_packages() {
 
   cd "$INSTALL_DIR"
 
-  local required_pkgs=("archiver" "adm-zip")
+  local required_pkgs=("archiver" "adm-zip" "nodemailer" "node-cron")
   local missing=()
 
   for pkg in "${required_pkgs[@]}"; do

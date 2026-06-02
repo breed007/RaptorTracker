@@ -62,9 +62,14 @@ export default function ModDetailPanel({ modId, onClose }) {
                   {mod.category && (
                     <span className="text-xs text-raptor-muted">{mod.category.replace(/_/g, ' ')}</span>
                   )}
-                  {mod.aux_switch && (
-                    <span className="text-xs text-raptor-accent font-medium">AUX {mod.aux_switch}</span>
-                  )}
+                  {mod.aux_switches?.length > 0
+                    ? mod.aux_switches.map(s => (
+                        <span key={s.switch_number} className="text-xs text-raptor-accent font-medium">AUX {s.switch_number}</span>
+                      ))
+                    : mod.aux_switch
+                      ? <span className="text-xs text-raptor-accent font-medium">AUX {mod.aux_switch}</span>
+                      : null
+                  }
                 </div>
               </>
             ) : (
@@ -126,10 +131,14 @@ export default function ModDetailPanel({ modId, onClose }) {
                 <InfoRow label="Purchased" value={fmt.date(mod.purchase_date)} />
                 <InfoRow label="Installed" value={fmt.date(mod.install_date)} />
                 <InfoRow label="Mileage at Install" value={fmt.miles(mod.mileage_at_install)} />
-                {mod.aux_switch && (
+                {(mod.aux_switches?.length > 0 || mod.aux_switch) && (
                   <InfoRow
-                    label="AUX Assignment"
-                    value={`AUX ${mod.aux_switch}${mod.aux_label ? ' — ' + mod.aux_label : ''}`}
+                    label={`AUX Switch${(mod.aux_switches?.length > 1) ? 'es' : ''}`}
+                    value={
+                      mod.aux_switches?.length > 0
+                        ? mod.aux_switches.map(s => `AUX ${s.switch_number}${s.label ? ' — ' + s.label : ''}`).join(', ')
+                        : `AUX ${mod.aux_switch}${mod.aux_label ? ' — ' + mod.aux_label : ''}`
+                    }
                   />
                 )}
               </div>

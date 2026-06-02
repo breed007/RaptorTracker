@@ -23,19 +23,53 @@ export default function AuxPanel() {
   const [mods, setMods] = useState([])
   const [auxLayout, setAuxLayout] = useState([])
   const [auxCount, setAuxCount] = useState(0)
+  const [dismissing, setDismissing] = useState(null) // switch_number being dismissed
 
+  // Instant paint from context, then corrected by the fresh fetch below
   useEffect(() => {
     if (!selectedVehicle) return
     setAuxLayout(selectedVehicle.aux_switch_layout || [])
     setAuxCount(selectedVehicle.aux_switch_count || 0)
   }, [selectedVehicle])
 
+  // Always refetch mods AND the vehicle layout on mount / vehicle change.
+  // The vehicle GET applies dismissed AUX warnings server-side, so this keeps
+  // the panel in sync after mod edits and after a warning is dismissed
+  // (context's copy of the layout is only loaded once at login).
   useEffect(() => {
     if (!selectedVehicleId) return
     fetch(`/api/mods?vehicle_id=${selectedVehicleId}`)
       .then(r => r.json())
       .then(setMods)
+      .catch(() => {})
+    fetch(`/api/user-vehicles/${selectedVehicleId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(v => {
+        if (v) {
+          setAuxLayout(v.aux_switch_layout || [])
+          setAuxCount(v.aux_switch_count || 0)
+        }
+      })
+      .catch(() => {})
   }, [selectedVehicleId])
+
+  const handleDismissWarning = async (switchNumber) => {
+    setDismissing(switchNumber)
+    try {
+      const res = await fetch(`/api/user-vehicles/${selectedVehicleId}/aux-warning-dismiss`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ switch_number: switchNumber, dismiss: true }),
+      })
+      if (res.ok) {
+        setAuxLayout(prev => prev.map(slot =>
+          slot.switch_number === switchNumber ? { ...slot, warning_note: null } : slot
+        ))
+      }
+    } finally {
+      setDismissing(null)
+    }
+  }
 
   if (!selectedVehicleId) {
     return (
@@ -62,9 +96,17 @@ export default function AuxPanel() {
     )
   }
 
-  const auxModMap = {}
+  // Build switch→mod map from the aux_switches array (falls back to legacy aux_switch)
+  const auxModMap = {} // { switch_number: { mod, label } }
   for (const mod of mods) {
-    if (mod.aux_switch) auxModMap[mod.aux_switch] = mod
+    const switches = Array.isArray(mod.aux_switches) && mod.aux_switches.length > 0
+      ? mod.aux_switches
+      : (mod.aux_switch ? [{ switch_number: mod.aux_switch, label: mod.aux_label || '' }] : [])
+    for (const sw of switches) {
+      if (sw.switch_number) {
+        auxModMap[sw.switch_number] = { mod, label: sw.label || '' }
+      }
+    }
   }
 
   return (
@@ -89,7 +131,9 @@ export default function AuxPanel() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {auxLayout.map(slot => {
-          const assignedMod = auxModMap[slot.switch_number]
+          const assignment = auxModMap[slot.switch_number]
+          const assignedMod = assignment?.mod
+          const switchLabel = assignment?.label
           const isFactoryReserved = slot.factory_used && !assignedMod
 
           const slotClass = assignedMod
@@ -121,8 +165,17 @@ export default function AuxPanel() {
               {slot.warning_note && (
                 <div className="bg-amber-50 border border-amber-300 dark:bg-amber-900/30 dark:border-amber-800 rounded px-2.5 py-1.5 mb-2">
                   <div className="flex items-start gap-1.5">
-                    <span className="text-amber-600 dark:text-amber-400 text-xs mt-px">⚠</span>
-                    <p className="text-xs text-amber-700 dark:text-amber-300 leading-snug">{slot.warning_note}</p>
+                    <span className="text-amber-600 dark:text-amber-400 text-xs mt-px flex-shrink-0">⚠</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-amber-700 dark:text-amber-300 leading-snug">{slot.warning_note}</p>
+                      <button
+                        onClick={e => { e.preventDefault(); e.stopPropagation(); handleDismissWarning(slot.switch_number) }}
+                        disabled={dismissing === slot.switch_number}
+                        className="mt-1.5 text-xs text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 underline underline-offset-2 disabled:opacity-50 transition-colors"
+                      >
+                        {dismissing === slot.switch_number ? 'Clearing…' : '✕ Lights relocated — clear this notice'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -130,9 +183,9 @@ export default function AuxPanel() {
               {assignedMod ? (
                 <div>
                   <div className="text-sm font-semibold text-raptor-primary truncate">{assignedMod.part_name}</div>
-                  {(assignedMod.aux_label || slot.default_label) && (
+                  {(switchLabel || slot.default_label) && (
                     <div className="text-xs text-raptor-secondary mt-0.5 truncate">
-                      {assignedMod.aux_label || slot.default_label}
+                      {switchLabel || slot.default_label}
                     </div>
                   )}
                   {assignedMod.brand && (

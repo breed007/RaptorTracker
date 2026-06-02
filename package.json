@@ -1,6 +1,6 @@
 {
   "name": "raptortracker",
-  "version": "2026.04.20",
+  "version": "0.2.0",
   "description": "Ford Raptor vehicle modification tracker",
   "main": "server.js",
   "scripts": {
@@ -18,6 +18,8 @@
     "express": "^4.18.3",
     "express-session": "^1.18.0",
     "multer": "^2.0.0",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.13",
     "pdfkit": "^0.15.0",
     "uuid": "^9.0.1"
   },

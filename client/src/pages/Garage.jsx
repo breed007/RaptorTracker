@@ -10,7 +10,9 @@ const EMPTY_FORM = {
   vehicle_id: '', nickname: '', model_year: '', color: '',
   vin: '', purchase_date: '', mileage_at_purchase: '', package_options: '', notes: '',
   purchase_price: '', seller_name: '', seller_contact: '',
-  service_dealership: '', service_dealership_contact: ''
+  service_dealership: '', service_dealership_contact: '',
+  registration_expiry: '', inspection_expiry: '',
+  insurance_provider: '', insurance_policy: '', insurance_phone: '', insurance_expiry: ''
 }
 
 // ── Icons ──────────────────────────────────────────────────────────────────
@@ -277,6 +279,26 @@ function VinResultCard({ result, autoFilled }) {
   )
 }
 
+// ── Compliance row (registration / inspection / insurance) ──────────────────
+
+function ComplianceRow({ label, date }) {
+  if (!date) return null
+  const days = Math.floor((new Date(date + 'T12:00:00') - new Date()) / 86400000)
+  let cls = 'text-raptor-secondary'
+  let tag = null
+  if (days < 0) { cls = 'text-red-500 dark:text-red-400 font-medium'; tag = 'expired' }
+  else if (days <= 30) { cls = 'text-yellow-600 dark:text-yellow-500 font-medium'; tag = `${days}d` }
+  return (
+    <div className="flex gap-1.5 text-xs">
+      <span className="text-raptor-muted w-24 flex-shrink-0">{label}</span>
+      <span className={cls}>
+        {new Date(date + 'T12:00:00').toLocaleDateString()}
+        {tag && <span className="ml-1.5">({tag})</span>}
+      </span>
+    </div>
+  )
+}
+
 // ── Main Component ─────────────────────────────────────────────────────────
 
 export default function Garage() {
@@ -443,6 +465,12 @@ export default function Garage() {
       seller_contact: v.seller_contact || '',
       service_dealership: v.service_dealership || '',
       service_dealership_contact: v.service_dealership_contact || '',
+      registration_expiry: v.registration_expiry || '',
+      inspection_expiry: v.inspection_expiry || '',
+      insurance_provider: v.insurance_provider || '',
+      insurance_policy: v.insurance_policy || '',
+      insurance_phone: v.insurance_phone || '',
+      insurance_expiry: v.insurance_expiry || '',
     })
     setVinResult(null)
     setVinAutoFilled([])
@@ -910,6 +938,50 @@ export default function Garage() {
                 </div>
               </div>
 
+              {/* ── Registration & Insurance ──────────────────────────────── */}
+              <div className="sm:col-span-2 pt-2 border-t border-raptor-border">
+                <div className="text-xs font-semibold text-raptor-muted uppercase tracking-wide mb-3">Registration &amp; Insurance</div>
+                <p className="text-xs text-raptor-muted mb-3">Expiration dates here feed the email reminders on the Notifications page.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="label">Registration Expires</label>
+                    <input type="date" value={form.registration_expiry}
+                      onChange={e => setForm(f => ({ ...f, registration_expiry: e.target.value }))}
+                      className="input-field" />
+                  </div>
+                  <div>
+                    <label className="label">Inspection / Emissions Expires</label>
+                    <input type="date" value={form.inspection_expiry}
+                      onChange={e => setForm(f => ({ ...f, inspection_expiry: e.target.value }))}
+                      className="input-field" />
+                  </div>
+                  <div>
+                    <label className="label">Insurance Provider</label>
+                    <input type="text" value={form.insurance_provider}
+                      onChange={e => setForm(f => ({ ...f, insurance_provider: e.target.value }))}
+                      className="input-field" placeholder="e.g. State Farm" />
+                  </div>
+                  <div>
+                    <label className="label">Policy Number</label>
+                    <input type="text" value={form.insurance_policy}
+                      onChange={e => setForm(f => ({ ...f, insurance_policy: e.target.value }))}
+                      className="input-field" />
+                  </div>
+                  <div>
+                    <label className="label">Insurance Phone</label>
+                    <input type="tel" value={form.insurance_phone}
+                      onChange={e => setForm(f => ({ ...f, insurance_phone: e.target.value }))}
+                      className="input-field" placeholder="Claims / agent number" />
+                  </div>
+                  <div>
+                    <label className="label">Insurance Expires / Renews</label>
+                    <input type="date" value={form.insurance_expiry}
+                      onChange={e => setForm(f => ({ ...f, insurance_expiry: e.target.value }))}
+                      className="input-field" />
+                  </div>
+                </div>
+              </div>
+
               {error && (
                 <div className="sm:col-span-2 text-red-600 dark:text-red-400 text-sm">{error}</div>
               )}
@@ -1060,6 +1132,16 @@ export default function Garage() {
                       <span className="text-raptor-secondary truncate">{v.service_dealership_contact}</span>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Registration & insurance */}
+              {(v.registration_expiry || v.inspection_expiry || v.insurance_expiry || v.insurance_provider) && (
+                <div className="pt-2 border-t border-raptor-border space-y-1">
+                  <div className="text-xs font-medium text-raptor-muted mb-0.5">Registration &amp; Insurance</div>
+                  <ComplianceRow label="Registration" date={v.registration_expiry} />
+                  <ComplianceRow label="Inspection" date={v.inspection_expiry} />
+                  <ComplianceRow label={v.insurance_provider ? `Insurance · ${v.insurance_provider}` : 'Insurance'} date={v.insurance_expiry} />
                 </div>
               )}
 

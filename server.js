@@ -26,6 +26,12 @@ const vehicleTransferRouter = require('./server/routes/vehicleTransfer');
 const { router: intervalsRouter } = require('./server/routes/intervals');
 const wishlistRouter = require('./server/routes/wishlist');
 const fuelRouter = require('./server/routes/fuel');
+const warrantyRouter = require('./server/routes/warranty');
+const tcoRouter = require('./server/routes/tco');
+const notificationsRouter = require('./server/routes/notifications');
+const tiresRouter = require('./server/routes/tires');
+const recallsRouter = require('./server/routes/recalls');
+const scheduler = require('./server/scheduler');
 
 const DATA_DIR = process.env.DATA_DIR || './data';
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
@@ -71,6 +77,11 @@ app.use('/api/user-vehicles', vehicleTransferRouter);
 app.use('/api/intervals', intervalsRouter);
 app.use('/api/wishlist', wishlistRouter);
 app.use('/api/fuel', fuelRouter);
+app.use('/api/warranty', warrantyRouter);
+app.use('/api/tco', tcoRouter);
+app.use('/api/notifications', notificationsRouter);
+app.use('/api/tires', tiresRouter);
+app.use('/api/recalls', recallsRouter);
 
 // Serve React frontend in production
 const DIST_DIR = path.join(__dirname, 'dist');
@@ -83,4 +94,5 @@ if (fs.existsSync(DIST_DIR)) {
 
 app.listen(PORT, () => {
   console.log(`RaptorTracker running on http://localhost:${PORT}`);
+  scheduler.start();
 });

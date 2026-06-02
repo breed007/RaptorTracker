@@ -6,7 +6,7 @@ import BuildSheet from '../components/BuildSheet'
 import BuildTimeline from '../components/BuildTimeline'
 import ModDetailPanel from '../components/ModDetailPanel'
 
-const CATEGORIES = ['Suspension','Tires_Wheels','Lighting','Bumpers','Armor','Engine','Performance','Interior','Audio','Electrical','Recovery','Bed_Accessories','Other']
+const CATEGORIES = ['Armor','Audio','Bed_Accessories','Bumpers','Electrical','Engine','Interior','Lighting','Performance','Recovery','Suspension','Tires_Wheels','Other']
 const STATUSES = ['Researching','Ordered','In_Transit','Installed','Removed']
 
 const VIEWS = [
@@ -362,7 +362,7 @@ export default function ModList() {
                       </thead>
                       <tbody>
                         {sorted.map(mod => {
-                          const photos = JSON.parse(mod.photos || '[]')
+                          const photos = Array.isArray(mod.photos) ? mod.photos : []
                           return (
                             <tr
                               key={mod.id}
@@ -381,7 +381,12 @@ export default function ModList() {
                                   <div>
                                     <div className="font-medium text-raptor-primary">{mod.part_name}</div>
                                     {mod.brand && <div className="text-xs text-raptor-muted mt-0.5">{mod.brand}</div>}
-                                    {mod.aux_switch && <div className="text-xs text-raptor-accent mt-0.5">AUX {mod.aux_switch}</div>}
+                                    {mod.aux_switches?.length > 0
+                                      ? <div className="text-xs text-raptor-accent mt-0.5">AUX {mod.aux_switches.map(s => s.switch_number).join(', ')}</div>
+                                      : mod.aux_switch
+                                        ? <div className="text-xs text-raptor-accent mt-0.5">AUX {mod.aux_switch}</div>
+                                        : null
+                                    }
                                   </div>
                                 </div>
                               </td>

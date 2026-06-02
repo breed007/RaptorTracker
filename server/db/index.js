@@ -29,9 +29,39 @@ function runMigrations(db) {
     ['service_dealership',        'ALTER TABLE user_vehicles ADD COLUMN service_dealership TEXT'],
     ['service_dealership_contact','ALTER TABLE user_vehicles ADD COLUMN service_dealership_contact TEXT'],
     ['current_mileage',           'ALTER TABLE user_vehicles ADD COLUMN current_mileage INTEGER'],
+    ['dismissed_aux_warnings',    "ALTER TABLE user_vehicles ADD COLUMN dismissed_aux_warnings TEXT NOT NULL DEFAULT '[]'"],
+    // Financing / ownership (for Total Cost of Ownership)
+    ['ownership_type',            "ALTER TABLE user_vehicles ADD COLUMN ownership_type TEXT NOT NULL DEFAULT 'owned'"], // owned | loan | lease
+    ['loan_lender',              'ALTER TABLE user_vehicles ADD COLUMN loan_lender TEXT'],
+    ['loan_amount',              'ALTER TABLE user_vehicles ADD COLUMN loan_amount REAL'],
+    ['loan_apr',                 'ALTER TABLE user_vehicles ADD COLUMN loan_apr REAL'],
+    ['loan_term_months',         'ALTER TABLE user_vehicles ADD COLUMN loan_term_months INTEGER'],
+    ['loan_start_date',          'ALTER TABLE user_vehicles ADD COLUMN loan_start_date TEXT'],
+    ['loan_monthly_payment',     'ALTER TABLE user_vehicles ADD COLUMN loan_monthly_payment REAL'],
+    ['loan_down_payment',        'ALTER TABLE user_vehicles ADD COLUMN loan_down_payment REAL'],
+    ['lease_lender',             'ALTER TABLE user_vehicles ADD COLUMN lease_lender TEXT'],
+    ['lease_monthly_payment',    'ALTER TABLE user_vehicles ADD COLUMN lease_monthly_payment REAL'],
+    ['lease_term_months',        'ALTER TABLE user_vehicles ADD COLUMN lease_term_months INTEGER'],
+    ['lease_start_date',         'ALTER TABLE user_vehicles ADD COLUMN lease_start_date TEXT'],
+    ['lease_down_payment',       'ALTER TABLE user_vehicles ADD COLUMN lease_down_payment REAL'],
+    ['lease_mileage_allowance',  'ALTER TABLE user_vehicles ADD COLUMN lease_mileage_allowance INTEGER'],
+    ['lease_buyout',             'ALTER TABLE user_vehicles ADD COLUMN lease_buyout REAL'],
+    // Registration / inspection / insurance (compliance reminders)
+    ['registration_expiry',      'ALTER TABLE user_vehicles ADD COLUMN registration_expiry TEXT'],
+    ['inspection_expiry',        'ALTER TABLE user_vehicles ADD COLUMN inspection_expiry TEXT'],
+    ['insurance_provider',       'ALTER TABLE user_vehicles ADD COLUMN insurance_provider TEXT'],
+    ['insurance_policy',         'ALTER TABLE user_vehicles ADD COLUMN insurance_policy TEXT'],
+    ['insurance_phone',          'ALTER TABLE user_vehicles ADD COLUMN insurance_phone TEXT'],
+    ['insurance_expiry',         'ALTER TABLE user_vehicles ADD COLUMN insurance_expiry TEXT'],
   ];
   for (const [col, sql] of uvAdditions) {
     if (!uvCols.includes(col)) db.prepare(sql).run();
+  }
+
+  // maintenance_log: service provider type (dealership | independent | owner)
+  const mlCols2 = db.prepare('PRAGMA table_info(maintenance_log)').all().map(c => c.name);
+  if (!mlCols2.includes('service_provider_type')) {
+    db.prepare('ALTER TABLE maintenance_log ADD COLUMN service_provider_type TEXT').run();
   }
 
   // maintenance_log columns
@@ -56,8 +86,50 @@ function runMigrations(db) {
     db.prepare("UPDATE vehicles SET mpg_city=17, mpg_highway=19 WHERE model='Ranger Raptor' AND make='Ford'").run();
   }
 
+  // mods: warranty columns + multi-aux column
+  const modCols = db.prepare('PRAGMA table_info(mods)').all().map(c => c.name);
+  const modWarrantyCols = [
+    ['warranty_months',     'ALTER TABLE mods ADD COLUMN warranty_months INTEGER'],
+    ['warranty_start_date', 'ALTER TABLE mods ADD COLUMN warranty_start_date TEXT'],
+    ['warranty_provider',   'ALTER TABLE mods ADD COLUMN warranty_provider TEXT'],
+    ['warranty_notes',      'ALTER TABLE mods ADD COLUMN warranty_notes TEXT'],
+    ['aux_switches',        "ALTER TABLE mods ADD COLUMN aux_switches TEXT NOT NULL DEFAULT '[]'"],
+  ];
+  for (const [col, sql] of modWarrantyCols) {
+    if (!modCols.includes(col)) db.prepare(sql).run();
+  }
+  // Migrate existing single-switch mods into the aux_switches array
+  const needsMigration = db.prepare(
+    "SELECT id, aux_switch, aux_label FROM mods WHERE aux_switch IS NOT NULL AND aux_switches = '[]'"
+  ).all();
+  if (needsMigration.length) {
+    const migrateStmt = db.prepare('UPDATE mods SET aux_switches = ? WHERE id = ?');
+    for (const m of needsMigration) {
+      migrateStmt.run(JSON.stringify([{ switch_number: m.aux_switch, label: m.aux_label || '' }]), m.id);
+    }
+  }
+
   // New feature tables
   db.exec(`
+    CREATE TABLE IF NOT EXISTS vehicle_warranties (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_vehicle_id INTEGER NOT NULL REFERENCES user_vehicles(id) ON DELETE CASCADE,
+      warranty_name TEXT NOT NULL,
+      provider TEXT NOT NULL,
+      provider_url TEXT,
+      purchase_date TEXT,
+      start_date TEXT,
+      term_years INTEGER,
+      term_miles INTEGER,
+      expiration_date TEXT,
+      deductible REAL,
+      cost REAL,
+      contract_number TEXT,
+      claims_phone TEXT,
+      notes TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS service_intervals (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_vehicle_id INTEGER NOT NULL REFERENCES user_vehicles(id) ON DELETE CASCADE,
@@ -96,6 +168,40 @@ function runMigrations(db) {
       notes TEXT DEFAULT '',
       full_tank INTEGER NOT NULL DEFAULT 1,
       trip_type TEXT DEFAULT 'mixed',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    -- Key/value store for app-level settings (notification prefs, etc.)
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    );
+
+    -- De-dupe log so reminder emails aren't re-sent every day for the same event
+    CREATE TABLE IF NOT EXISTS sent_reminders (
+      signature TEXT PRIMARY KEY,
+      sent_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- Tire / wheel sets (e.g. street vs off-road), with mileage per set
+    CREATE TABLE IF NOT EXISTS tire_sets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_vehicle_id INTEGER NOT NULL REFERENCES user_vehicles(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      tire_brand TEXT DEFAULT '',
+      tire_model TEXT DEFAULT '',
+      tire_size TEXT DEFAULT '',
+      wheel_brand TEXT DEFAULT '',
+      wheel_size TEXT DEFAULT '',
+      quantity INTEGER DEFAULT 4,
+      cost REAL,
+      purchase_date TEXT,
+      install_date TEXT,
+      removed_date TEXT,
+      odometer_installed INTEGER,
+      odometer_removed INTEGER,
+      is_active INTEGER NOT NULL DEFAULT 0,
+      notes TEXT DEFAULT '',
       created_at TEXT DEFAULT (datetime('now'))
     );
   `);
