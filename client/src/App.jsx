@@ -17,6 +17,8 @@ import Warranty from './pages/Warranty'
 import TCO from './pages/TCO'
 import Notifications from './pages/Notifications'
 import TireSets from './pages/TireSets'
+import Logbook from './pages/Logbook'
+import Analytics from './pages/Analytics'
 
 function AppRoutes() {
   const { user, authLoading } = useApp()
@@ -49,6 +51,8 @@ function AppRoutes() {
         <Route path="/tires" element={<TireSets />} />
         <Route path="/warranty" element={<Warranty />} />
         <Route path="/tco" element={<TCO />} />
+        <Route path="/logbook" element={<Logbook />} />
+        <Route path="/analytics" element={<Analytics />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/export" element={<Export />} />
         <Route path="*" element={<Navigate to="/" replace />} />

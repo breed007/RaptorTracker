@@ -4,6 +4,35 @@ All notable changes to RaptorTracker are documented here.
 
 ---
 
+## [v0.4.0] — 2026-06-04
+
+### New Features
+
+#### Webhook Reminders (Discord / Slack)
+- Reminders can now be delivered to a **webhook** in addition to (or instead of) email — no mail server required
+- Set a Discord or Slack incoming webhook URL on the Notifications page, with a "Send Test Webhook" button
+- The daily digest is sent to every configured channel; the same per-event de-duplication applies across channels
+
+#### Full Backup & Restore
+- One-click **Download Backup** on the Export page produces a single ZIP of the entire install — the database plus all uploaded photos, stickers, and attachments
+- **Restore from Backup** replaces all data from a backup ZIP, with a confirmation step and server-side validation that the archive is a real RaptorTracker database
+- The database is WAL-checkpointed before backup for a consistent snapshot
+
+#### Vehicle Logbook
+- New **Logbook** page: a single chronological history of the truck — mods, services, fuel fills, tire changes, warranties, and acquisition — grouped by year
+- Filter by event type; every entry links back to its record
+
+#### Mileage History & Analytics
+- New **Analytics** page with a mileage-over-time chart that unions manual odometer readings, fuel odometers, and service mileage
+- Computes **miles per month** and total miles tracked, and breaks down **maintenance cost by provider** (dealership / independent / owner)
+- A built-in odometer log lets you record readings directly (which also keeps the vehicle's current mileage up to date)
+
+### Notes
+- No new dependencies. Two of the features reuse existing libraries (`archiver`/`adm-zip` for backups), so a plain `git pull && npm run build && pm2 restart` is enough to update.
+- One new database table (`mileage_log`) and a webhook setting are added automatically on first restart.
+
+---
+
 ## [v0.3.0] — 2026-06-04
 
 ### Improvements

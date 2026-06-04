@@ -206,6 +206,16 @@ function runMigrations(db) {
       notes TEXT DEFAULT '',
       created_at TEXT DEFAULT (datetime('now'))
     );
+
+    -- Manual odometer readings (fuel/maintenance mileage is unioned in for analytics)
+    CREATE TABLE IF NOT EXISTS mileage_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_vehicle_id INTEGER NOT NULL REFERENCES user_vehicles(id) ON DELETE CASCADE,
+      date TEXT NOT NULL,
+      odometer INTEGER NOT NULL,
+      note TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
   `);
 
   // Fix Gen 3.5 AUX 2: should be factory_used: false (available), not factory_used: true
@@ -224,4 +234,13 @@ function runMigrations(db) {
   }
 }
 
-module.exports = { getDb };
+// Close the singleton connection (used by the restore flow before swapping the
+// database file). The next getDb() call reopens and re-runs migrations.
+function closeDb() {
+  if (_db) {
+    try { _db.close(); } catch (_) { /* ignore */ }
+    _db = null;
+  }
+}
+
+module.exports = { getDb, closeDb, DB_PATH, DATA_DIR };

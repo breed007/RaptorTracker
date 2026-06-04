@@ -2,7 +2,7 @@
 
 **Ford Raptor Build Tracker** — a self-hosted web app for tracking modifications, maintenance, AUX switch assignments, warranties, fuel economy, and build costs across one or more Ford Raptors.
 
-> Version `0.3.0` · [GitHub](https://github.com/breed007/RaptorTracker) · [Changelog](CHANGELOG.md)
+> Version `0.4.0` · [GitHub](https://github.com/breed007/RaptorTracker) · [Changelog](CHANGELOG.md)
 
 ---
 
@@ -72,11 +72,18 @@
 - Cost-per-mile and operating-cost-per-mile, plus a cumulative-spend chart
 - Financing section for owned-outright, loan, or lease — with paid-to-date, remaining balance, and interest
 
-### Email Reminders
-- Optional daily email digest of overdue/due-soon services, expired/expiring warranties, and registration/inspection/insurance deadlines
+### Reminders (Email + Webhook)
+- Optional daily digest of overdue/due-soon services, expired/expiring warranties, and registration/inspection/insurance deadlines
+- Delivered by **email** (SMTP) and/or a **Discord/Slack webhook** — pick either or both
 - Toggle service, warranty, and compliance alerts independently; configurable look-ahead window
-- De-duplicated so you're not re-emailed the same item daily
-- Requires SMTP settings in `.env`; off by default
+- De-duplicated so you're not re-notified about the same item daily; off by default
+
+### Logbook & Analytics
+- **Logbook** — a single chronological history of the truck (mods, services, fuel, tires, warranties), filterable by type
+- **Analytics** — mileage-over-time, miles per month, and maintenance cost by provider, plus a manual odometer log
+
+### Backup & Restore
+- One-click full backup (database + all uploads) to a single ZIP, and restore from a backup file
 
 ### Registration, Inspection & Insurance
 - Track registration, inspection/emissions, and insurance expiration per vehicle, with provider and policy details

@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
+import ConfirmModal from '../components/ConfirmModal'
 
 const CheckIcon = () => (
   <svg className="w-4 h-4 text-raptor-accent flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -13,6 +14,49 @@ export default function Export() {
   const [summary, setSummary] = useState(null)
   const [generating, setGenerating] = useState(false)
   const [includeSticker, setIncludeSticker] = useState(false)
+
+  // Backup / restore
+  const restoreInputRef = useRef(null)
+  const [pendingRestoreFile, setPendingRestoreFile] = useState(null)
+  const [restoring, setRestoring] = useState(false)
+  const [backupMsg, setBackupMsg] = useState(null) // { type, text }
+
+  const handleBackup = () => {
+    const a = document.createElement('a')
+    a.href = '/api/backup'
+    a.download = `raptortracker-backup-${new Date().toISOString().slice(0, 10)}.zip`
+    a.click()
+  }
+
+  const handleRestorePick = (e) => {
+    const file = e.target.files?.[0]
+    if (file) setPendingRestoreFile(file)
+  }
+
+  const confirmRestore = async () => {
+    const file = pendingRestoreFile
+    setPendingRestoreFile(null)
+    if (!file) return
+    setRestoring(true)
+    setBackupMsg(null)
+    try {
+      const fd = new FormData()
+      fd.append('backup', file)
+      const res = await fetch('/api/backup/restore', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (res.ok) {
+        setBackupMsg({ type: 'ok', text: `Restore complete (${data.restoredFiles} file(s)). Reloading…` })
+        setTimeout(() => window.location.reload(), 1500)
+      } else {
+        setBackupMsg({ type: 'err', text: data.error || 'Restore failed.' })
+      }
+    } catch {
+      setBackupMsg({ type: 'err', text: 'Restore failed — check your connection.' })
+    } finally {
+      setRestoring(false)
+      if (restoreInputRef.current) restoreInputRef.current.value = ''
+    }
+  }
 
   useEffect(() => {
     if (!selectedVehicleId) return
@@ -182,6 +226,56 @@ export default function Export() {
           ))}
         </div>
       </div>
+
+      {/* Full backup & restore */}
+      <div className="card p-5 space-y-3">
+        <div className="section-title">Full Backup &amp; Restore</div>
+        <p className="text-sm text-raptor-secondary">
+          A complete snapshot of <strong>every vehicle</strong> — the database plus all uploaded photos,
+          stickers, and attachments — in one ZIP. Keep these somewhere safe; restoring replaces all current data.
+        </p>
+
+        {backupMsg && (
+          <div className={`rounded-lg px-3 py-2 text-sm ${backupMsg.type === 'ok'
+            ? 'border border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400'
+            : 'border border-red-500/30 bg-red-500/10 text-red-500 dark:text-red-400'}`}>
+            {backupMsg.text}
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-3">
+          <button onClick={handleBackup} className="btn-primary text-sm flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Download Backup
+          </button>
+          <button
+            onClick={() => restoreInputRef.current?.click()}
+            disabled={restoring}
+            className="btn-secondary text-sm flex items-center gap-2 disabled:opacity-50"
+          >
+            {restoring ? 'Restoring…' : 'Restore from Backup…'}
+          </button>
+          <input
+            ref={restoreInputRef}
+            type="file"
+            accept=".zip"
+            className="hidden"
+            onChange={handleRestorePick}
+          />
+        </div>
+      </div>
+
+      {pendingRestoreFile && (
+        <ConfirmModal
+          title="Restore from Backup"
+          message={`This will REPLACE all current vehicles, records, and uploads with the contents of "${pendingRestoreFile.name}". This cannot be undone. Continue?`}
+          danger
+          onConfirm={confirmRestore}
+          onCancel={() => { setPendingRestoreFile(null); if (restoreInputRef.current) restoreInputRef.current.value = '' }}
+        />
+      )}
     </div>
   )
 }

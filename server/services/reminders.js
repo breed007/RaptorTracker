@@ -190,19 +190,38 @@ function renderEmail(items) {
   return { text, html };
 }
 
-// Send a digest of NEW reminders (those not already emailed). Returns a summary.
+// POST the digest text to a webhook (Discord/Slack-compatible payload).
+async function sendWebhook(url, text) {
+  if (typeof fetch !== 'function') throw new Error('Webhooks require Node 18+ (global fetch unavailable).');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      // `content` → Discord, `text` → Slack/Mattermost; harmless extras for others
+      body: JSON.stringify({ content: text, text, username: 'RaptorTracker' }),
+      signal: controller.signal,
+    });
+    if (!resp.ok) throw new Error(`Webhook returned ${resp.status}`);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Send a digest of NEW reminders to every configured channel (email + webhook).
 async function sendDigest(db = getDb(), { onlyNew = true } = {}) {
   if (!isTrue(getSetting('notify_enabled'))) return { sent: false, reason: 'notifications disabled' };
-  const to = getSetting('notify_email');
-  if (!to) return { sent: false, reason: 'no recipient email configured' };
-  if (!isConfigured()) return { sent: false, reason: 'SMTP not configured' };
+
+  const emailTo = getSetting('notify_email');
+  const webhookUrl = getSetting('notify_webhook_url');
+  const emailReady = Boolean(emailTo && isConfigured());
+  const webhookReady = Boolean(webhookUrl);
+  if (!emailReady && !webhookReady) return { sent: false, reason: 'no delivery channel configured (set up email or a webhook)' };
 
   let items = gatherReminders(db);
   if (onlyNew) {
-    items = items.filter(it => {
-      const seen = db.prepare('SELECT 1 FROM sent_reminders WHERE signature = ?').get(it.signature);
-      return !seen;
-    });
+    items = items.filter(it => !db.prepare('SELECT 1 FROM sent_reminders WHERE signature = ?').get(it.signature));
   }
   if (items.length === 0) return { sent: false, reason: 'nothing new to report', count: 0 };
 
@@ -210,13 +229,32 @@ async function sendDigest(db = getDb(), { onlyNew = true } = {}) {
   const overdue = items.filter(i => i.state === 'overdue' || i.state === 'expired').length;
   const subject = `RaptorTracker: ${items.length} reminder${items.length === 1 ? '' : 's'}${overdue ? ` (${overdue} need attention)` : ''}`;
 
-  await sendMail({ to, subject, text, html });
+  const channels = {};
+  if (emailReady) {
+    try { await sendMail({ to: emailTo, subject, text, html }); channels.email = true; }
+    catch (e) { channels.emailError = e.message; }
+  }
+  if (webhookReady) {
+    try { await sendWebhook(webhookUrl, text); channels.webhook = true; }
+    catch (e) { channels.webhookError = e.message; }
+  }
 
-  const stamp = db.prepare('INSERT OR REPLACE INTO sent_reminders (signature) VALUES (?)');
-  const record = db.transaction((list) => { for (const it of list) stamp.run(it.signature); });
-  record(items);
+  // Only mark items as sent if at least one channel delivered
+  if (channels.email || channels.webhook) {
+    const stamp = db.prepare('INSERT OR REPLACE INTO sent_reminders (signature) VALUES (?)');
+    const record = db.transaction((list) => { for (const it of list) stamp.run(it.signature); });
+    record(items);
+    return { sent: true, count: items.length, channels };
+  }
+  return { sent: false, reason: 'all channels failed', count: items.length, channels };
+}
 
-  return { sent: true, count: items.length, to };
+// Send a sample to a webhook so the user can verify it works.
+async function sendTestWebhook(url) {
+  const target = url || getSetting('notify_webhook_url');
+  if (!target) throw new Error('No webhook URL set.');
+  await sendWebhook(target, 'RaptorTracker: test message. If you see this, webhook reminders are configured correctly.');
+  return { sent: true };
 }
 
 // A fixed sample email so the user can verify SMTP works.
@@ -232,4 +270,4 @@ async function sendTest(to) {
   return { sent: true, to: recipient };
 }
 
-module.exports = { gatherReminders, sendDigest, sendTest, renderEmail };
+module.exports = { gatherReminders, sendDigest, sendTest, sendTestWebhook, renderEmail };

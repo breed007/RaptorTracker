@@ -7,6 +7,7 @@ const DEFAULTS = {
   notify_service: 'true',
   notify_warranty: 'true',
   notify_compliance: 'true',
+  notify_webhook_url: '',
   warranty_threshold_days: '90',
 };
 

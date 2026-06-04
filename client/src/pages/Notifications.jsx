@@ -52,6 +52,16 @@ export default function Notifications() {
     setMsg(res.ok ? { type: 'ok', text: `Test email sent to ${data.to}.` } : { type: 'err', text: data.error || 'Failed to send test.' })
   }
 
+  const sendTestWebhook = async () => {
+    setMsg(null)
+    const res = await fetch('/api/notifications/test-webhook', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ webhookUrl: settings.webhookUrl }),
+    })
+    const data = await res.json()
+    setMsg(res.ok ? { type: 'ok', text: 'Test message posted to webhook.' } : { type: 'err', text: data.error || 'Failed to post to webhook.' })
+  }
+
   const sendNow = async () => {
     setMsg(null)
     const res = await fetch('/api/notifications/run', {
@@ -59,8 +69,10 @@ export default function Notifications() {
       body: JSON.stringify({ onlyNew: true }),
     })
     const data = await res.json()
-    if (res.ok && data.sent) setMsg({ type: 'ok', text: `Sent ${data.count} reminder(s) to ${data.to}.` })
-    else if (res.ok) setMsg({ type: 'ok', text: `Nothing sent — ${data.reason}.` })
+    if (res.ok && data.sent) {
+      const where = Object.keys(data.channels || {}).filter(k => data.channels[k] === true).join(' + ') || 'configured channels'
+      setMsg({ type: 'ok', text: `Sent ${data.count} reminder(s) via ${where}.` })
+    } else if (res.ok) setMsg({ type: 'ok', text: `Nothing sent — ${data.reason}.` })
     else setMsg({ type: 'err', text: data.error || 'Failed to send.' })
   }
 
@@ -73,7 +85,8 @@ export default function Notifications() {
       {!settings.smtpConfigured && (
         <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-600 dark:text-yellow-400">
           <strong>SMTP is not configured.</strong> Add <code>SMTP_HOST</code>, <code>SMTP_FROM</code>, and credentials
-          to your <code>.env</code>, then restart the server. Until then, emails can't be sent.
+          to your <code>.env</code> to send email — or skip email entirely and use a <strong>webhook</strong> below
+          (Discord / Slack), which needs no mail server.
         </div>
       )}
 
@@ -87,21 +100,30 @@ export default function Notifications() {
 
       {/* Settings */}
       <div className="card p-5 space-y-4">
-        <div className="section-title">Email Reminders</div>
+        <div className="section-title">Reminders</div>
 
         <Toggle
           checked={settings.enabled}
           onChange={v => set('enabled', v)}
-          label="Enable email reminders"
-          hint="A daily check (08:00 server time) emails you anything new that's due or expiring."
+          label="Enable reminders"
+          hint="A daily check (08:00 server time) sends anything new that's due or expiring to your configured channels."
         />
 
         <div>
-          <label className="label">Recipient email</label>
+          <label className="label">Recipient email <span className="font-normal text-raptor-muted">(requires SMTP)</span></label>
           <input
             type="email" value={settings.email}
             onChange={e => set('email', e.target.value)}
             className="input-field" placeholder="you@example.com"
+          />
+        </div>
+
+        <div>
+          <label className="label">Webhook URL <span className="font-normal text-raptor-muted">(Discord or Slack incoming webhook)</span></label>
+          <input
+            type="url" value={settings.webhookUrl}
+            onChange={e => set('webhookUrl', e.target.value)}
+            className="input-field" placeholder="https://discord.com/api/webhooks/…"
           />
         </div>
 
@@ -123,7 +145,8 @@ export default function Notifications() {
         <div className="flex flex-wrap gap-3 pt-1">
           <button onClick={save} disabled={saving} className="btn-primary text-sm">{saving ? 'Saving…' : 'Save Settings'}</button>
           <button onClick={sendTest} disabled={!settings.smtpConfigured || !settings.email} className="btn-secondary text-sm disabled:opacity-50">Send Test Email</button>
-          <button onClick={sendNow} disabled={!settings.smtpConfigured || !settings.enabled} className="btn-secondary text-sm disabled:opacity-50">Send Digest Now</button>
+          <button onClick={sendTestWebhook} disabled={!settings.webhookUrl} className="btn-secondary text-sm disabled:opacity-50">Send Test Webhook</button>
+          <button onClick={sendNow} disabled={!settings.enabled || !((settings.smtpConfigured && settings.email) || settings.webhookUrl)} className="btn-secondary text-sm disabled:opacity-50">Send Digest Now</button>
         </div>
       </div>
 

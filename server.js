@@ -31,6 +31,10 @@ const tcoRouter = require('./server/routes/tco');
 const notificationsRouter = require('./server/routes/notifications');
 const tiresRouter = require('./server/routes/tires');
 const recallsRouter = require('./server/routes/recalls');
+const backupRouter = require('./server/routes/backup');
+const logbookRouter = require('./server/routes/logbook');
+const mileageRouter = require('./server/routes/mileage');
+const analyticsRouter = require('./server/routes/analytics');
 const scheduler = require('./server/scheduler');
 
 const DATA_DIR = process.env.DATA_DIR || './data';
@@ -82,6 +86,10 @@ app.use('/api/tco', tcoRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/tires', tiresRouter);
 app.use('/api/recalls', recallsRouter);
+app.use('/api/backup', backupRouter);
+app.use('/api/logbook', logbookRouter);
+app.use('/api/mileage', mileageRouter);
+app.use('/api/analytics', analyticsRouter);
 
 // Serve React frontend in production
 const DIST_DIR = path.join(__dirname, 'dist');
