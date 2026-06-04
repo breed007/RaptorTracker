@@ -8,16 +8,22 @@ const router = express.Router();
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
 
-// Apply per-vehicle aux warning dismissals to a layout coming from the reference vehicle
-function applyAuxDismissals(auxLayoutStr, dismissedJson) {
-  const layout = JSON.parse(auxLayoutStr || '[]');
-  const dismissed = JSON.parse(dismissedJson || '[]');
-  if (!dismissed.length) return layout;
-  return layout.map(slot =>
-    dismissed.includes(slot.switch_number)
-      ? { ...slot, warning_note: null }
-      : slot
-  );
+// Apply per-vehicle AUX overrides to a layout coming from the reference vehicle.
+//  - dismissed warnings: clear the warning note but keep the factory designation
+//  - reclaimed switches: fully convert a factory slot into a normal available slot
+function applyAuxOverrides(uv) {
+  const layout = JSON.parse(uv.aux_switch_layout || '[]');
+  const dismissed = JSON.parse(uv.dismissed_aux_warnings || '[]');
+  const reclaimed = JSON.parse(uv.reclaimed_aux_switches || '[]');
+  return layout.map(slot => {
+    if (reclaimed.includes(slot.switch_number)) {
+      return { ...slot, factory_used: false, warning_note: null, default_label: 'User Available', reclaimed: true };
+    }
+    if (dismissed.includes(slot.switch_number)) {
+      return { ...slot, warning_note: null };
+    }
+    return slot;
+  });
 }
 
 const vehiclePhotoStorage = multer.diskStorage({
@@ -71,7 +77,7 @@ router.get('/', (req, res) => {
   `).all();
   res.json(rows.map(uv => ({
     ...uv,
-    aux_switch_layout: applyAuxDismissals(uv.aux_switch_layout, uv.dismissed_aux_warnings),
+    aux_switch_layout: applyAuxOverrides(uv),
     vehicle_photos: JSON.parse(uv.vehicle_photos || '[]')
   })));
 });
@@ -132,7 +138,7 @@ router.get('/:id', (req, res) => {
   if (!uv) return res.status(404).json({ error: 'Not found' });
   res.json({
     ...uv,
-    aux_switch_layout: applyAuxDismissals(uv.aux_switch_layout, uv.dismissed_aux_warnings),
+    aux_switch_layout: applyAuxOverrides(uv),
     engine_options: JSON.parse(uv.engine_options || '[]'),
     vehicle_photos: JSON.parse(uv.vehicle_photos || '[]')
   });
@@ -281,6 +287,29 @@ router.put('/:id/aux-warning-dismiss', (req, res) => {
     .run(JSON.stringify(dismissed), req.params.id);
 
   res.json({ ok: true, dismissed_aux_warnings: dismissed });
+});
+
+// PUT /api/user-vehicles/:id/aux-reclaim
+// Reclaim a factory AUX slot as a normal available switch (or restore it to factory)
+router.put('/:id/aux-reclaim', (req, res) => {
+  const { switch_number, reclaim = true } = req.body;
+  if (switch_number == null) return res.status(400).json({ error: 'switch_number required' });
+
+  const db = getDb();
+  const uv = db.prepare('SELECT id, reclaimed_aux_switches FROM user_vehicles WHERE id = ?').get(req.params.id);
+  if (!uv) return res.status(404).json({ error: 'Not found' });
+
+  let reclaimed = JSON.parse(uv.reclaimed_aux_switches || '[]');
+  if (reclaim) {
+    if (!reclaimed.includes(switch_number)) reclaimed.push(switch_number);
+  } else {
+    reclaimed = reclaimed.filter(n => n !== switch_number);
+  }
+
+  db.prepare('UPDATE user_vehicles SET reclaimed_aux_switches = ? WHERE id = ?')
+    .run(JSON.stringify(reclaimed), req.params.id);
+
+  res.json({ ok: true, reclaimed_aux_switches: reclaimed });
 });
 
 // PUT /api/user-vehicles/:id/financing — update ownership/financing only

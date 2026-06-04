@@ -2,7 +2,7 @@
 
 **Ford Raptor Build Tracker** — a self-hosted web app for tracking modifications, maintenance, AUX switch assignments, warranties, fuel economy, and build costs across one or more Ford Raptors.
 
-> Version `0.2.0` · [GitHub](https://github.com/breed007/RaptorTracker) · [Changelog](CHANGELOG.md)
+> Version `0.3.0` · [GitHub](https://github.com/breed007/RaptorTracker) · [Changelog](CHANGELOG.md)
 
 ---
 
@@ -36,7 +36,7 @@
 - Factory-accurate AUX switch layouts for Gen 2, Gen 3, and Gen 3.5
 - Shows which switches are factory-consumed versus available
 - Assign mods to switches with custom per-switch labels
-- Gen 3.5 marks AUX 1 as factory-consumed by the bumper fogs, with a notice you can clear once the lights are relocated
+- Gen 3.5 marks AUX 1 as factory-consumed by the bumper fogs; assign a mod to it directly, or mark it available to use like any other switch (reversible per vehicle)
 
 ### Maintenance Log & Service Intervals
 - Record service events with type, date, mileage, vendor, cost, and notes
@@ -83,7 +83,7 @@
 - Deadlines feed the email reminders and are highlighted on the garage card when expiring
 
 ### Recall Lookup
-- Dashboard surfaces open NHTSA recalls for your truck, matched by model and year
+- Dashboard surfaces open NHTSA recalls for your truck, matched by model and year; dismiss individually, collapse the card, and restore later
 
 ### Tire & Wheel Sets
 - Track multiple sets (street vs. off-road) with specs, cost, install/removal mileage, and miles-run per set

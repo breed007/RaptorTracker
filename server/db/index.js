@@ -30,6 +30,8 @@ function runMigrations(db) {
     ['service_dealership_contact','ALTER TABLE user_vehicles ADD COLUMN service_dealership_contact TEXT'],
     ['current_mileage',           'ALTER TABLE user_vehicles ADD COLUMN current_mileage INTEGER'],
     ['dismissed_aux_warnings',    "ALTER TABLE user_vehicles ADD COLUMN dismissed_aux_warnings TEXT NOT NULL DEFAULT '[]'"],
+    ['reclaimed_aux_switches',    "ALTER TABLE user_vehicles ADD COLUMN reclaimed_aux_switches TEXT NOT NULL DEFAULT '[]'"],
+    ['dismissed_recalls',         "ALTER TABLE user_vehicles ADD COLUMN dismissed_recalls TEXT NOT NULL DEFAULT '[]'"],
     // Financing / ownership (for Total Cost of Ownership)
     ['ownership_type',            "ALTER TABLE user_vehicles ADD COLUMN ownership_type TEXT NOT NULL DEFAULT 'owned'"], // owned | loan | lease
     ['loan_lender',              'ALTER TABLE user_vehicles ADD COLUMN loan_lender TEXT'],

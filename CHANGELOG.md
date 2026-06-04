@@ -4,6 +4,26 @@ All notable changes to RaptorTracker are documented here.
 
 ---
 
+## [v0.3.0] — 2026-06-04
+
+### Improvements
+
+#### Reclaimable Factory AUX Slots
+- Factory-wired AUX slots (e.g. AUX 1 bumper fogs on Gen 3.5) now offer two explicit actions: **Assign a mod** or **Mark as available**
+- "Mark as available" reclaims the slot per vehicle — it becomes a normal switch you can assign and customize like any other, and can be restored to factory later via a "↺ factory" link
+- This replaces the older "clear this notice" behavior, which only hid the warning text but left the slot locked as factory-used
+- The choice persists in the database and survives reloads and restarts
+
+#### Recall Management
+- Open NHTSA recalls on the dashboard can now be **dismissed** individually (persisted per vehicle) and **restored** later from a "show dismissed" list
+- The recalls card **collapses** to keep the dashboard tidy; the collapsed state is remembered
+- When every recall is handled, the badge shows "all cleared" instead of the card disappearing
+
+### Upgrade Notes
+- Two new database columns are added automatically on first server restart (`reclaimed_aux_switches` and `dismissed_recalls` on vehicles). No manual database changes required.
+
+---
+
 ## [v0.2.0] — 2026-06-02
 
 ### New Features

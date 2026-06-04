@@ -23,7 +23,7 @@ export default function AuxPanel() {
   const [mods, setMods] = useState([])
   const [auxLayout, setAuxLayout] = useState([])
   const [auxCount, setAuxCount] = useState(0)
-  const [dismissing, setDismissing] = useState(null) // switch_number being dismissed
+  const [reclaiming, setReclaiming] = useState(null) // switch_number being reclaimed/restored
 
   // Instant paint from context, then corrected by the fresh fetch below
   useEffect(() => {
@@ -53,21 +53,22 @@ export default function AuxPanel() {
       .catch(() => {})
   }, [selectedVehicleId])
 
-  const handleDismissWarning = async (switchNumber) => {
-    setDismissing(switchNumber)
+  // Reclaim a factory slot as a normal available switch (or restore it to factory)
+  const handleReclaim = async (switchNumber, reclaim = true) => {
+    setReclaiming(switchNumber)
     try {
-      const res = await fetch(`/api/user-vehicles/${selectedVehicleId}/aux-warning-dismiss`, {
+      const res = await fetch(`/api/user-vehicles/${selectedVehicleId}/aux-reclaim`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ switch_number: switchNumber, dismiss: true }),
+        body: JSON.stringify({ switch_number: switchNumber, reclaim }),
       })
       if (res.ok) {
-        setAuxLayout(prev => prev.map(slot =>
-          slot.switch_number === switchNumber ? { ...slot, warning_note: null } : slot
-        ))
+        // Refetch the layout so the slot reflects the authoritative state
+        const v = await fetch(`/api/user-vehicles/${selectedVehicleId}`).then(r => r.ok ? r.json() : null)
+        if (v) setAuxLayout(v.aux_switch_layout || [])
       }
     } finally {
-      setDismissing(null)
+      setReclaiming(null)
     }
   }
 
@@ -134,7 +135,6 @@ export default function AuxPanel() {
           const assignment = auxModMap[slot.switch_number]
           const assignedMod = assignment?.mod
           const switchLabel = assignment?.label
-          const isFactoryReserved = slot.factory_used && !assignedMod
 
           const slotClass = assignedMod
             ? STATUS_COLORS[assignedMod.status] || STATUS_COLORS.Researching
@@ -144,95 +144,95 @@ export default function AuxPanel() {
 
           const dotClass = assignedMod
             ? STATUS_DOT[assignedMod.status]
-            : slot.factory_used
-              ? 'bg-amber-500'
-              : 'bg-gray-300 dark:bg-gray-700'
+            : slot.factory_used ? 'bg-amber-500' : 'bg-gray-300 dark:bg-gray-700'
 
-          const content = (
-            <div className={`card border-2 ${slotClass} p-4 transition-colors`}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${dotClass}`} />
-                  <span className="text-xs font-mono font-semibold text-raptor-secondary">
-                    AUX {slot.switch_number} — {slot.fuse_amps}A
-                  </span>
-                </div>
-                {!assignedMod && !slot.factory_used && (
-                  <span className="text-xs text-raptor-muted font-medium">Available</span>
-                )}
+          const Header = (
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${dotClass}`} />
+                <span className="text-xs font-mono font-semibold text-raptor-secondary">
+                  AUX {slot.switch_number} — {slot.fuse_amps}A
+                </span>
               </div>
-
-              {slot.warning_note && (
-                <div className="bg-amber-50 border border-amber-300 dark:bg-amber-900/30 dark:border-amber-800 rounded px-2.5 py-1.5 mb-2">
-                  <div className="flex items-start gap-1.5">
-                    <span className="text-amber-600 dark:text-amber-400 text-xs mt-px flex-shrink-0">⚠</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-amber-700 dark:text-amber-300 leading-snug">{slot.warning_note}</p>
-                      <button
-                        onClick={e => { e.preventDefault(); e.stopPropagation(); handleDismissWarning(slot.switch_number) }}
-                        disabled={dismissing === slot.switch_number}
-                        className="mt-1.5 text-xs text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 underline underline-offset-2 disabled:opacity-50 transition-colors"
-                      >
-                        {dismissing === slot.switch_number ? 'Clearing…' : '✕ Lights relocated — clear this notice'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {assignedMod ? (
-                <div>
-                  <div className="text-sm font-semibold text-raptor-primary truncate">{assignedMod.part_name}</div>
-                  {(switchLabel || slot.default_label) && (
-                    <div className="text-xs text-raptor-secondary mt-0.5 truncate">
-                      {switchLabel || slot.default_label}
-                    </div>
-                  )}
-                  {assignedMod.brand && (
-                    <div className="text-xs text-raptor-muted mt-0.5">{assignedMod.brand}</div>
-                  )}
-                </div>
-              ) : slot.factory_used ? (
-                <div>
-                  <div className="text-sm text-amber-700 dark:text-amber-400 font-medium">{slot.default_label}</div>
-                  <div className="text-xs text-raptor-muted italic mt-1">Tap to assign a mod</div>
-                </div>
-              ) : (
-                <div className="text-xs text-raptor-muted italic">No assignment — tap to add</div>
+              {!assignedMod && !slot.factory_used && (
+                <span className="text-xs text-raptor-muted font-medium">Available</span>
               )}
             </div>
           )
 
+          // CASE 1 — assigned mod: whole-card link to the mod
           if (assignedMod) {
             return (
               <Link key={slot.switch_number} to={`/mods/${assignedMod.id}`} className="block">
-                {content}
+                <div className={`card border-2 ${slotClass} p-4 transition-colors`}>
+                  {Header}
+                  <div className="text-sm font-semibold text-raptor-primary truncate">{assignedMod.part_name}</div>
+                  {(switchLabel || slot.default_label) && (
+                    <div className="text-xs text-raptor-secondary mt-0.5 truncate">{switchLabel || slot.default_label}</div>
+                  )}
+                  {assignedMod.brand && <div className="text-xs text-raptor-muted mt-0.5">{assignedMod.brand}</div>}
+                </div>
               </Link>
             )
           }
+
+          // CASE 2 — factory slot, unassigned: explicit "assign" and "mark available" actions
           if (slot.factory_used) {
-            // Factory-reserved but unassigned — link to new mod form, pre-populate label if slot has a warning (AUX 1)
-            const auxLabel = slot.warning_note ? slot.default_label : ''
-            const href = auxLabel
+            const auxLabel = slot.default_label && slot.default_label !== 'User Available' ? slot.default_label : ''
+            const assignHref = auxLabel
               ? `/mods/new?aux=${slot.switch_number}&aux_label=${encodeURIComponent(auxLabel)}`
               : `/mods/new?aux=${slot.switch_number}`
             return (
-              <Link key={slot.switch_number} to={href} className="block">
-                {content}
-              </Link>
+              <div key={slot.switch_number} className={`card border-2 ${slotClass} p-4`}>
+                {Header}
+                {slot.warning_note && (
+                  <div className="bg-amber-50 border border-amber-300 dark:bg-amber-900/30 dark:border-amber-800 rounded px-2.5 py-1.5 mb-2">
+                    <div className="flex items-start gap-1.5">
+                      <span className="text-amber-600 dark:text-amber-400 text-xs mt-px flex-shrink-0">⚠</span>
+                      <p className="text-xs text-amber-700 dark:text-amber-300 leading-snug flex-1">{slot.warning_note}</p>
+                    </div>
+                  </div>
+                )}
+                <div className="text-sm text-amber-700 dark:text-amber-400 font-medium">{slot.default_label}</div>
+                <div className="text-xs text-raptor-muted mt-0.5 mb-3">Factory-wired slot</div>
+                <div className="flex flex-wrap gap-2">
+                  <Link to={assignHref} className="btn-primary text-xs">Assign a mod</Link>
+                  <button
+                    onClick={() => handleReclaim(slot.switch_number, true)}
+                    disabled={reclaiming === slot.switch_number}
+                    className="btn-secondary text-xs disabled:opacity-50"
+                  >
+                    {reclaiming === slot.switch_number ? 'Saving…' : 'Mark as available'}
+                  </button>
+                </div>
+              </div>
             )
           }
+
+          // CASE 3 — normal available (including reclaimed): whole-card link to add a mod
           return (
             <Link key={slot.switch_number} to={`/mods/new?aux=${slot.switch_number}`} className="block">
-              {content}
+              <div className={`card border-2 ${slotClass} p-4 transition-colors relative`}>
+                {Header}
+                <div className="text-xs text-raptor-muted italic">No assignment — tap to add</div>
+                {slot.reclaimed && (
+                  <button
+                    onClick={e => { e.preventDefault(); e.stopPropagation(); handleReclaim(slot.switch_number, false) }}
+                    disabled={reclaiming === slot.switch_number}
+                    className="absolute bottom-2 right-2 text-xs text-raptor-muted hover:text-amber-600 dark:hover:text-amber-400 underline underline-offset-2 disabled:opacity-50"
+                    title="Restore the factory designation for this slot"
+                  >
+                    ↺ factory
+                  </button>
+                )}
+              </div>
             </Link>
           )
         })}
       </div>
 
       <p className="text-xs text-raptor-muted">
-        Tap any slot to assign or edit a mod.
-        {auxLayout.some(s => s.factory_used) && ' Amber slots are factory-used — tapping one will let you reclaim it for a custom accessory.'}
+        Tap a slot to assign or edit a mod. Factory-wired slots (amber) can be assigned a mod directly, or marked as available to use like any other switch.
       </p>
     </div>
   )

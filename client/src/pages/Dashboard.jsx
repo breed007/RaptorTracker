@@ -34,7 +34,27 @@ export default function Dashboard() {
   const [intervals, setIntervals] = useState({ intervals: [], currentMileage: null })
   const [warrantySummary, setWarrantySummary] = useState(null)
   const [recalls, setRecalls] = useState(null)
+  const [recallsCollapsed, setRecallsCollapsed] = useState(() => localStorage.getItem('recallsCollapsed') === 'true')
+  const [showDismissedRecalls, setShowDismissedRecalls] = useState(false)
   const [loading, setLoading] = useState(true)
+
+  const toggleRecallsCollapsed = () => {
+    setRecallsCollapsed(c => { localStorage.setItem('recallsCollapsed', String(!c)); return !c })
+  }
+
+  const dismissRecall = (campaign, dismiss = true) => {
+    setRecalls(prev => {
+      if (!prev) return prev
+      const list = prev.recalls.map(r => r.campaign === campaign ? { ...r, dismissed: dismiss } : r)
+      return { ...prev, recalls: list,
+        activeCount: list.filter(r => !r.dismissed).length,
+        dismissedCount: list.filter(r => r.dismissed).length }
+    })
+    fetch('/api/recalls/dismiss', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vehicle_id: selectedVehicleId, campaign, dismiss }),
+    }).catch(() => {})
+  }
 
   useEffect(() => {
     if (!selectedVehicleId) { setLoading(false); return }
@@ -168,34 +188,100 @@ export default function Dashboard() {
       )}
 
       {/* Open Recalls (NHTSA) */}
-      {recalls && recalls.recalls && recalls.recalls.length > 0 && (
-        <div className="card p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4a2 2 0 00-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
-            </svg>
-            <span className="section-title">Open Recalls</span>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
-              {recalls.recalls.length}
-            </span>
-            <span className="ml-auto text-xs text-raptor-muted">{recalls.make} {recalls.model} {recalls.year}</span>
-          </div>
-          <div className="space-y-2">
-            {recalls.recalls.slice(0, 5).map((r, i) => (
-              <div key={i} className="px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-medium text-red-700 dark:text-red-400">{r.component}</span>
-                  {r.campaign && <span className="text-xs text-raptor-muted">#{r.campaign}</span>}
-                </div>
-                {r.summary && <p className="text-xs text-raptor-secondary mt-1 line-clamp-2">{r.summary}</p>}
+      {recalls && recalls.recalls && recalls.recalls.length > 0 && (() => {
+        const active = recalls.recalls.filter(r => !r.dismissed)
+        const dismissed = recalls.recalls.filter(r => r.dismissed)
+        return (
+          <div className="card p-4">
+            <button
+              onClick={toggleRecallsCollapsed}
+              className="flex items-center gap-2 w-full text-left"
+            >
+              <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4a2 2 0 00-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z" />
+              </svg>
+              <span className="section-title">Open Recalls</span>
+              {active.length > 0 ? (
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                  {active.length}
+                </span>
+              ) : (
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                  all cleared
+                </span>
+              )}
+              <span className="ml-auto text-xs text-raptor-muted">{recalls.make} {recalls.model} {recalls.year}</span>
+              <svg className={`w-4 h-4 text-raptor-muted transition-transform ${recallsCollapsed ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {!recallsCollapsed && (
+              <div className="mt-3">
+                {active.length === 0 ? (
+                  <p className="text-sm text-raptor-secondary px-1">All recalls dismissed.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {active.map((r, i) => (
+                      <div key={r.campaign || i} className="px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40">
+                        <div className="flex items-start gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-sm font-medium text-red-700 dark:text-red-400">{r.component}</span>
+                              {r.campaign && <span className="text-xs text-raptor-muted">#{r.campaign}</span>}
+                            </div>
+                            {r.summary && <p className="text-xs text-raptor-secondary mt-1 line-clamp-2">{r.summary}</p>}
+                          </div>
+                          <button
+                            onClick={() => dismissRecall(r.campaign, true)}
+                            className="flex-shrink-0 text-raptor-muted hover:text-raptor-primary p-1 rounded hover:bg-raptor-elevated transition-colors"
+                            title="Dismiss this recall"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Dismissed recalls (collapsible) */}
+                {dismissed.length > 0 && (
+                  <div className="mt-2">
+                    <button
+                      onClick={() => setShowDismissedRecalls(s => !s)}
+                      className="text-xs text-raptor-accent hover:underline"
+                    >
+                      {showDismissedRecalls ? 'Hide' : 'Show'} {dismissed.length} dismissed
+                    </button>
+                    {showDismissedRecalls && (
+                      <div className="space-y-1.5 mt-2">
+                        {dismissed.map((r, i) => (
+                          <div key={r.campaign || i} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-raptor-elevated border border-raptor-border">
+                            <span className="text-xs text-raptor-secondary flex-1 truncate">{r.component} {r.campaign && <span className="text-raptor-muted">#{r.campaign}</span>}</span>
+                            <button
+                              onClick={() => dismissRecall(r.campaign, false)}
+                              className="text-xs text-raptor-accent hover:underline flex-shrink-0"
+                            >
+                              Restore
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <p className="text-xs text-raptor-muted mt-2">
+                  Source: NHTSA, matched by model &amp; year. Confirm applicability against your VIN at nhtsa.gov.
+                </p>
               </div>
-            ))}
+            )}
           </div>
-          <p className="text-xs text-raptor-muted mt-2">
-            Source: NHTSA, matched by model &amp; year. Confirm applicability against your VIN at nhtsa.gov.
-          </p>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
