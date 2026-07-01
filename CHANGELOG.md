@@ -4,6 +4,28 @@ All notable changes to RaptorTracker are documented here.
 
 ---
 
+## [v0.5.0] — 2026-07-01
+
+Hardening release from a QA pass — no new user-facing features, but the newest and most destructive surfaces (restore, CSV export, sessions) are now much safer.
+
+### Security & Data Safety
+- **Crash-safe restore** — Restore now snapshots the current database to `raptortracker.db.pre-restore` and moves the current uploads aside *before* swapping anything, and replaces the live DB with an atomic rename instead of delete-then-rename. A crash mid-restore can no longer leave you with no database. Restore is also now a faithful snapshot (old orphan uploads are set aside, not left behind).
+- **CSV formula-injection neutralized** — Exported CSV cells that begin with `= + - @` (the classic spreadsheet-injection vector) are now prefixed so they render as text in Excel/Sheets. Genuine numbers are left untouched.
+- **Session secret required in production** — The server refuses to start in `NODE_ENV=production` without `SESSION_SECRET`, instead of silently falling back to a public default key. Cookie `secure` flag is now driven by a new `COOKIE_SECURE` env var for HTTPS deployments.
+- **Webhook URL validation** — Reminder webhook URLs are validated (must be http/https) on save and before sending, so bad input gives a clear error instead of an unhandled failure.
+
+### Reliability & Tooling
+- **Smoke test** — `npm test` boots the data layer against a throwaway database, runs migrations, asserts the full schema, and loads every route/service module — a fast tripwire for the migration/schema/module regressions that have bitten before.
+- **`better-sqlite3` upgraded to 11.x** — Ships prebuilt binaries for Node 20/22, so server installs no longer compile the native module from source.
+- Added `engines.node` (`>=20.19`) and a `.nvmrc` so contributors land on a compatible Node version.
+- **Reminder housekeeping** — the `sent_reminders` de-dup log is pruned to the last 180 days on the daily run, so it can't grow without bound.
+- **Configurable reminder schedule** — the daily digest hour and timezone are now set via `REMINDER_HOUR` / `REMINDER_TZ` (default 8am server time).
+
+### Upgrade Notes
+- This release changes a dependency (`better-sqlite3`), so **run `npm install`** when updating (`git pull && npm install && npm run build && pm2 restart raptortracker`). No database changes.
+
+---
+
 ## [v0.4.0] — 2026-06-04
 
 ### New Features

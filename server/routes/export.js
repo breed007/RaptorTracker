@@ -306,7 +306,11 @@ const CSV_TYPES = {
 
 function csvCell(v) {
   if (v == null) return '';
-  const s = String(v);
+  let s = String(v);
+  // Neutralize spreadsheet formula injection: a cell starting with = + - @ (or
+  // a control char) is treated as a formula by Excel/Sheets. Prefix a quote so
+  // it's rendered as text — but leave genuine numbers (e.g. -5, +3.2) alone.
+  if (/^[=+\-@\t\r]/.test(s) && isNaN(Number(s))) s = `'${s}`;
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 

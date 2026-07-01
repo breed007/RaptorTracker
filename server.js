@@ -45,15 +45,26 @@ fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Never sign sessions with a public, hardcoded key in production. The installer
+// generates a random SESSION_SECRET; refuse to start if it's missing in prod.
+const IS_PROD = process.env.NODE_ENV === 'production';
+if (IS_PROD && !process.env.SESSION_SECRET) {
+  console.error('FATAL: SESSION_SECRET is not set. Refusing to start in production with a default secret.');
+  console.error('Generate one:  node -e "console.log(require(\'crypto\').randomBytes(48).toString(\'hex\'))"');
+  process.exit(1);
+}
+const SESSION_SECRET = process.env.SESSION_SECRET || 'raptortracker-dev-insecure-secret';
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'raptortracker-dev-secret',
+  secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // set to true when behind HTTPS
+    // Set COOKIE_SECURE=true when serving over HTTPS so the cookie isn't sent in cleartext
+    secure: process.env.COOKIE_SECURE === 'true',
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   }
 }));

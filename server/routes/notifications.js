@@ -3,7 +3,7 @@ const router = express.Router();
 const { getDb } = require('../db');
 const { getAllSettings, setSetting } = require('../services/settings');
 const { isConfigured } = require('../services/mailer');
-const { gatherReminders, sendDigest, sendTest, sendTestWebhook } = require('../services/reminders');
+const { gatherReminders, sendDigest, sendTest, sendTestWebhook, assertValidWebhook } = require('../services/reminders');
 
 function settingsPayload() {
   const s = getAllSettings();
@@ -27,6 +27,10 @@ router.get('/settings', (req, res) => {
 // PUT /api/notifications/settings
 router.put('/settings', (req, res) => {
   const { enabled, email, webhookUrl, service, warranty, compliance, warrantyThresholdDays } = req.body;
+  if (webhookUrl != null && String(webhookUrl).trim() !== '') {
+    try { assertValidWebhook(String(webhookUrl).trim()); }
+    catch (e) { return res.status(400).json({ error: e.message }); }
+  }
   if (enabled != null) setSetting('notify_enabled', enabled ? 'true' : 'false');
   if (email != null) setSetting('notify_email', String(email).trim());
   if (webhookUrl != null) setSetting('notify_webhook_url', String(webhookUrl).trim());

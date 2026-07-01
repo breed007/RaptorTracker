@@ -2,7 +2,7 @@
 
 **Ford Raptor Build Tracker** — a self-hosted web app for tracking modifications, maintenance, AUX switch assignments, warranties, fuel economy, and build costs across one or more Ford Raptors.
 
-> Version `0.4.0` · [GitHub](https://github.com/breed007/RaptorTracker) · [Changelog](CHANGELOG.md)
+> Version `0.5.0` · [GitHub](https://github.com/breed007/RaptorTracker) · [Changelog](CHANGELOG.md)
 
 ---
 

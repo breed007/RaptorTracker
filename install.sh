@@ -410,6 +410,10 @@ DATA_DIR=${DATA_DIR}
 UPLOAD_DIR=${DATA_DIR}/uploads
 NODE_ENV=production
 
+# Set to true only if you terminate HTTPS in front of the app (this install
+# proxies plain HTTP on localhost, so false is correct here).
+COOKIE_SECURE=false
+
 # Optional — email reminders. Fill in to enable, then turn reminders on
 # under Notifications in the app. Leave SMTP_HOST blank to keep email off.
 SMTP_HOST=

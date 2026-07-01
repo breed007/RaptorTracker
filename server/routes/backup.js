@@ -52,6 +52,8 @@ router.post('/restore', restoreUpload.single('backup'), (req, res) => {
 
   const uploadedZipPath = req.file.path;
   const tmpDbPath = path.join(DATA_DIR, `restore-tmp-${Date.now()}.db`);
+  const dbSnapshot = `${DB_PATH}.pre-restore`;
+  const uploadsSnapshot = `${UPLOAD_DIR}.pre-restore`;
   const cleanup = () => { try { fs.unlinkSync(uploadedZipPath); } catch (_) {} };
 
   try {
@@ -63,7 +65,7 @@ router.post('/restore', restoreUpload.single('backup'), (req, res) => {
       return res.status(400).json({ error: 'Not a valid RaptorTracker backup (raptortracker.db not found in archive).' });
     }
 
-    // Write the candidate DB to a temp file and validate it before swapping
+    // 1) Write the candidate DB to a temp file and validate it BEFORE touching anything live
     fs.writeFileSync(tmpDbPath, dbEntry.getData());
     try {
       const test = new Database(tmpDbPath, { readonly: true });
@@ -76,14 +78,25 @@ router.post('/restore', restoreUpload.single('backup'), (req, res) => {
       return res.status(400).json({ error: 'The archive does not contain a valid RaptorTracker database.' });
     }
 
-    // Swap the database: close the live handle, remove db + WAL/SHM, move temp in
+    // 2) Snapshot the CURRENT database first, so a mid-restore crash is always recoverable.
+    //    Flush the WAL into the main file, close the handle, then copy it aside.
+    try { getDb().pragma('wal_checkpoint(TRUNCATE)'); } catch (_) {}
     closeDb();
-    for (const suffix of ['', '-wal', '-shm']) {
+    try { fs.rmSync(dbSnapshot, { force: true }); } catch (_) {}
+    if (fs.existsSync(DB_PATH)) fs.copyFileSync(DB_PATH, dbSnapshot);
+
+    // 3) Remove the stale (checkpointed) WAL/SHM, then ATOMICALLY replace the db file.
+    //    A rename over an existing file is atomic on the same filesystem, so at every
+    //    instant DB_PATH holds either the old or the new database — never nothing.
+    for (const suffix of ['-wal', '-shm']) {
       try { fs.unlinkSync(DB_PATH + suffix); } catch (_) {}
     }
     fs.renameSync(tmpDbPath, DB_PATH);
 
-    // Restore uploads (overwrite by basename; leaves any extra existing files alone)
+    // 4) Reconcile uploads: move the current set aside (recoverable) and extract a clean
+    //    set from the backup, so the restore is a faithful snapshot with no orphans.
+    try { fs.rmSync(uploadsSnapshot, { recursive: true, force: true }); } catch (_) {}
+    if (fs.existsSync(UPLOAD_DIR)) { try { fs.renameSync(UPLOAD_DIR, uploadsSnapshot); } catch (_) {} }
     fs.mkdirSync(UPLOAD_DIR, { recursive: true });
     let restoredFiles = 0;
     for (const entry of entries) {
@@ -99,11 +112,11 @@ router.post('/restore', restoreUpload.single('backup'), (req, res) => {
     cleanup();
     // Re-open immediately so migrations run against the restored DB
     getDb();
-    res.json({ ok: true, restoredFiles });
+    res.json({ ok: true, restoredFiles, snapshot: path.basename(dbSnapshot) });
   } catch (err) {
     try { fs.unlinkSync(tmpDbPath); } catch (_) {}
     cleanup();
-    res.status(500).json({ error: `Restore failed: ${err.message}` });
+    res.status(500).json({ error: `Restore failed: ${err.message}. Your previous data was snapshotted to ${path.basename(dbSnapshot)}.` });
   }
 });
 

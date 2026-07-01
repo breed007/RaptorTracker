@@ -190,9 +190,20 @@ function renderEmail(items) {
   return { text, html };
 }
 
+// Validate a webhook URL: must parse and be http(s). Returns the URL or throws.
+function assertValidWebhook(url) {
+  let u;
+  try { u = new URL(url); } catch (_) { throw new Error('Invalid webhook URL.'); }
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+    throw new Error('Webhook URL must start with http:// or https://');
+  }
+  return url;
+}
+
 // POST the digest text to a webhook (Discord/Slack-compatible payload).
 async function sendWebhook(url, text) {
   if (typeof fetch !== 'function') throw new Error('Webhooks require Node 18+ (global fetch unavailable).');
+  assertValidWebhook(url);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8000);
   try {
@@ -270,4 +281,14 @@ async function sendTest(to) {
   return { sent: true, to: recipient };
 }
 
-module.exports = { gatherReminders, sendDigest, sendTest, sendTestWebhook, renderEmail };
+// Sweep de-dup signatures older than `days` so sent_reminders can't grow forever.
+function pruneSentReminders(db = getDb(), days = 180) {
+  try {
+    const r = db.prepare(`DELETE FROM sent_reminders WHERE sent_at < datetime('now', ?)`).run(`-${days} days`);
+    return r.changes || 0;
+  } catch (_) {
+    return 0;
+  }
+}
+
+module.exports = { gatherReminders, sendDigest, sendTest, sendTestWebhook, pruneSentReminders, assertValidWebhook, renderEmail };
