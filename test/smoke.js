@@ -85,24 +85,44 @@ try {
 
   closeDb();
 
-  // 6) Every route/service module loads without throwing
+  // 7) Every route/service module loads without throwing
   const modules = [
     'routes/vehicles', 'routes/userVehicles', 'routes/mods', 'routes/maintenance',
     'routes/upload', 'routes/summary', 'routes/export', 'routes/vin', 'routes/modTransfer',
     'routes/vehicleTransfer', 'routes/intervals', 'routes/wishlist', 'routes/fuel',
     'routes/warranty', 'routes/tco', 'routes/notifications', 'routes/tires', 'routes/recalls',
-    'routes/backup', 'routes/logbook', 'routes/mileage', 'routes/analytics', 'routes/search',
-    'services/settings', 'services/mailer', 'services/reminders', 'services/backupArchive', 'scheduler',
+    'routes/backup', 'routes/logbook', 'routes/mileage', 'routes/analytics', 'routes/search', 'routes/import',
+    'services/settings', 'services/mailer', 'services/reminders', 'services/backupArchive', 'services/csvImport', 'scheduler',
   ];
   for (const m of modules) check(`require ${m}`, () => { require(`../server/${m}`); });
 
-  // 7) Webhook URL validation guards junk
+  // 8) Webhook URL validation guards junk
   check('assertValidWebhook rejects junk', () => {
     const { assertValidWebhook } = require('../server/services/reminders');
     let threw = false;
     try { assertValidWebhook('not a url'); } catch (_) { threw = true; }
     if (!threw) throw new Error('accepted invalid url');
     assertValidWebhook('https://discord.com/api/webhooks/x'); // should not throw
+  });
+
+  // 9) CSV import: loose header matching, messy values, and shifted-column detection
+  check('csv import parses messy input', () => {
+    const { analyze } = require('../server/services/csvImport');
+    const csv = 'Fill Date,Odo,Gal,Total,Where\r\n12/4/25,24500,26.2,"$90.63","Shell, Main St"\r\n';
+    const r = analyze('fuel', csv);
+    if (r.rows.length !== 1) throw new Error(`expected 1 row, got ${r.rows.length}`);
+    const row = r.rows[0];
+    if (row.date !== '2025-12-04') throw new Error(`date parsed as ${row.date}`);
+    if (row.total_cost !== 90.63) throw new Error(`total parsed as ${row.total_cost}`);
+    if (row.station !== 'Shell, Main St') throw new Error(`station parsed as ${row.station}`);
+  });
+
+  check('csv import rejects shifted columns', () => {
+    const { analyze } = require('../server/services/csvImport');
+    // Unquoted "$1,299.00" splits into two fields and shifts every later column
+    const r = analyze('mods', 'Part,Brand,Cost\nLight Bar,Baja,$1,299.00\n');
+    if (r.rows.length !== 0) throw new Error('imported a corrupted row instead of rejecting it');
+    if (r.errors.length !== 1) throw new Error('expected exactly one column-count error');
   });
 } catch (e) {
   failures++;

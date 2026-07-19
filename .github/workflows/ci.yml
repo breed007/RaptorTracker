@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The versions the installer targets. better-sqlite3 ships prebuilt
+        # binaries for both, so this also catches native-module breakage.
+        node: ['20.19', '22']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Install server dependencies
+        run: npm install
+
+      - name: Smoke test (schema, migrations, module load)
+        run: npm test
+
+      - name: Install client dependencies
+        run: npm install --prefix client
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Confirm PWA assets are in the build
+        run: |
+          set -e
+          for f in dist/index.html dist/manifest.webmanifest dist/sw.js dist/icon.svg; do
+            test -f "$f" || { echo "missing $f"; exit 1; }
+          done
+          echo "build output looks complete"
