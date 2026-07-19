@@ -19,6 +19,7 @@ export function AppProvider({ children }) {
   const [user, setUser] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [userVehicles, setUserVehicles] = useState([])
+  const [vehiclesLoaded, setVehiclesLoaded] = useState(false)
   const [selectedVehicleId, setSelectedVehicleId] = useState(null)
 
   const [theme, setThemeState] = useState(() => {
@@ -57,19 +58,25 @@ export function AppProvider({ children }) {
       .catch(() => setAuthLoading(false))
   }, [])
 
-  useEffect(() => {
-    if (!user) return
-    fetch('/api/user-vehicles')
-      .then(r => r.json())
-      .then(data => {
-        setUserVehicles(data)
-        if (data.length > 0 && !selectedVehicleId) {
-          const saved = localStorage.getItem('selectedVehicleId')
-          const found = data.find(v => v.id === parseInt(saved))
-          setSelectedVehicleId(found ? found.id : data[0].id)
-        }
+  const refreshVehicles = async () => {
+    const data = await fetch('/api/user-vehicles').then(r => r.json()).catch(() => null)
+    if (!data) return []
+    setUserVehicles(data)
+    setVehiclesLoaded(true)
+    if (data.length > 0) {
+      setSelectedVehicleId(prev => {
+        if (prev && data.some(v => v.id === prev)) return prev
+        const saved = localStorage.getItem('selectedVehicleId')
+        const found = data.find(v => v.id === parseInt(saved))
+        return found ? found.id : data[0].id
       })
-      .catch(() => {})
+    }
+    return data
+  }
+
+  useEffect(() => {
+    if (!user) { setVehiclesLoaded(false); return }
+    refreshVehicles()
   }, [user])
 
   const selectVehicle = (id) => {
@@ -89,7 +96,7 @@ export function AppProvider({ children }) {
   return (
     <AppContext.Provider value={{
       user, setUser, authLoading,
-      userVehicles, setUserVehicles,
+      userVehicles, setUserVehicles, vehiclesLoaded, refreshVehicles,
       selectedVehicleId, selectedVehicle,
       selectVehicle, logout,
       darkMode: effectiveDarkMode, toggleDark,

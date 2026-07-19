@@ -5,6 +5,7 @@
 //   REMINDER_HOUR  — hour of day 0-23 (default 8)
 //   REMINDER_TZ    — IANA timezone, e.g. "America/New_York" (default: server time)
 const { sendDigest, pruneSentReminders } = require('./services/reminders');
+const { runScheduledBackup } = require('./services/backupArchive');
 const { getDb } = require('./db');
 const { isTrue, getSetting } = require('./services/settings');
 
@@ -41,6 +42,26 @@ function start() {
   }, options);
 
   console.log(`[scheduler] daily reminder check scheduled for ${String(hour).padStart(2, '0')}:00${tz ? ` (${tz})` : ' server time'}.`);
+
+  // Nightly automatic backup — reads its schedule from app settings each run so
+  // changing it in the UI takes effect without a restart.
+  cron.schedule('0 * * * *', async () => {
+    try {
+      if (!isTrue(getSetting('backup_enabled'))) return;
+      const wantHour = parseInt(getSetting('backup_hour') || '3', 10);
+      const nowHour = tz
+        ? parseInt(new Intl.DateTimeFormat('en-US', { hour: 'numeric', hour12: false, timeZone: tz }).format(new Date()), 10)
+        : new Date().getHours();
+      if (nowHour !== wantHour) return;
+      const keep = parseInt(getSetting('backup_keep') || '7', 10);
+      const result = await runScheduledBackup(keep);
+      console.log(`[scheduler] wrote backup ${result.name}${result.removed ? ` (pruned ${result.removed})` : ''}`);
+    } catch (err) {
+      console.error('[scheduler] backup run failed:', err.message);
+    }
+  }, options);
+
+  console.log('[scheduler] automatic backups will run when enabled in Export & Backup.');
 }
 
 module.exports = { start };

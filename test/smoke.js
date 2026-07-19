@@ -64,12 +64,21 @@ try {
     if (n < 1) throw new Error('no reference vehicles');
   });
 
-  // 5) A basic write path works (insert a mileage reading against the seed vehicle)
-  check('insert + read mileage_log', () => {
-    const uv = db.prepare('SELECT id FROM user_vehicles LIMIT 1').get();
-    if (!uv) throw new Error('no seed user_vehicle');
+  // 5) A fresh install must start with an EMPTY garage — the first-run flow
+  //    depends on it (we deliberately don't seed a sample vehicle any more).
+  check('fresh install has no user vehicles', () => {
+    const n = db.prepare('SELECT COUNT(*) AS c FROM user_vehicles').get().c;
+    if (n !== 0) throw new Error(`expected 0 user_vehicles on a fresh install, found ${n}`);
+  });
+
+  // 6) A basic write path works end to end (create a vehicle, log mileage)
+  check('insert vehicle + mileage_log round-trip', () => {
+    const ref = db.prepare('SELECT id FROM vehicles LIMIT 1').get();
+    if (!ref) throw new Error('no reference vehicle to attach to');
+    const uv = db.prepare('INSERT INTO user_vehicles (vehicle_id, nickname, model_year) VALUES (?,?,?)')
+      .run(ref.id, 'Smoke Test Truck', 2025);
     db.prepare('INSERT INTO mileage_log (user_vehicle_id, date, odometer, note) VALUES (?,?,?,?)')
-      .run(uv.id, '2026-01-01', 12345, 'smoke');
+      .run(uv.lastInsertRowid, '2026-01-01', 12345, 'smoke');
     const row = db.prepare('SELECT odometer FROM mileage_log ORDER BY id DESC LIMIT 1').get();
     if (!row || row.odometer !== 12345) throw new Error('readback mismatch');
   });
@@ -82,8 +91,8 @@ try {
     'routes/upload', 'routes/summary', 'routes/export', 'routes/vin', 'routes/modTransfer',
     'routes/vehicleTransfer', 'routes/intervals', 'routes/wishlist', 'routes/fuel',
     'routes/warranty', 'routes/tco', 'routes/notifications', 'routes/tires', 'routes/recalls',
-    'routes/backup', 'routes/logbook', 'routes/mileage', 'routes/analytics',
-    'services/settings', 'services/mailer', 'services/reminders', 'scheduler',
+    'routes/backup', 'routes/logbook', 'routes/mileage', 'routes/analytics', 'routes/search',
+    'services/settings', 'services/mailer', 'services/reminders', 'services/backupArchive', 'scheduler',
   ];
   for (const m of modules) check(`require ${m}`, () => { require(`../server/${m}`); });
 

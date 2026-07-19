@@ -2,7 +2,7 @@
 
 **Ford Raptor Build Tracker** — a self-hosted web app for tracking modifications, maintenance, AUX switch assignments, warranties, fuel economy, and build costs across one or more Ford Raptors.
 
-> Version `0.5.0` · [GitHub](https://github.com/breed007/RaptorTracker) · [Changelog](CHANGELOG.md)
+> Version `0.6.0` · [GitHub](https://github.com/breed007/RaptorTracker) · [Changelog](CHANGELOG.md)
 
 ---
 
@@ -84,6 +84,14 @@
 
 ### Backup & Restore
 - One-click full backup (database + all uploads) to a single ZIP, and restore from a backup file
+- Optional nightly automatic backups with configurable retention
+
+### Install on Your Phone
+- Installable progressive web app — add it to your home screen for a standalone app window
+- **Quick Add** screen for logging a fill-up, odometer reading, or service in a few taps
+
+### Find Anything
+- Grouped sidebar navigation plus a `⌘K` command palette that searches mods, service, wishlist, tires, warranties, and fuel stops
 
 ### Registration, Inspection & Insurance
 - Track registration, inspection/emissions, and insurance expiration per vehicle, with provider and policy details

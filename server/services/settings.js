@@ -9,6 +9,9 @@ const DEFAULTS = {
   notify_compliance: 'true',
   notify_webhook_url: '',
   warranty_threshold_days: '90',
+  backup_enabled: 'false',
+  backup_hour: '3',
+  backup_keep: '7',
 };
 
 function getSetting(key) {

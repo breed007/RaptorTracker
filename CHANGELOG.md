@@ -4,6 +4,38 @@ All notable changes to RaptorTracker are documented here.
 
 ---
 
+## [v0.6.0] — 2026-07-01
+
+**"Field & Focus"** — the release that makes RaptorTracker work for someone who isn't the person who built it.
+
+### New Features
+
+#### First-run onboarding
+- A fresh install no longer seeds a sample vehicle. Previously every new install booted into someone else's truck ("Carbonized Raptor") that the owner had to find and delete.
+- New installs now get a **welcome screen** that walks you through adding your own truck, with optional VIN decode to fill in the model and year.
+
+#### Navigation & search
+- The sidebar's 15 flat links are grouped into **Build / Maintain / Insights / Garage / Settings**, so the app has a shape you can scan.
+- New **command palette** (`⌘K` / `Ctrl+K`, or the search box in the sidebar) searches across mods, service records, wishlist, tire sets, warranties, and fuel stops — and doubles as a jump-to-page list.
+
+#### Install it on your phone (PWA)
+- RaptorTracker is now an installable **progressive web app** with an app icon, standalone window, and offline app shell.
+- New **Quick Add** screen (`/quick`, plus a floating button on phones) for the three things you log while standing at a pump or a counter: a fill-up, an odometer reading, or a service.
+- The service worker is deliberately network-first for pages and never caches API responses, so a new deploy is picked up immediately instead of pinning you to a stale build.
+
+#### Recalls that do something
+- Open NHTSA recalls now have a **"Log as service"** action that creates a maintenance record pre-filled with the campaign number, component, summary, and remedy — and dismisses the recall since it's now tracked. Previously recalls were read-and-dismiss only.
+
+#### Automatic backups
+- Nightly **scheduled backups** written to `data/backups/`, with a configurable hour and retention count ("keep last N").
+- Stored backups can be listed, downloaded, or deleted from Export & Backup, plus a "Back Up Now" button.
+
+### Notes
+- No new dependencies and no schema changes. A plain `git pull && npm run build && pm2 restart` is enough.
+- Existing installs are unaffected by the seed change — it only applies to brand-new databases.
+
+---
+
 ## [v0.5.0] — 2026-07-01
 
 Hardening release from a QA pass — no new user-facing features, but the newest and most destructive surfaces (restore, CSV export, sessions) are now much safer.

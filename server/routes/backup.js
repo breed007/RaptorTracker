@@ -2,10 +2,11 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const archiver = require('archiver');
 const AdmZip = require('adm-zip');
 const Database = require('better-sqlite3');
 const { getDb, closeDb, DB_PATH, DATA_DIR } = require('../db');
+const { pipeBackupTo, listBackups, runScheduledBackup, BACKUP_DIR } = require('../services/backupArchive');
+const { getAllSettings, setSetting } = require('../services/settings');
 
 const router = express.Router();
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
@@ -25,25 +26,76 @@ const restoreUpload = multer({
 
 // GET /api/backup — download a full snapshot (database + uploads) as a ZIP
 router.get('/', (req, res) => {
-  // Flush the WAL into the main db file so the snapshot is consistent
-  try { getDb().pragma('wal_checkpoint(TRUNCATE)'); } catch (_) { /* ignore */ }
-
   const dateStr = new Date().toISOString().slice(0, 10);
   res.setHeader('Content-Type', 'application/zip');
   res.setHeader('Content-Disposition', `attachment; filename="raptortracker-backup-${dateStr}.zip"`);
-
-  const archive = archiver('zip', { zlib: { level: 9 } });
-  archive.on('error', (err) => {
+  pipeBackupTo(res).catch((err) => {
     if (!res.headersSent) res.status(500).json({ error: err.message });
     else res.destroy(err);
   });
-  archive.pipe(res);
+});
 
-  if (fs.existsSync(DB_PATH)) archive.file(DB_PATH, { name: 'raptortracker.db' });
-  if (fs.existsSync(UPLOAD_DIR)) archive.directory(UPLOAD_DIR, 'uploads');
-  archive.append(JSON.stringify({ created: new Date().toISOString(), kind: 'raptortracker-backup', version: 1 }, null, 2), { name: 'backup-manifest.json' });
+// ── Scheduled backups ─────────────────────────────────────────────────────────
 
-  archive.finalize();
+// GET /api/backup/settings
+router.get('/settings', (req, res) => {
+  const s = getAllSettings();
+  res.json({
+    enabled: s.backup_enabled === 'true',
+    hour: parseInt(s.backup_hour || '3', 10),
+    keep: parseInt(s.backup_keep || '7', 10),
+    backups: listBackups(),
+  });
+});
+
+// PUT /api/backup/settings
+router.put('/settings', (req, res) => {
+  const { enabled, hour, keep } = req.body;
+  if (enabled != null) setSetting('backup_enabled', enabled ? 'true' : 'false');
+  if (hour != null) {
+    const h = parseInt(hour, 10);
+    if (!isNaN(h) && h >= 0 && h <= 23) setSetting('backup_hour', String(h));
+  }
+  if (keep != null) {
+    const k = parseInt(keep, 10);
+    if (!isNaN(k) && k >= 1 && k <= 90) setSetting('backup_keep', String(k));
+  }
+  const s = getAllSettings();
+  res.json({
+    enabled: s.backup_enabled === 'true',
+    hour: parseInt(s.backup_hour || '3', 10),
+    keep: parseInt(s.backup_keep || '7', 10),
+    backups: listBackups(),
+  });
+});
+
+// POST /api/backup/run — take a scheduled-style backup right now
+router.post('/run', async (req, res) => {
+  try {
+    const keep = parseInt(getAllSettings().backup_keep || '7', 10);
+    const result = await runScheduledBackup(keep);
+    res.json({ ok: true, ...result, backups: listBackups() });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/backup/file/:name — download a stored backup
+router.get('/file/:name', (req, res) => {
+  const name = path.basename(req.params.name); // never allow traversal
+  if (!name.endsWith('.zip')) return res.status(400).json({ error: 'Invalid backup file' });
+  const full = path.join(BACKUP_DIR, name);
+  if (!fs.existsSync(full)) return res.status(404).json({ error: 'Not found' });
+  res.download(full, name);
+});
+
+// DELETE /api/backup/file/:name
+router.delete('/file/:name', (req, res) => {
+  const name = path.basename(req.params.name);
+  const full = path.join(BACKUP_DIR, name);
+  if (!name.endsWith('.zip') || !fs.existsSync(full)) return res.status(404).json({ error: 'Not found' });
+  fs.unlinkSync(full);
+  res.json({ ok: true, backups: listBackups() });
 });
 
 // POST /api/restore — replace the database and uploads from a backup ZIP

@@ -275,26 +275,9 @@ if (existing.cnt === 0) {
   console.log(`Vehicles table already has ${existing.cnt} records — skipping vehicle seed.`);
 }
 
-// Seed default user_vehicle if none exist
-const existingUV = db.prepare('SELECT COUNT(*) as cnt FROM user_vehicles').get();
-if (existingUV.cnt === 0) {
-  const gen35 = db.prepare("SELECT id FROM vehicles WHERE generation = 'Gen 3.5' LIMIT 1").get();
-  if (gen35) {
-    db.prepare(`
-      INSERT INTO user_vehicles
-        (vehicle_id, nickname, model_year, color, package_options, notes)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(
-      gen35.id,
-      'Carbonized Raptor',
-      2025,
-      'Carbonized Gray',
-      '802A package, 37-inch tires, Recaro seats, FOX Live Valve shocks',
-      null
-    );
-    console.log('Seeded default user vehicle: Carbonized Raptor (2025 Gen 3.5).');
-  }
-}
+// NOTE: no default user_vehicle is seeded. A fresh install starts with an empty
+// garage so the owner is walked through adding their own truck on first run.
+// (Seeding a sample vehicle meant every new install booted into someone else's Raptor.)
 
 console.log('Database initialization complete.');
 db.close();

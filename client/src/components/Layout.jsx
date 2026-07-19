@@ -1,14 +1,29 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import Nav from './Nav'
+import CommandPalette from './CommandPalette'
 
 export default function Layout({ children }) {
   const [navOpen, setNavOpen] = useState(false)
+  const [paletteOpen, setPaletteOpen] = useState(false)
+
+  // ⌘K / Ctrl+K opens search from anywhere
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setPaletteOpen(o => !o)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
   return (
     <div className="flex min-h-screen bg-raptor-base">
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex lg:flex-col lg:w-56 lg:min-h-screen bg-raptor-sidebar flex-shrink-0">
-        <Nav onClose={() => setNavOpen(false)} />
+        <Nav onClose={() => setNavOpen(false)} onSearch={() => setPaletteOpen(true)} />
       </aside>
 
       {/* Mobile overlay */}
@@ -21,7 +36,7 @@ export default function Layout({ children }) {
 
       {/* Mobile drawer */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-raptor-sidebar transform transition-transform duration-200 lg:hidden ${navOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <Nav onClose={() => setNavOpen(false)} />
+        <Nav onClose={() => setNavOpen(false)} onSearch={() => { setNavOpen(false); setPaletteOpen(true) }} />
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
@@ -37,6 +52,15 @@ export default function Layout({ children }) {
             </svg>
           </button>
           <span className="font-display font-bold text-xl text-white tracking-wide">RaptorTracker</span>
+          <button
+            onClick={() => setPaletteOpen(true)}
+            className="ml-auto text-white/70 hover:text-white p-1 rounded"
+            aria-label="Search"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
+            </svg>
+          </button>
         </header>
 
         <main className="flex-1 p-4 lg:p-6 overflow-auto">
@@ -57,6 +81,19 @@ export default function Layout({ children }) {
           </a>
         </footer>
       </div>
+
+      {/* Floating quick-add — phone only, where fuel/odometer logging happens */}
+      <Link
+        to="/quick"
+        className="lg:hidden fixed bottom-5 right-5 z-30 w-14 h-14 rounded-full bg-raptor-accent text-white shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+        aria-label="Quick add"
+      >
+        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+      </Link>
+
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
     </div>
   )
 }

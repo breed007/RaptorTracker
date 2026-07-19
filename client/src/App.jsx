@@ -19,9 +19,11 @@ import Notifications from './pages/Notifications'
 import TireSets from './pages/TireSets'
 import Logbook from './pages/Logbook'
 import Analytics from './pages/Analytics'
+import Welcome from './pages/Welcome'
+import QuickAdd from './pages/QuickAdd'
 
 function AppRoutes() {
-  const { user, authLoading } = useApp()
+  const { user, authLoading, userVehicles, vehiclesLoaded } = useApp()
 
   if (authLoading) {
     return (
@@ -34,6 +36,10 @@ function AppRoutes() {
   }
 
   if (!user) return <Login />
+
+  // First run: an empty garage means a brand-new install — walk the owner
+  // through adding their truck rather than dropping them into empty pages.
+  if (vehiclesLoaded && userVehicles.length === 0) return <Welcome />
 
   return (
     <Layout>
@@ -51,6 +57,7 @@ function AppRoutes() {
         <Route path="/tires" element={<TireSets />} />
         <Route path="/warranty" element={<Warranty />} />
         <Route path="/tco" element={<TCO />} />
+        <Route path="/quick" element={<QuickAdd />} />
         <Route path="/logbook" element={<Logbook />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/notifications" element={<Notifications />} />

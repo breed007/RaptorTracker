@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import StatsCard from '../components/StatsCard'
 import SpendChart from '../components/SpendChart'
@@ -29,6 +29,7 @@ function calcIntervalStatus(interval, currentMileage) {
 
 export default function Dashboard() {
   const { selectedVehicleId, selectedVehicle } = useApp()
+  const navigate = useNavigate()
   const [summary, setSummary] = useState(null)
   const [maintenance, setMaintenance] = useState([])
   const [intervals, setIntervals] = useState({ intervals: [], currentMileage: null })
@@ -40,6 +41,30 @@ export default function Dashboard() {
 
   const toggleRecallsCollapsed = () => {
     setRecallsCollapsed(c => { localStorage.setItem('recallsCollapsed', String(!c)); return !c })
+  }
+
+  // Turn an open recall into a tracked maintenance record so it stops being a
+  // read-only dead end. Dismisses the recall since it's now on the books.
+  const trackRecall = async (r) => {
+    const notes = [
+      r.component ? `Component: ${r.component}` : null,
+      r.summary ? `\n${r.summary}` : null,
+      r.remedy ? `\nRemedy: ${r.remedy}` : null,
+    ].filter(Boolean).join('')
+    const res = await fetch('/api/maintenance', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_vehicle_id: selectedVehicleId,
+        service_type: r.campaign ? `Recall ${r.campaign}` : 'Recall service',
+        date_performed: new Date().toISOString().slice(0, 10),
+        service_provider_type: 'dealership',
+        notes,
+      }),
+    }).catch(() => null)
+    if (res && res.ok) {
+      dismissRecall(r.campaign, true)
+      navigate('/maintenance')
+    }
   }
 
   const dismissRecall = (campaign, dismiss = true) => {
@@ -231,6 +256,12 @@ export default function Dashboard() {
                               {r.campaign && <span className="text-xs text-raptor-muted">#{r.campaign}</span>}
                             </div>
                             {r.summary && <p className="text-xs text-raptor-secondary mt-1 line-clamp-2">{r.summary}</p>}
+                            <button
+                              onClick={() => trackRecall(r)}
+                              className="mt-1.5 text-xs text-raptor-accent hover:underline"
+                            >
+                              + Log as service
+                            </button>
                           </div>
                           <button
                             onClick={() => dismissRecall(r.campaign, true)}
