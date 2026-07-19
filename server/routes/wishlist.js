@@ -15,33 +15,41 @@ router.get('/', (req, res) => {
 // POST /api/wishlist
 router.post('/', (req, res) => {
   const { user_vehicle_id, part_name, brand, part_number, category,
-          estimated_cost, priority, vendor_name, vendor_url, notes } = req.body;
+          estimated_cost, priority, vendor_name, vendor_url, notes,
+          amp_draw, aux_switch } = req.body;
   if (!user_vehicle_id || !part_name)
     return res.status(400).json({ error: 'user_vehicle_id and part_name required' });
   const db = getDb();
   const r = db.prepare(`
     INSERT INTO wishlist
       (user_vehicle_id, part_name, brand, part_number, category,
-       estimated_cost, priority, vendor_name, vendor_url, notes)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       estimated_cost, priority, vendor_name, vendor_url, notes, amp_draw, aux_switch)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(user_vehicle_id, part_name, brand || null, part_number || null,
          category || null, estimated_cost || null, priority || 'medium',
-         vendor_name || null, vendor_url || null, notes || null);
+         vendor_name || null, vendor_url || null, notes || null,
+         amp_draw !== undefined && amp_draw !== '' && amp_draw !== null ? parseFloat(amp_draw) : null,
+         aux_switch !== undefined && aux_switch !== '' && aux_switch !== null ? parseInt(aux_switch) : null);
   res.json(db.prepare('SELECT * FROM wishlist WHERE id = ?').get(r.lastInsertRowid));
 });
 
 // PUT /api/wishlist/:id
 router.put('/:id', (req, res) => {
   const { part_name, brand, part_number, category,
-          estimated_cost, priority, vendor_name, vendor_url, notes } = req.body;
+          estimated_cost, priority, vendor_name, vendor_url, notes,
+          amp_draw, aux_switch } = req.body;
   const db = getDb();
   db.prepare(`
     UPDATE wishlist SET part_name=?, brand=?, part_number=?, category=?,
-      estimated_cost=?, priority=?, vendor_name=?, vendor_url=?, notes=?
+      estimated_cost=?, priority=?, vendor_name=?, vendor_url=?, notes=?,
+      amp_draw=?, aux_switch=?
     WHERE id=?
   `).run(part_name, brand || null, part_number || null, category || null,
          estimated_cost || null, priority || 'medium',
-         vendor_name || null, vendor_url || null, notes || null, req.params.id);
+         vendor_name || null, vendor_url || null, notes || null,
+         amp_draw !== undefined && amp_draw !== '' && amp_draw !== null ? parseFloat(amp_draw) : null,
+         aux_switch !== undefined && aux_switch !== '' && aux_switch !== null ? parseInt(aux_switch) : null,
+         req.params.id);
   res.json(db.prepare('SELECT * FROM wishlist WHERE id = ?').get(req.params.id));
 });
 

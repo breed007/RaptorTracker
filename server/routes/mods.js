@@ -46,7 +46,7 @@ router.post('/', (req, res) => {
   const {
     user_vehicle_id, part_name, part_number, brand, vendor, vendor_url,
     category, status, purchase_date, install_date, cost, mileage_at_install,
-    aux_switches, install_notes, wiring_notes, photos,
+    aux_switches, install_notes, wiring_notes, photos, amp_draw,
     // legacy single-switch fields (still accepted for backward compat)
     aux_switch, aux_label,
   } = req.body;
@@ -66,8 +66,8 @@ router.post('/', (req, res) => {
     INSERT INTO mods
       (user_vehicle_id, part_name, part_number, brand, vendor, vendor_url,
        category, status, purchase_date, install_date, cost, mileage_at_install,
-       aux_switch, aux_label, aux_switches, install_notes, wiring_notes, photos)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+       aux_switch, aux_label, aux_switches, install_notes, wiring_notes, photos, amp_draw)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(
     user_vehicle_id, part_name, part_number || null, brand || null,
     vendor || null, vendor_url || null,
@@ -78,7 +78,8 @@ router.post('/', (req, res) => {
     legacy.aux_switch, legacy.aux_label,
     JSON.stringify(switches),
     install_notes || null, wiring_notes || null,
-    JSON.stringify(photos || [])
+    JSON.stringify(photos || []),
+    amp_draw != null && amp_draw !== '' ? parseFloat(amp_draw) : null
   );
 
   const created = db.prepare('SELECT * FROM mods WHERE id = ?').get(result.lastInsertRowid);
@@ -100,7 +101,7 @@ router.put('/:id', (req, res) => {
   const {
     part_name, part_number, brand, vendor, vendor_url, category, status,
     purchase_date, install_date, cost, mileage_at_install,
-    aux_switches, install_notes, wiring_notes, photos,
+    aux_switches, install_notes, wiring_notes, photos, amp_draw,
     // legacy
     aux_switch, aux_label,
   } = req.body;
@@ -116,7 +117,7 @@ router.put('/:id', (req, res) => {
       part_name=?, part_number=?, brand=?, vendor=?, vendor_url=?,
       category=?, status=?, purchase_date=?, install_date=?, cost=?,
       mileage_at_install=?, aux_switch=?, aux_label=?, aux_switches=?,
-      install_notes=?, wiring_notes=?, photos=?, updated_at=datetime('now')
+      install_notes=?, wiring_notes=?, photos=?, amp_draw=?, updated_at=datetime('now')
     WHERE id=?
   `).run(
     part_name, part_number || null, brand || null, vendor || null, vendor_url || null,
@@ -128,6 +129,7 @@ router.put('/:id', (req, res) => {
     JSON.stringify(switches),
     install_notes || null, wiring_notes || null,
     JSON.stringify(photos || []),
+    amp_draw != null && amp_draw !== '' ? parseFloat(amp_draw) : null,
     req.params.id
   );
   res.json({ ok: true });

@@ -55,6 +55,9 @@ try {
     ['maintenance_log', 'service_provider_type'],
     ['mods', 'aux_switches'],
     ['mods', 'warranty_months'],
+    ['mods', 'amp_draw'],
+    ['wishlist', 'amp_draw'],
+    ['wishlist', 'aux_switch'],
   ];
   for (const [t, c] of expectedCols) check(`column ${t}.${c}`, () => { if (!hasCol(t, c)) throw new Error('missing'); });
 
@@ -91,7 +94,7 @@ try {
     'routes/upload', 'routes/summary', 'routes/export', 'routes/vin', 'routes/modTransfer',
     'routes/vehicleTransfer', 'routes/intervals', 'routes/wishlist', 'routes/fuel',
     'routes/warranty', 'routes/tco', 'routes/notifications', 'routes/tires', 'routes/recalls',
-    'routes/backup', 'routes/logbook', 'routes/mileage', 'routes/analytics', 'routes/search', 'routes/import',
+    'routes/backup', 'routes/logbook', 'routes/mileage', 'routes/analytics', 'routes/search', 'routes/import', 'routes/auxCapacity',
     'services/settings', 'services/mailer', 'services/reminders', 'services/backupArchive', 'services/csvImport', 'scheduler',
   ];
   for (const m of modules) check(`require ${m}`, () => { require(`../server/${m}`); });

@@ -24,6 +24,7 @@ export default function AuxPanel() {
   const [auxLayout, setAuxLayout] = useState([])
   const [auxCount, setAuxCount] = useState(0)
   const [reclaiming, setReclaiming] = useState(null) // switch_number being reclaimed/restored
+  const [capacity, setCapacity] = useState(null)
 
   // Instant paint from context, then corrected by the fresh fetch below
   useEffect(() => {
@@ -51,7 +52,15 @@ export default function AuxPanel() {
         }
       })
       .catch(() => {})
+    fetch(`/api/aux-capacity?vehicle_id=${selectedVehicleId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(setCapacity)
+      .catch(() => {})
   }, [selectedVehicleId])
+
+  // Quick lookup of per-switch electrical load
+  const capBySwitch = {}
+  for (const s of capacity?.switches || []) capBySwitch[s.switch_number] = s
 
   // Reclaim a factory slot as a normal available switch (or restore it to factory)
   const handleReclaim = async (switchNumber, reclaim = true) => {
@@ -130,8 +139,45 @@ export default function AuxPanel() {
         <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500"></span>Factory Use (tap to reclaim)</span>
       </div>
 
+      {/* Electrical capacity planning */}
+      {capacity?.summary && (
+        <div className="card p-4">
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            <span className="section-title">Switch Capacity</span>
+            {capacity.summary.over > 0 && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                {capacity.summary.over} over fuse rating
+              </span>
+            )}
+            {capacity.summary.over === 0 && capacity.summary.tight > 0 && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-500">
+                {capacity.summary.tight} near capacity
+              </span>
+            )}
+            <Link to="/wishlist" className="ml-auto text-xs text-raptor-accent hover:underline">Plan in Wishlist →</Link>
+          </div>
+          <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
+            <span className="text-raptor-secondary">Free switches: <span className="text-raptor-primary font-semibold">{capacity.summary.free}</span></span>
+            <span className="text-raptor-secondary">In use: <span className="text-raptor-primary font-semibold">{capacity.summary.occupied}</span></span>
+            {capacity.summary.spokenFor > 0 && (
+              <span className="text-raptor-secondary">Planned: <span className="text-raptor-primary font-semibold">{capacity.summary.spokenFor}</span></span>
+            )}
+            {capacity.summary.factoryUsed > 0 && (
+              <span className="text-raptor-secondary">Factory-used: <span className="text-raptor-primary font-semibold">{capacity.summary.factoryUsed}</span></span>
+            )}
+          </div>
+          {capacity.unassigned?.length > 0 && (
+            <p className="text-xs text-raptor-muted mt-2">
+              {capacity.unassigned.length} wishlist item{capacity.unassigned.length === 1 ? '' : 's'} draw power but
+              {capacity.unassigned.length === 1 ? " hasn't" : " haven't"} been assigned a switch yet.
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {auxLayout.map(slot => {
+          const cap = capBySwitch[slot.switch_number]
           const assignment = auxModMap[slot.switch_number]
           const assignedMod = assignment?.mod
           const switchLabel = assignment?.label
@@ -160,6 +206,27 @@ export default function AuxPanel() {
             </div>
           )
 
+          // Electrical load bar — only when there's something to say
+          const load = cap && cap.fuse_amps && (cap.totalAmps > 0 || cap.unknownDraw) ? (
+            <div className="mt-2">
+              <div className="flex items-center justify-between text-xs mb-1 gap-2">
+                <span className="text-raptor-muted">
+                  {cap.totalAmps}A of {cap.fuse_amps}A
+                  {cap.plannedAmps > 0 && <span className="text-raptor-accent"> · {cap.plannedAmps}A planned</span>}
+                </span>
+                {cap.status === 'over' && <span className="text-red-500 font-semibold flex-shrink-0">over fuse</span>}
+                {cap.status === 'tight' && <span className="text-yellow-600 dark:text-yellow-500 font-semibold flex-shrink-0">near limit</span>}
+                {cap.status === 'ok' && cap.unknownDraw && <span className="text-raptor-muted flex-shrink-0">draw unknown</span>}
+              </div>
+              <div className="h-1.5 rounded-full bg-raptor-elevated overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${cap.status === 'over' ? 'bg-red-500' : cap.status === 'tight' ? 'bg-yellow-500' : 'bg-green-500'}`}
+                  style={{ width: `${Math.min(100, (cap.totalAmps / cap.fuse_amps) * 100)}%` }}
+                />
+              </div>
+            </div>
+          ) : null
+
           // CASE 1 — assigned mod: whole-card link to the mod
           if (assignedMod) {
             return (
@@ -171,6 +238,7 @@ export default function AuxPanel() {
                     <div className="text-xs text-raptor-secondary mt-0.5 truncate">{switchLabel || slot.default_label}</div>
                   )}
                   {assignedMod.brand && <div className="text-xs text-raptor-muted mt-0.5">{assignedMod.brand}</div>}
+                  {load}
                 </div>
               </Link>
             )
@@ -194,7 +262,9 @@ export default function AuxPanel() {
                   </div>
                 )}
                 <div className="text-sm text-amber-700 dark:text-amber-400 font-medium">{slot.default_label}</div>
-                <div className="text-xs text-raptor-muted mt-0.5 mb-3">Factory-wired slot</div>
+                <div className="text-xs text-raptor-muted mt-0.5">Factory-wired slot</div>
+                {load}
+                <div className="mb-3" />
                 <div className="flex flex-wrap gap-2">
                   <Link to={assignHref} className="btn-primary text-xs">Assign a mod</Link>
                   <button
@@ -215,6 +285,7 @@ export default function AuxPanel() {
               <div className={`card border-2 ${slotClass} p-4 transition-colors relative`}>
                 {Header}
                 <div className="text-xs text-raptor-muted italic">No assignment — tap to add</div>
+                {load}
                 {slot.reclaimed && (
                   <button
                     onClick={e => { e.preventDefault(); e.stopPropagation(); handleReclaim(slot.switch_number, false) }}

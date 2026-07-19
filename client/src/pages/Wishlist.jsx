@@ -36,6 +36,8 @@ const EMPTY_FORM = {
   part_number: '',
   category: '',
   estimated_cost: '',
+  amp_draw: '',
+  aux_switch: '',
   priority: 'medium',
   vendor_name: '',
   vendor_url: '',
@@ -51,7 +53,7 @@ function PriorityBadge({ priority }) {
   )
 }
 
-function WishlistForm({ initialValues, onSave, onCancel, saving, error }) {
+function WishlistForm({ initialValues, onSave, onCancel, saving, error, auxOptions = [] }) {
   const [form, setForm] = useState(initialValues || EMPTY_FORM)
 
   const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }))
@@ -144,6 +146,28 @@ function WishlistForm({ initialValues, onSave, onCancel, saving, error }) {
             placeholder="0.00"
             className="input-field"
           />
+        </div>
+
+        {/* Electrical planning — feeds the AUX capacity planner */}
+        <div>
+          <label className="label">Amp Draw <span className="font-normal text-raptor-muted">(A)</span></label>
+          <input
+            type="number"
+            min="0"
+            step="0.1"
+            value={form.amp_draw}
+            onChange={set('amp_draw')}
+            placeholder="e.g. 6.5"
+            className="input-field"
+          />
+        </div>
+
+        <div>
+          <label className="label">Intended AUX Switch</label>
+          <select value={form.aux_switch} onChange={set('aux_switch')} className="input-field">
+            <option value="">Not decided</option>
+            {auxOptions.map(n => <option key={n} value={n}>AUX {n}</option>)}
+          </select>
         </div>
 
         {/* Vendor Name */}
@@ -271,6 +295,8 @@ export default function Wishlist() {
       vendor_name: form.vendor_name.trim() || null,
       vendor_url: form.vendor_url.trim() || null,
       notes: form.notes.trim() || null,
+      amp_draw: form.amp_draw !== '' ? parseFloat(form.amp_draw) : null,
+      aux_switch: form.aux_switch !== '' ? parseInt(form.aux_switch) : null,
     }
 
     try {
@@ -362,8 +388,14 @@ export default function Wishlist() {
         part_number: editItem.part_number || '',
         category: editItem.category || '',
         notes: editItem.notes || '',
+        amp_draw: editItem.amp_draw != null ? String(editItem.amp_draw) : '',
+        aux_switch: editItem.aux_switch != null ? String(editItem.aux_switch) : '',
       }
     : EMPTY_FORM
+
+  // AUX switches available on this truck, for the capacity planner fields
+  const auxCount = selectedVehicle?.aux_switch_count || 0
+  const auxOptions = Array.from({ length: auxCount }, (_, i) => i + 1)
 
   return (
     <div className="space-y-5">
@@ -393,6 +425,7 @@ export default function Wishlist() {
       {/* Add / Edit form */}
       {showForm && (
         <WishlistForm
+          auxOptions={auxOptions}
           initialValues={formInitialValues}
           onSave={handleSave}
           onCancel={cancelForm}

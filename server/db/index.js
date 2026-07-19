@@ -66,6 +66,17 @@ function runMigrations(db) {
     db.prepare('ALTER TABLE maintenance_log ADD COLUMN service_provider_type TEXT').run();
   }
 
+  // wishlist: electrical planning — how much current an item draws and which
+  // AUX switch you intend to hang it on (feeds the capacity planner)
+  const wlCols = db.prepare('PRAGMA table_info(wishlist)').all().map(c => c.name);
+  const wlAdditions = [
+    ['amp_draw',   'ALTER TABLE wishlist ADD COLUMN amp_draw REAL'],
+    ['aux_switch', 'ALTER TABLE wishlist ADD COLUMN aux_switch INTEGER'],
+  ];
+  for (const [col, sql] of wlAdditions) {
+    if (!wlCols.includes(col)) db.prepare(sql).run();
+  }
+
   // maintenance_log columns
   const mlCols = db.prepare('PRAGMA table_info(maintenance_log)').all().map(c => c.name);
   if (!mlCols.includes('attachments')) {
@@ -96,6 +107,7 @@ function runMigrations(db) {
     ['warranty_provider',   'ALTER TABLE mods ADD COLUMN warranty_provider TEXT'],
     ['warranty_notes',      'ALTER TABLE mods ADD COLUMN warranty_notes TEXT'],
     ['aux_switches',        "ALTER TABLE mods ADD COLUMN aux_switches TEXT NOT NULL DEFAULT '[]'"],
+    ['amp_draw',            'ALTER TABLE mods ADD COLUMN amp_draw REAL'],
   ];
   for (const [col, sql] of modWarrantyCols) {
     if (!modCols.includes(col)) db.prepare(sql).run();

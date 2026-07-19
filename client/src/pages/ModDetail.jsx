@@ -11,7 +11,7 @@ const STATUSES = ['Researching','Ordered','In_Transit','Installed','Removed']
 const EMPTY_FORM = {
   part_name: '', part_number: '', brand: '', vendor: '', vendor_url: '',
   category: 'Other', status: 'Researching', purchase_date: '', install_date: '',
-  cost: '', mileage_at_install: '', aux_switches: [],
+  cost: '', mileage_at_install: '', aux_switches: [], amp_draw: '',
   install_notes: '', wiring_notes: '', photos: []
 }
 
@@ -54,6 +54,7 @@ export default function ModDetail({ isNew }) {
           ...data,                 // overlay API fields
           cost: data.cost ?? '',
           mileage_at_install: data.mileage_at_install ?? '',
+          amp_draw: data.amp_draw ?? '',
           aux_switches: auxSwitches,
           photos: Array.isArray(data.photos) ? data.photos : [],
         })
@@ -79,6 +80,7 @@ export default function ModDetail({ isNew }) {
       cost: form.cost !== '' ? parseFloat(form.cost) : null,
       mileage_at_install: form.mileage_at_install !== '' ? parseInt(form.mileage_at_install) : null,
       aux_switches: validSwitches,
+      amp_draw: form.amp_draw !== '' ? parseFloat(form.amp_draw) : null,
     }
     try {
       const url = isNew ? '/api/mods' : `/api/mods/${id}`
@@ -208,6 +210,19 @@ export default function ModDetail({ isNew }) {
         {auxCount > 0 && (
           <div className="card p-5 space-y-4">
             <div className="section-title">AUX Switch Assignments</div>
+
+            <div className="sm:w-1/2">
+              <label className="label">
+                Amp Draw <span className="font-normal text-raptor-muted">(A — powers the capacity planner)</span>
+              </label>
+              <input
+                type="number" min="0" step="0.1"
+                value={form.amp_draw}
+                onChange={e => set('amp_draw', e.target.value)}
+                className="input-field"
+                placeholder="e.g. 6.5"
+              />
+            </div>
 
             {/* Existing switch rows */}
             {Array.isArray(form.aux_switches) && form.aux_switches.length > 0 && (
