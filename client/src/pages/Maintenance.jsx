@@ -335,6 +335,108 @@ function ServiceIntervals({ vehicleId }) {
   )
 }
 
+// ── Service forecast ─────────────────────────────────────────────────────────
+
+function ServiceForecast({ vehicleId }) {
+  const [data, setData] = useState(null)
+  const [expanded, setExpanded] = useState(false)
+
+  useEffect(() => {
+    if (!vehicleId) return
+    fetch(`/api/forecast?vehicle_id=${vehicleId}&months=12`)
+      .then(r => r.ok ? r.json() : null)
+      .then(setData)
+      .catch(() => {})
+  }, [vehicleId])
+
+  if (!data || !data.items?.length) return null
+
+  const money = (v) => v == null ? null : '$' + Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })
+  const fmtDate = (d) => d ? new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—'
+  const shown = expanded ? data.items : data.items.filter(i => i.projectedDate).slice(0, 5)
+
+  return (
+    <div className="card overflow-hidden">
+      <button
+        onClick={() => setExpanded(o => !o)}
+        className="w-full flex items-center justify-between px-5 py-4 hover:bg-raptor-elevated transition-colors text-left"
+      >
+        <div className="flex items-center gap-3 flex-wrap">
+          <svg className="w-4 h-4 text-raptor-accent flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <span className="section-title">Service Forecast</span>
+          {data.summary.overdue > 0 && (
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+              {data.summary.overdue} overdue
+            </span>
+          )}
+          <span className="text-xs text-raptor-muted">
+            {data.summary.dueInHorizon} due in {data.horizonMonths} months
+            {data.summary.forecastCost > 0 && ` · ~${money(data.summary.forecastCost)}`}
+          </span>
+        </div>
+        <svg className={`w-4 h-4 text-raptor-muted transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      <div className="border-t border-raptor-border">
+        {data.milesPerMonth == null ? (
+          <div className="px-5 py-3 text-xs text-raptor-muted">
+            Projections need at least two odometer readings — log fuel, service mileage, or an odometer entry and dates will appear here.
+          </div>
+        ) : (
+          <div className="px-5 py-2 text-xs text-raptor-muted">
+            Based on about {Math.round(data.milesPerMonth).toLocaleString()} miles/month
+            {data.currentMileage ? ` at ${data.currentMileage.toLocaleString()} mi` : ''}.
+          </div>
+        )}
+
+        <div className="divide-y divide-raptor-border">
+          {shown.map(item => (
+            <div key={item.id} className="px-5 py-2.5 flex items-center gap-3 text-sm">
+              <span className="flex-1 min-w-0">
+                <span className="text-raptor-primary font-medium">{item.service_type}</span>
+                {item.projectedDate ? (
+                  <span className="block text-xs text-raptor-muted">
+                    {item.overdue ? 'Overdue now' : `in ${item.daysOut} days`}
+                    {item.milesRemaining != null && ` · ${Math.round(item.milesRemaining).toLocaleString()} mi to go`}
+                    {item.basis === 'time' && ' · time-based'}
+                  </span>
+                ) : (
+                  <span className="block text-xs text-raptor-muted italic">{item.reason}</span>
+                )}
+              </span>
+              {item.estimatedCost != null && (
+                <span className="text-xs text-raptor-secondary flex-shrink-0">~{money(item.estimatedCost)}</span>
+              )}
+              <span className={`text-xs font-medium flex-shrink-0 w-20 text-right ${
+                item.overdue ? 'text-red-500' : item.projectedDate ? 'text-raptor-secondary' : 'text-raptor-muted'
+              }`}>
+                {fmtDate(item.projectedDate)}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {!expanded && data.items.length > shown.length && (
+          <button onClick={() => setExpanded(true)} className="w-full px-5 py-2 text-xs text-raptor-accent hover:underline text-left">
+            Show all {data.items.length} intervals →
+          </button>
+        )}
+        {data.summary.forecastCost > 0 && (
+          <p className="px-5 py-2 text-xs text-raptor-muted border-t border-raptor-border">
+            Cost estimates come from your own service history
+            {data.summary.costKnownFor < data.summary.dueInHorizon &&
+              ` (${data.summary.dueInHorizon - data.summary.costKnownFor} upcoming service${data.summary.dueInHorizon - data.summary.costKnownFor === 1 ? ' has' : 's have'} no prior cost logged)`}.
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 
 const SERVICE_TYPES = [
@@ -544,6 +646,9 @@ export default function Maintenance() {
 
   return (
     <div className="space-y-5">
+      {/* Forward-looking service projection */}
+      <ServiceForecast vehicleId={selectedVehicleId} />
+
       {/* Reminders & Service Intervals */}
       <ServiceIntervals vehicleId={selectedVehicleId} />
 

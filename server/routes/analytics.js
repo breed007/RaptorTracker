@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
+const { mileageTrend, usageRate } = require('../services/mileageStats');
 
 function round2(n) { return Math.round((n + Number.EPSILON) * 100) / 100; }
 
@@ -19,31 +20,9 @@ router.get('/', (req, res) => {
   const uv = db.prepare('SELECT id FROM user_vehicles WHERE id = ?').get(vehicle_id);
   if (!uv) return res.status(404).json({ error: 'Not found' });
 
-  // ── Mileage trend: union of manual readings, fuel odometers, and service mileage ──
-  const points = [];
-  db.prepare('SELECT date, odometer FROM mileage_log WHERE user_vehicle_id = ? AND odometer IS NOT NULL').all(vehicle_id)
-    .forEach(r => points.push({ date: r.date, odometer: r.odometer }));
-  db.prepare('SELECT date, odometer FROM fuel_log WHERE user_vehicle_id = ? AND odometer IS NOT NULL').all(vehicle_id)
-    .forEach(r => points.push({ date: r.date, odometer: r.odometer }));
-  db.prepare('SELECT date_performed AS date, mileage AS odometer FROM maintenance_log WHERE user_vehicle_id = ? AND mileage IS NOT NULL').all(vehicle_id)
-    .forEach(r => points.push({ date: r.date, odometer: r.odometer }));
-
-  // Keep the highest odometer seen per day, then sort ascending
-  const byDay = {};
-  for (const p of points) {
-    if (!byDay[p.date] || p.odometer > byDay[p.date]) byDay[p.date] = p.odometer;
-  }
-  const mileageTrend = Object.keys(byDay).sort().map(date => ({ date, odometer: byDay[date] }));
-
-  // ── Miles per month (from first→last reading) ──
-  let milesPerMonth = null, totalMilesTracked = null;
-  if (mileageTrend.length >= 2) {
-    const first = mileageTrend[0];
-    const last = mileageTrend[mileageTrend.length - 1];
-    const span = monthsBetween(first.date, last.date);
-    totalMilesTracked = Math.max(0, last.odometer - first.odometer);
-    if (span > 0) milesPerMonth = round2(totalMilesTracked / span);
-  }
+  // ── Mileage trend + usage rate (shared with the service forecast) ──
+  const mileageTrendPoints = mileageTrend(db, vehicle_id);
+  const { milesPerMonth, totalMilesTracked } = usageRate(mileageTrendPoints);
 
   // ── Maintenance cost by provider type ──
   const byProviderRaw = db.prepare(`
@@ -65,7 +44,7 @@ router.get('/', (req, res) => {
   `).get(vehicle_id);
 
   res.json({
-    mileageTrend,
+    mileageTrend: mileageTrendPoints,
     milesPerMonth,
     totalMilesTracked,
     maintenanceByProvider,
