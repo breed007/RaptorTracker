@@ -7,6 +7,12 @@ on:
   pull_request:
     branches: [main]
 
+# Several pushes in a row should produce one verdict, not one per commit.
+# A newer push cancels the run still churning on the older one.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
