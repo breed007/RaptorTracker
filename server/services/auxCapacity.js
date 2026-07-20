@@ -31,9 +31,9 @@ const round1 = (n) => Math.round(n * 10) / 10;
  */
 function computeCapacity(db, vehicleId) {
   const uv = db.prepare(`
-    SELECT uv.aux_switch_layout, uv.dismissed_aux_warnings, uv.reclaimed_aux_switches,
+    SELECT uv.dismissed_aux_warnings, uv.reclaimed_aux_switches,
            v.aux_switch_count, v.aux_switch_layout AS ref_layout
-    FROM user_vehicles uv JOIN vehicles v ON uv.vehicleId = v.id
+    FROM user_vehicles uv JOIN vehicles v ON uv.vehicle_id = v.id
     WHERE uv.id = ?
   `).get(vehicleId);
   if (!uv) return null;
@@ -52,7 +52,7 @@ function computeCapacity(db, vehicleId) {
   // Installed/committed mods and their switch assignments
   const mods = db.prepare(`
     SELECT id, part_name, status, amp_draw, aux_switches, aux_switch, aux_label
-    FROM mods WHERE user_vehicleId = ? AND status != 'Removed'
+    FROM mods WHERE user_vehicle_id = ? AND status != 'Removed'
   `).all(vehicleId).map(m => ({
     ...m,
     switches: (() => {
@@ -65,7 +65,7 @@ function computeCapacity(db, vehicleId) {
   // Wishlist items that name a target switch
   const planned = db.prepare(`
     SELECT id, part_name, amp_draw, aux_switch, priority
-    FROM wishlist WHERE user_vehicleId = ?
+    FROM wishlist WHERE user_vehicle_id = ?
   `).all(vehicleId);
 
   const switches = layout.map(slot => {

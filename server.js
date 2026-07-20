@@ -129,7 +129,13 @@ if (fs.existsSync(DIST_DIR)) {
   });
 }
 
-app.listen(PORT, () => {
-  console.log(`RaptorTracker running on http://localhost:${PORT}`);
-  scheduler.start();
-});
+// Only bind a port when run directly. Requiring this file (integration tests)
+// gets the configured app without a listening socket or a live cron scheduler.
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`RaptorTracker running on http://localhost:${PORT}`);
+    scheduler.start();
+  });
+}
+
+module.exports = app;

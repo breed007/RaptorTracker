@@ -31,6 +31,9 @@ jobs:
       - name: Smoke test (schema, migrations, module load)
         run: npm test
 
+      - name: API tests (routes, auth, cross-record behavior)
+        run: npm run test:api
+
       - name: Install client dependencies
         run: npm install --prefix client
 
