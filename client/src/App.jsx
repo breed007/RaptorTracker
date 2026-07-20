@@ -21,6 +21,7 @@ import Logbook from './pages/Logbook'
 import Analytics from './pages/Analytics'
 import Welcome from './pages/Welcome'
 import QuickAdd from './pages/QuickAdd'
+import Outings from './pages/Outings'
 
 function AppRoutes() {
   const { user, authLoading, userVehicles, vehiclesLoaded } = useApp()
@@ -55,6 +56,7 @@ function AppRoutes() {
         <Route path="/wishlist" element={<Wishlist />} />
         <Route path="/fuel" element={<FuelLog />} />
         <Route path="/tires" element={<TireSets />} />
+        <Route path="/outings" element={<Outings />} />
         <Route path="/warranty" element={<Warranty />} />
         <Route path="/tco" element={<TCO />} />
         <Route path="/quick" element={<QuickAdd />} />

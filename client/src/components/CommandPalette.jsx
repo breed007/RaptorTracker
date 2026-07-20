@@ -13,6 +13,7 @@ const PAGES = [
   { title: 'Tire Sets', link: '/tires' },
   { title: 'Wishlist', link: '/wishlist' },
   { title: 'Fuel Log', link: '/fuel' },
+  { title: 'Trail Log', link: '/outings' },
   { title: 'Warranty', link: '/warranty' },
   { title: 'Cost of Ownership', link: '/tco' },
   { title: 'Analytics', link: '/analytics' },

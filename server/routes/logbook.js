@@ -58,6 +58,18 @@ router.get('/', (req, res) => {
     if (t.removed_date) events.push({ date: t.removed_date, type: 'tire', title: `Removed ${t.name}`, detail: 'Tire / wheel set', link: '/tires' });
   });
 
+  db.prepare(`SELECT id, name, date, location, trail_name, difficulty, odometer_start, odometer_end, damage
+              FROM outings WHERE user_vehicle_id = ?`).all(vehicle_id).forEach(o => {
+    const distance = (o.odometer_start != null && o.odometer_end != null)
+      ? Math.max(0, o.odometer_end - o.odometer_start) : null;
+    events.push({
+      date: o.date, type: 'outing',
+      title: o.name,
+      detail: join(o.trail_name || o.location, o.difficulty, miles(distance), o.damage ? 'damage noted' : null),
+      link: '/outings',
+    });
+  });
+
   db.prepare(`SELECT warranty_name, provider, start_date, purchase_date FROM vehicle_warranties WHERE user_vehicle_id = ?`).all(vehicle_id).forEach(w => {
     const date = w.start_date || w.purchase_date;
     if (!date) return;

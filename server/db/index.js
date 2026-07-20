@@ -222,6 +222,31 @@ function runMigrations(db) {
       created_at TEXT DEFAULT (datetime('now'))
     );
 
+    -- Trail / outing log: how the truck actually gets used. Everything else in
+    -- the app records what was done *to* the vehicle; this records the driving.
+    CREATE TABLE IF NOT EXISTS outings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_vehicle_id INTEGER NOT NULL REFERENCES user_vehicles(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      date TEXT NOT NULL,
+      end_date TEXT,
+      location TEXT DEFAULT '',
+      trail_name TEXT DEFAULT '',
+      difficulty TEXT DEFAULT '',
+      terrain TEXT DEFAULT '',
+      odometer_start INTEGER,
+      odometer_end INTEGER,
+      tire_psi_front REAL,
+      tire_psi_rear REAL,
+      tire_set_id INTEGER REFERENCES tire_sets(id) ON DELETE SET NULL,
+      companions TEXT DEFAULT '',
+      conditions TEXT DEFAULT '',
+      damage TEXT DEFAULT '',
+      notes TEXT DEFAULT '',
+      photos TEXT NOT NULL DEFAULT '[]',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
     -- Owner-maintained spec sheet (fluid capacities, torque values, bulb sizes…).
     -- Deliberately per-vehicle and user-supplied: RaptorTracker links to Ford's
     -- official documentation rather than reproducing copyrighted service data.
