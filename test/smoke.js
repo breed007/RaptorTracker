@@ -39,7 +39,7 @@ try {
   const expectedTables = [
     'vehicles', 'user_vehicles', 'mods', 'maintenance_log',
     'vehicle_warranties', 'service_intervals', 'wishlist', 'fuel_log',
-    'app_settings', 'sent_reminders', 'tire_sets', 'mileage_log',
+    'app_settings', 'sent_reminders', 'tire_sets', 'mileage_log', 'documents',
   ];
   const tables = new Set(db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(r => r.name));
   for (const t of expectedTables) check(`table ${t}`, () => { if (!tables.has(t)) throw new Error('missing'); });
@@ -59,6 +59,7 @@ try {
     ['wishlist', 'amp_draw'],
     ['wishlist', 'aux_switch'],
     ['user_vehicles', 'mod_budget_monthly'],
+    ['mods', 'attachments'],
   ];
   for (const [t, c] of expectedCols) check(`column ${t}.${c}`, () => { if (!hasCol(t, c)) throw new Error('missing'); });
 
@@ -95,7 +96,7 @@ try {
     'routes/upload', 'routes/summary', 'routes/export', 'routes/vin', 'routes/modTransfer',
     'routes/vehicleTransfer', 'routes/intervals', 'routes/wishlist', 'routes/fuel',
     'routes/warranty', 'routes/tco', 'routes/notifications', 'routes/tires', 'routes/recalls',
-    'routes/backup', 'routes/logbook', 'routes/mileage', 'routes/analytics', 'routes/search', 'routes/import', 'routes/auxCapacity', 'routes/forecast', 'routes/budget',
+    'routes/backup', 'routes/logbook', 'routes/mileage', 'routes/analytics', 'routes/search', 'routes/import', 'routes/auxCapacity', 'routes/forecast', 'routes/budget', 'routes/documents',
     'services/settings', 'services/mailer', 'services/reminders', 'services/backupArchive', 'services/csvImport', 'services/mileageStats', 'scheduler',
   ];
   for (const m of modules) check(`require ${m}`, () => { require(`../server/${m}`); });

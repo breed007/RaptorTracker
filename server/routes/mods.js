@@ -1,12 +1,33 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const { v4: uuidv4 } = require('uuid');
 const { getDb } = require('../db');
 const router = express.Router();
+
+const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
+
+// Receipts and invoices for a mod — images or PDFs, separate from build photos
+const receiptUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+    filename: (req, file, cb) => cb(null, `modrcpt-${uuidv4()}${path.extname(file.originalname).toLowerCase()}`),
+  }),
+  fileFilter: (req, file, cb) => {
+    const allowed = ['.jpg', '.jpeg', '.png', '.webp', '.tiff', '.tif', '.pdf'];
+    const ok = allowed.includes(path.extname(file.originalname).toLowerCase());
+    cb(ok ? null : new Error('Only images (JPEG, PNG, WEBP, TIFF) and PDF files are allowed'), ok);
+  },
+  limits: { fileSize: 20 * 1024 * 1024 },
+});
 
 function parseMod(m) {
   return {
     ...m,
     photos: JSON.parse(m.photos || '[]'),
     aux_switches: JSON.parse(m.aux_switches || '[]'),
+    attachments: JSON.parse(m.attachments || '[]'),
   };
 }
 
@@ -137,10 +158,51 @@ router.put('/:id', (req, res) => {
 
 router.delete('/:id', (req, res) => {
   const db = getDb();
-  const existing = db.prepare('SELECT id FROM mods WHERE id = ?').get(req.params.id);
+  const existing = db.prepare('SELECT id, photos, attachments FROM mods WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
+
+  // Remove the mod's files so deleting a mod doesn't orphan uploads on disk
+  for (const key of ['photos', 'attachments']) {
+    let list = [];
+    try { list = JSON.parse(existing[key] || '[]'); } catch (_) { list = []; }
+    for (const p of list) fs.unlink(path.join(UPLOAD_DIR, path.basename(p)), () => {});
+  }
+
   db.prepare('DELETE FROM mods WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
+});
+
+// ── Receipts / documents ──────────────────────────────────────────────────────
+
+router.post('/:id/attachments', receiptUpload.array('attachments', 10), (req, res) => {
+  const db = getDb();
+  const existing = db.prepare('SELECT id, attachments FROM mods WHERE id = ?').get(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'Not found' });
+  if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'No files uploaded' });
+
+  const current = JSON.parse(existing.attachments || '[]');
+  const updated = [...current, ...req.files.map(f => `/uploads/${f.filename}`)];
+  db.prepare('UPDATE mods SET attachments = ? WHERE id = ?').run(JSON.stringify(updated), req.params.id);
+  res.json({ attachments: updated });
+});
+
+router.delete('/:id/attachments/:filename', (req, res) => {
+  const db = getDb();
+  const existing = db.prepare('SELECT id, attachments FROM mods WHERE id = ?').get(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'Not found' });
+
+  const filePath = `/uploads/${path.basename(req.params.filename)}`;
+  const updated = JSON.parse(existing.attachments || '[]').filter(p => p !== filePath);
+  fs.unlink(path.join(UPLOAD_DIR, path.basename(req.params.filename)), () => {});
+  db.prepare('UPDATE mods SET attachments = ? WHERE id = ?').run(JSON.stringify(updated), req.params.id);
+  res.json({ attachments: updated });
+});
+
+router.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError || err.message) {
+    return res.status(400).json({ error: err.message });
+  }
+  next(err);
 });
 
 module.exports = router;

@@ -109,6 +109,8 @@ function runMigrations(db) {
     ['warranty_notes',      'ALTER TABLE mods ADD COLUMN warranty_notes TEXT'],
     ['aux_switches',        "ALTER TABLE mods ADD COLUMN aux_switches TEXT NOT NULL DEFAULT '[]'"],
     ['amp_draw',            'ALTER TABLE mods ADD COLUMN amp_draw REAL'],
+    // Receipts / invoices, kept separate from build photos
+    ['attachments',         "ALTER TABLE mods ADD COLUMN attachments TEXT NOT NULL DEFAULT '[]'"],
   ];
   for (const [col, sql] of modWarrantyCols) {
     if (!modCols.includes(col)) db.prepare(sql).run();
@@ -216,6 +218,21 @@ function runMigrations(db) {
       odometer_installed INTEGER,
       odometer_removed INTEGER,
       is_active INTEGER NOT NULL DEFAULT 0,
+      notes TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    -- Vehicle document vault: title, registration card, insurance card, bill of
+    -- sale, and anything else worth keeping with the truck.
+    CREATE TABLE IF NOT EXISTS documents (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_vehicle_id INTEGER NOT NULL REFERENCES user_vehicles(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      doc_type TEXT DEFAULT 'other',
+      file_path TEXT NOT NULL,
+      original_name TEXT DEFAULT '',
+      size_bytes INTEGER,
+      expires_on TEXT,
       notes TEXT DEFAULT '',
       created_at TEXT DEFAULT (datetime('now'))
     );

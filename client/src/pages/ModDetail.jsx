@@ -27,6 +27,8 @@ export default function ModDetail({ isNew }) {
   const [error, setError] = useState('')
   const [showDelete, setShowDelete] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [attachments, setAttachments] = useState([])
+  const [receiptUploading, setReceiptUploading] = useState(false)
 
   useEffect(() => {
     if (isNew) {
@@ -58,6 +60,7 @@ export default function ModDetail({ isNew }) {
           aux_switches: auxSwitches,
           photos: Array.isArray(data.photos) ? data.photos : [],
         })
+        setAttachments(Array.isArray(data.attachments) ? data.attachments : [])
         setLoading(false)
       })
       .catch(() => { navigate('/mods') })
@@ -124,6 +127,28 @@ export default function ModDetail({ isNew }) {
     } catch {
       setError('Upload failed')
     } finally { setUploading(false); e.target.value = '' }
+  }
+
+  const uploadReceipts = async (e) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    setReceiptUploading(true)
+    const fd = new FormData()
+    for (const f of files) fd.append('attachments', f)
+    try {
+      const res = await fetch(`/api/mods/${id}/attachments`, { method: 'POST', body: fd })
+      const data = await res.json()
+      if (res.ok) setAttachments(data.attachments || [])
+      else setError(data.error || 'Upload failed')
+    } catch {
+      setError('Upload failed')
+    } finally { setReceiptUploading(false); e.target.value = '' }
+  }
+
+  const removeReceipt = async (src) => {
+    const filename = src.split('/').pop()
+    const res = await fetch(`/api/mods/${id}/attachments/${filename}`, { method: 'DELETE' })
+    if (res.ok) { const d = await res.json(); setAttachments(d.attachments || []) }
   }
 
   const removePhoto = (index) => {
@@ -331,6 +356,56 @@ export default function ModDetail({ isNew }) {
             </div>
           )}
         </div>
+
+        {/* Receipts & documents — only once the mod exists to attach them to */}
+        {!isNew && (
+          <div className="card p-5">
+            <div className="section-title mb-1">Receipts &amp; Documents</div>
+            <p className="text-xs text-raptor-muted mb-3">
+              Invoices, order confirmations, or install paperwork. Images and PDFs, kept separate from build photos.
+            </p>
+
+            {attachments.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {attachments.map(src => {
+                  const pdf = src.toLowerCase().endsWith('.pdf')
+                  return (
+                    <div key={src} className="relative group">
+                      {pdf ? (
+                        <a href={src} target="_blank" rel="noopener noreferrer"
+                          className="flex flex-col items-center justify-center w-20 h-20 rounded-lg border border-raptor-border bg-raptor-elevated text-raptor-muted hover:text-raptor-accent hover:border-raptor-accent transition-colors gap-1">
+                          <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <span className="text-xs font-medium">PDF</span>
+                        </a>
+                      ) : (
+                        <a href={src} target="_blank" rel="noopener noreferrer"
+                          className="block w-20 h-20 rounded-lg border border-raptor-border overflow-hidden hover:border-raptor-accent transition-colors">
+                          <img src={src} alt="" className="w-full h-full object-cover" />
+                        </a>
+                      )}
+                      <button type="button" onClick={() => removeReceipt(src)}
+                        className="absolute -top-1.5 -right-1.5 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs shadow"
+                        aria-label="Remove receipt">×</button>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            <label className="btn-secondary text-sm cursor-pointer inline-flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+              </svg>
+              {receiptUploading ? 'Uploading…' : 'Attach Receipt'}
+              <input type="file" accept=".jpg,.jpeg,.png,.webp,.tiff,.tif,.pdf" multiple className="sr-only"
+                onChange={uploadReceipts} disabled={receiptUploading} />
+            </label>
+          </div>
+        )}
 
         {error && (
           <div className="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 rounded-lg px-3 py-2">
