@@ -32,6 +32,7 @@ function runMigrations(db) {
     ['dismissed_aux_warnings',    "ALTER TABLE user_vehicles ADD COLUMN dismissed_aux_warnings TEXT NOT NULL DEFAULT '[]'"],
     ['reclaimed_aux_switches',    "ALTER TABLE user_vehicles ADD COLUMN reclaimed_aux_switches TEXT NOT NULL DEFAULT '[]'"],
     ['dismissed_recalls',         "ALTER TABLE user_vehicles ADD COLUMN dismissed_recalls TEXT NOT NULL DEFAULT '[]'"],
+    ['mod_budget_monthly',        'ALTER TABLE user_vehicles ADD COLUMN mod_budget_monthly REAL'],
     // Financing / ownership (for Total Cost of Ownership)
     ['ownership_type',            "ALTER TABLE user_vehicles ADD COLUMN ownership_type TEXT NOT NULL DEFAULT 'owned'"], // owned | loan | lease
     ['loan_lender',              'ALTER TABLE user_vehicles ADD COLUMN loan_lender TEXT'],

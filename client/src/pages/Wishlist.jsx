@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import ConfirmModal from '../components/ConfirmModal'
+import PurchasePlan from '../components/PurchasePlan'
 
 const CATEGORIES = [
   'Lighting', 'Armor', 'Suspension', 'Wheels & Tires', 'Performance',
@@ -409,6 +410,9 @@ export default function Wishlist() {
           Add Item
         </button>
       </div>
+
+      {/* Budget-aware purchase plan */}
+      <PurchasePlan vehicleId={selectedVehicleId} refreshKey={items.length} />
 
       {/* Promote error banner */}
       {promoteError && (
