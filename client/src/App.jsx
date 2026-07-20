@@ -22,6 +22,7 @@ import Analytics from './pages/Analytics'
 import Welcome from './pages/Welcome'
 import QuickAdd from './pages/QuickAdd'
 import Outings from './pages/Outings'
+import Account from './pages/Account'
 
 function AppRoutes() {
   const { user, authLoading, userVehicles, vehiclesLoaded } = useApp()
@@ -63,6 +64,7 @@ function AppRoutes() {
         <Route path="/logbook" element={<Logbook />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/notifications" element={<Notifications />} />
+        <Route path="/account" element={<Account />} />
         <Route path="/export" element={<Export />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -232,8 +232,66 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
     r = await req('GET', `/api/outings?vehicle_id=${vid}`);
     check('its outings go with it', () => eq((r.body?.outings || []).length, 0, 'remaining outings'));
 
+    // --- Password change ---------------------------------------------------
+    r = await req('GET', '/api/auth/me');
+    check('a bootstrap-password install says so', () => {
+      eq(r.status, 200, 'status');
+      eq(r.body.mustChangePassword, true, 'mustChangePassword');
+    });
+
+    r = await req('POST', '/api/auth/password', { current_password: 'wrong', new_password: 'a-much-longer-passphrase' });
+    check('changing the password needs the current one', () => eq(r.status, 401, 'status'));
+
+    r = await req('POST', '/api/auth/password', { current_password: 'testpassword', new_password: 'short' });
+    check('a too-short new password is rejected', () => eq(r.status, 400, 'status'));
+
+    r = await req('POST', '/api/auth/password', { current_password: 'testpassword', new_password: 'changeme-please-now' });
+    check('the placeholder password is rejected', () => eq(r.status, 400, 'status'));
+
+    r = await req('POST', '/api/auth/password', { current_password: 'testpassword', new_password: 'correct-horse-battery-staple' });
+    check('the password can be changed', () => eq(r.status, 200, 'status'));
+
+    r = await req('GET', '/api/auth/me');
+    check('the bootstrap warning clears once a password is set', () =>
+      eq(r.body.mustChangePassword, false, 'mustChangePassword'));
+
+    // The database hash must now win over the .env value entirely.
+    const saved = cookie; cookie = '';
+    r = await req('POST', '/api/auth/login', { username: 'testadmin', password: 'testpassword' });
+    check('the old .env password no longer works', () => eq(r.status, 401, 'status'));
+
+    r = await req('POST', '/api/auth/login', { username: 'testadmin', password: 'correct-horse-battery-staple' });
+    check('the new password works', () => eq(r.status, 200, 'status'));
+
+    // A hash in app_settings must never reach the client.
+    r = await req('GET', '/api/notifications');
+    check('the password hash is not exposed through settings', () => {
+      const body = JSON.stringify(r.body || {});
+      if (/secret_|\$2[aby]\$/.test(body)) throw new Error('a secret leaked into the settings response');
+    });
+    if (!cookie) cookie = saved;
+
     r = await req('POST', '/api/auth/logout');
     check('logout succeeds', () => eq(r.status, 200, 'status'));
+
+    // --- Rate limiting -----------------------------------------------------
+    // Off by default under test so the suite above can drive login freely;
+    // switched on here so the protection itself is actually exercised.
+    process.env.RATE_LIMIT_IN_TEST = 'true';
+    cookie = '';
+    let limited = 0, attempts = 0;
+    for (let i = 0; i < 14; i++) {
+      const res = await req('POST', '/api/auth/login', { username: 'testadmin', password: `bad-${i}` });
+      attempts++;
+      if (res.status === 429) { limited++; }
+    }
+    check('repeated failed sign-ins get rate limited', () => {
+      if (!limited) throw new Error(`14 bad attempts produced no 429 (all ${attempts} allowed)`);
+    });
+
+    r = await req('POST', '/api/auth/login', { username: 'testadmin', password: 'correct-horse-battery-staple' });
+    check('the lockout applies even to the correct password', () => eq(r.status, 429, 'status'));
+    process.env.RATE_LIMIT_IN_TEST = '';
   } catch (e) {
     failures++;
     results.push(`  ✗ test run aborted — ${e.message}`);

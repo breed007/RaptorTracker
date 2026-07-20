@@ -12,7 +12,8 @@ if (!fs.existsSync(DB_PATH_EARLY)) {
   require('./server/db/init.js');
 }
 
-const { requireAuth, login, logout, me } = require('./server/middleware/auth');
+const { requireAuth, login, logout, me, changePassword, usingBootstrapPassword } = require('./server/middleware/auth');
+const rateLimit = require('express-rate-limit');
 const vehiclesRouter = require('./server/routes/vehicles');
 const userVehiclesRouter = require('./server/routes/userVehicles');
 const modsRouter = require('./server/routes/mods');
@@ -64,6 +65,11 @@ if (IS_PROD && !process.env.SESSION_SECRET) {
 }
 const SESSION_SECRET = process.env.SESSION_SECRET || 'raptortracker-dev-insecure-secret';
 
+// install.sh puts the app behind nginx, so req.ip is the proxy unless we say
+// otherwise — and without this every visitor shares one rate-limit bucket,
+// meaning one attacker could lock the owner out. Default to one proxy hop.
+app.set('trust proxy', process.env.TRUST_PROXY ? Number(process.env.TRUST_PROXY) || process.env.TRUST_PROXY : 1);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -81,10 +87,24 @@ app.use(session({
 // Serve uploaded files
 app.use('/uploads', express.static(UPLOAD_DIR));
 
+// A single shared password with no throttle is brute-forceable, and the
+// install docs walk people through exposing this to the internet. Disabled
+// under test so the suite can drive login freely.
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  skip: () => process.env.NODE_ENV === 'test' && process.env.RATE_LIMIT_IN_TEST !== 'true',
+  message: { error: 'Too many sign-in attempts. Try again in 15 minutes.' },
+});
+
 // Auth endpoints (no requireAuth guard)
-app.post('/api/auth/login', login);
+app.post('/api/auth/login', loginLimiter, login);
 app.post('/api/auth/logout', logout);
 app.get('/api/auth/me', me);
+app.post('/api/auth/password', requireAuth, changePassword);
 
 // All other API routes require auth
 app.use('/api', requireAuth);
@@ -134,6 +154,12 @@ if (fs.existsSync(DIST_DIR)) {
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`RaptorTracker running on http://localhost:${PORT}`);
+    try {
+      if (usingBootstrapPassword()) {
+        console.warn('WARNING: still signing in with the password from .env.');
+        console.warn('         Set a real one under Settings -> Account; .env is then ignored.');
+      }
+    } catch (_) { /* database not ready yet — the app will say so on first login */ }
     scheduler.start();
   });
 }

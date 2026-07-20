@@ -21,6 +21,7 @@ const PAGES = [
   { title: 'Notifications', link: '/notifications' },
   { title: 'Reference', link: '/vehicles' },
   { title: 'Export & Backup', link: '/export' },
+  { title: 'Account', link: '/account' },
   { title: 'Quick Add', link: '/quick' },
 ]
 

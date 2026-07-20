@@ -27,13 +27,17 @@ function setSetting(key, value) {
   `).run(key, value == null ? null : String(value));
 }
 
+// Keys under `secret_` never leave the server — routes hand the result of
+// this straight to the client, and the admin password hash lives in here.
+const isSecret = (key) => key.startsWith('secret_');
+
 function getAllSettings() {
   const out = { ...DEFAULTS };
   const rows = getDb().prepare('SELECT key, value FROM app_settings').all();
-  for (const r of rows) out[r.key] = r.value;
+  for (const r of rows) if (!isSecret(r.key)) out[r.key] = r.value;
   return out;
 }
 
 const isTrue = (v) => v === 'true' || v === true || v === 1;
 
-module.exports = { getSetting, setSetting, getAllSettings, isTrue, DEFAULTS };
+module.exports = { getSetting, setSetting, getAllSettings, isTrue, isSecret, DEFAULTS };

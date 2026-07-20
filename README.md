@@ -155,6 +155,29 @@ Each theme has a light/dark toggle, except FordRaptorForum, which is always dark
 
 ---
 
+## Security
+
+RaptorTracker is a single-owner app with one password, so a few things matter
+if you put it anywhere the internet can reach:
+
+- **Change the password in the app.** `ADMIN_PASSWORD` in `.env` only bootstraps
+  the first sign-in. Set a real one under **Settings → Account** and it's stored
+  as a bcrypt hash in the database — the `.env` value is then ignored. The app
+  warns on every start until you do.
+- **Sign-in attempts are rate limited** to 10 failures per 15 minutes per IP.
+  Successful sign-ins don't count against the limit.
+- **Set `TRUST_PROXY`** to the number of reverse proxies in front of the app
+  (`install.sh` writes `1`). Without it, the rate limiter sees the proxy's
+  address instead of the real client, and one attacker can lock you out.
+- **Serve it over HTTPS** and set `COOKIE_SECURE=true` so the session cookie
+  isn't sent in the clear.
+
+There is no password reset by email. If you lose the password, delete the
+`secret_admin_password_hash` row from the `app_settings` table and the `.env`
+value takes over again.
+
+---
+
 ## Prerequisites
 
 | Requirement | Version | Notes |
@@ -327,8 +350,9 @@ RaptorTracker/
 ## Tests
 
 ```bash
-npm test          # smoke test: schema, migrations, every module loads
-npm run test:api  # boots the app against a throwaway DB and exercises the routes
+npm test              # smoke test: schema, migrations, every module loads
+npm run test:api      # boots the app against a throwaway DB and exercises the routes
+npm run test:upgrade  # rebuilds every released tag's database and migrates it to HEAD
 ```
 
 Both run against a temporary database in your system temp directory and never

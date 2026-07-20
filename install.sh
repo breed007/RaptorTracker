@@ -414,6 +414,10 @@ NODE_ENV=production
 # proxies plain HTTP on localhost, so false is correct here).
 COOKIE_SECURE=false
 
+# This install puts one reverse proxy in front of the app, so per-IP sign-in
+# rate limiting counts the real client rather than the proxy.
+TRUST_PROXY=1
+
 # Optional — email reminders. Fill in to enable, then turn reminders on
 # under Notifications in the app. Leave SMTP_HOST blank to keep email off.
 SMTP_HOST=

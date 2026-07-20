@@ -48,14 +48,17 @@ export function AppProvider({ children }) {
 
   const effectiveDarkMode = theme === 'fordraptorforum' ? true : darkMode
 
+  // Also re-run after a password change, so the "still on the .env password"
+  // banner clears without a reload.
+  const refreshUser = async () => {
+    try {
+      const r = await fetch('/api/auth/me')
+      setUser(r.ok ? await r.json() : null)
+    } catch (_) { /* leave the current user in place */ }
+  }
+
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        setUser(data)
-        setAuthLoading(false)
-      })
-      .catch(() => setAuthLoading(false))
+    refreshUser().finally(() => setAuthLoading(false))
   }, [])
 
   const refreshVehicles = async () => {
@@ -95,7 +98,7 @@ export function AppProvider({ children }) {
 
   return (
     <AppContext.Provider value={{
-      user, setUser, authLoading,
+      user, setUser, authLoading, refreshUser,
       userVehicles, setUserVehicles, vehiclesLoaded, refreshVehicles,
       selectedVehicleId, selectedVehicle,
       selectVehicle, logout,
