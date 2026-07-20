@@ -121,7 +121,7 @@ export default function Login() {
       </div>
 
       <footer className="py-4 w-full flex items-center justify-between gap-4 max-w-sm">
-        <p className="text-xs text-raptor-muted">© Copyright breed breed007@gmail.com 2026</p>
+        <p className="text-xs text-raptor-muted">© 2026 breed007 · MIT licensed</p>
         <a
           href="https://github.com/breed007/RaptorTracker"
           target="_blank"

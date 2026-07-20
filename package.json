@@ -1,6 +1,7 @@
 {
   "name": "raptortracker",
   "version": "0.8.0",
+  "license": "MIT",
   "description": "Ford Raptor vehicle modification tracker",
   "main": "server.js",
   "engines": {

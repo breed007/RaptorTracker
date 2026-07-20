@@ -69,7 +69,7 @@ export default function Layout({ children }) {
 
         <footer className="px-4 lg:px-6 py-3 border-t border-raptor-border flex items-center justify-between gap-4">
           <p className="text-xs text-raptor-muted">
-            © Copyright breed breed007@gmail.com 2026
+            © 2026 breed007 · MIT licensed
           </p>
           <a
             href="https://github.com/breed007/RaptorTracker"

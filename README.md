@@ -389,6 +389,6 @@ sudo bash /opt/raptortracker/uninstall.sh
 
 ## License
 
-Personal / private use. All rights reserved.
+[MIT](LICENSE). Fork it, change it, run it however you want.
 
-© Copyright breed breed007@gmail.com 2026
+© 2026 [breed007](https://github.com/breed007)
