@@ -12,7 +12,8 @@
     "build": "cd client && npm run build",
     "db:init": "node server/db/init.js",
     "test": "node test/smoke.js",
-    "test:api": "node test/api.js"
+    "test:api": "node test/api.js",
+    "test:upgrade": "node test/upgrade.js"
   },
   "dependencies": {
     "adm-zip": "^0.5.16",

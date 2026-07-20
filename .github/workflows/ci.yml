@@ -25,6 +25,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0   # tags are the fixtures for the upgrade tests
 
       - name: Use Node ${{ matrix.node }}
         uses: actions/setup-node@v5
@@ -39,6 +41,11 @@ jobs:
 
       - name: API tests (routes, auth, cross-record behavior)
         run: npm run test:api
+
+      # Needs full history: it rebuilds each released tag's schema and migrates
+      # it forward, so a shallow clone would find no tags to test against.
+      - name: Upgrade tests (every released tag -> HEAD)
+        run: npm run test:upgrade
 
       - name: Install client dependencies
         run: npm install --prefix client

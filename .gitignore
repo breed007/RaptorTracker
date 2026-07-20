@@ -9,3 +9,6 @@ client/dist/
 *.log
 .DS_Store
 .claude/
+
+# Scratch dir used by test/upgrade.js
+.upgrade-stage/
