@@ -2,7 +2,7 @@
 
 **Ford Raptor Build Tracker** — a self-hosted web app for tracking modifications, maintenance, AUX switch assignments, warranties, fuel economy, and build costs across one or more Ford Raptors.
 
-> Version `0.7.0` · [GitHub](https://github.com/breed007/RaptorTracker) · [Changelog](CHANGELOG.md)
+> Version `0.8.0` · [GitHub](https://github.com/breed007/RaptorTracker) · [Changelog](CHANGELOG.md)
 
 ---
 
@@ -67,6 +67,12 @@
 - Damage notes link straight to logging the repair
 - Outings appear in the unified logbook, and one that ends past your recorded odometer bumps the vehicle's mileage
 - Trip totals report how many outings lack odometer readings rather than counting unknown miles as zero
+
+### Share Your Build
+- Turns your installed mods into a list you can paste straight into a forum post or signature
+- **BBCode** (FordRaptorForum and most vBulletin/XenForo boards), **Markdown** (Reddit, GitHub, Discord), or plain text
+- Grouped by category, with optional part numbers, vendor links, and AUX switch assignments
+- Only mods marked *Installed* appear. Your VIN, purchase price, and insurance details are never included, and **prices are off by default** — a build list is public, what you spent usually isn't
 
 ### Wishlist & Budget
 - A separate list for planned purchases, with priority, target budget, vendor links, and notes

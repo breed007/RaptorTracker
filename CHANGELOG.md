@@ -4,6 +4,35 @@ All notable changes to RaptorTracker are documented here.
 
 ---
 
+## [v0.8.0] — 2026-07-20
+
+**"Show and Tell"** — the first release aimed at people who don't own this app yet.
+
+### New Features
+
+#### Share your build
+- Renders your installed mods as a list you can paste directly into a forum post or signature, in **BBCode**, **Markdown**, or **plain text**.
+- Grouped by category the way people describe a build, with optional part numbers, vendor links, and **AUX switch assignments** — the part of a Raptor build list nothing else can generate.
+- Only mods marked *Installed* are eligible. The query selects a fixed set of safe columns, so VIN, purchase price, seller, and insurance details cannot appear.
+- **Prices are opt-in and off by default.** A build list is public; what you spent usually isn't.
+
+### Security
+
+- **Sign-in attempts are now rate limited** — 10 failures per 15 minutes per IP address. Successful sign-ins don't count against the limit. Previously there was no throttle at all on an app whose install docs describe putting it on a routable server.
+- **Passwords are stored as a bcrypt hash** in the database. `ADMIN_PASSWORD` in `.env` now only bootstraps the first sign-in; once you set a password in the app, the `.env` value is ignored entirely.
+- **New Settings → Account page** to change your password without an SSH session and a restart. The server warns on every start until you've set one.
+- **New `TRUST_PROXY` setting** (written automatically by `install.sh`). Behind a reverse proxy without it, rate limiting sees the proxy's address instead of the real client — meaning one attacker could lock the owner out. 
+- Settings keys prefixed `secret_` are filtered out of the settings API, which routes hand straight to the client.
+- Replaced the previous "constant-time" login comparison, which hashed the expected password, compared against it, discarded the result, and then did a plain `===` anyway. Username and password now both use a hash-then-`timingSafeEqual` comparison, and both are evaluated before either can short-circuit.
+
+### Testing
+
+- **New upgrade test suite** (`npm run test:upgrade`). For every released tag it rebuilds a database using that version's own schema and migrations, seeds it, runs the current migrations over it, and asserts every field survived, no rows were dropped or duplicated, the schema is complete, and a second run is a no-op. All seven tags pass.
+- This closes the gap that let v0.7.0's fresh-install bug through: the existing suites only ever started from an empty database, so "I have years of data and I just ran git pull" — the path most owners take — was completely untested.
+- The suite was verified to actually fail by introducing a migration that deletes a row.
+
+---
+
 ## [v0.7.0] — 2026-07-19
 
 **"Plan & Prove"** — v0.6.0 made the app usable by someone who didn't build it. This one makes it answer questions instead of just storing answers.
