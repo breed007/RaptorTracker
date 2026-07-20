@@ -4,6 +4,61 @@ All notable changes to RaptorTracker are documented here.
 
 ---
 
+## [v0.7.0] — 2026-07-19
+
+**"Plan & Prove"** — v0.6.0 made the app usable by someone who didn't build it. This one makes it answer questions instead of just storing answers.
+
+### New Features
+
+#### AUX capacity planner
+- The AUX panel now does electrical math: what each switch is fused for, what's already hanging on it, what the wishlist would add, and how much headroom is left.
+- Switches are flagged **tight** past 80% of the fuse rating and **over** above it.
+- A mod with no recorded amp draw makes the switch report *unknown*, not *fine*. The planner will not imply a circuit is safe when it has no idea.
+
+#### Maintenance forecasting
+- Service intervals project forward from your actual driving rate, so "due in 3,400 miles" becomes a date you can plan around.
+- Forecasts are suppressed rather than guessed when there isn't enough mileage history to establish a rate.
+
+#### Budget mode
+- Set a monthly modification budget and see committed spend, remaining runway, and which wishlist items fit inside it.
+
+#### Receipts and document vault
+- Attach receipts and PDFs to mods and service records.
+- A vault for the documents that live in a glovebox: registration, insurance, window sticker, warranty paperwork — with expiry tracking for the ones that lapse.
+
+#### Reference library
+- Owner-facing spec sheets per generation, sourced from public data, with links out to Ford's own documentation rather than copies of it.
+
+#### Trail log
+- Every other page tracks what's been done *to* the truck. The trail log records **using** it: trail, difficulty, terrain, aired-down PSI, tire set, who came along, damage, and photos.
+- Outings join the unified logbook timeline, and damage notes link straight to logging a repair.
+- An outing that ends past your recorded odometer bumps the vehicle's mileage.
+- Trip summaries report how many outings lack odometer readings instead of quietly counting unknown miles as zero.
+
+#### Camera-first capture
+- Quick Add's capture tab opens the camera directly on a phone, with a separate path for picking an existing photo or PDF.
+
+#### Vehicle overview
+- The dashboard is now a vehicle home page — one "Needs Attention" list and one "Coming Up" list — instead of a wall of competing alert cards.
+- It loads in a single request that reuses the same reminder and capacity code as the email digest, so the dashboard and your inbox cannot disagree.
+
+#### CSV import
+- Import fuel, maintenance, mods, specs, and wishlist history from a spreadsheet.
+- Rows whose column count doesn't match the header are **rejected with an explanation** rather than silently imported shifted — the failure mode where an unquoted `$1,299.00` quietly corrupts a row.
+
+### Testing
+
+- New **route-level API test suite** (`npm run test:api`) that boots the real app against a throwaway database, authenticates over HTTP, and drives the endpoints an owner actually touches.
+- CI runs the smoke test, the API suite, and the client build on Node 20.19 and 22.
+
+### Bug Fixes
+
+- **Fresh installs could not initialize the database.** Migrations altered the `wishlist` table before creating it, so a brand-new install failed with `no such table: wishlist`. Table creation now runs before every `ALTER`. This affected anyone installing from scratch.
+- **The AUX capacity planner returned a 500 on every request**, taking the dashboard overview down with it. Its query referenced a column that doesn't exist and joined on camelCase names against snake_case columns.
+- Deleting a vehicle now reliably removes its outings along with it.
+
+---
+
 ## [v0.6.0] — 2026-07-01
 
 **"Field & Focus"** — the release that makes RaptorTracker work for someone who isn't the person who built it.

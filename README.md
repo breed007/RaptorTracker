@@ -2,7 +2,7 @@
 
 **Ford Raptor Build Tracker** — a self-hosted web app for tracking modifications, maintenance, AUX switch assignments, warranties, fuel economy, and build costs across one or more Ford Raptors.
 
-> Version `0.6.0` · [GitHub](https://github.com/breed007/RaptorTracker) · [Changelog](CHANGELOG.md)
+> Version `0.7.0` · [GitHub](https://github.com/breed007/RaptorTracker) · [Changelog](CHANGELOG.md)
 
 ---
 
@@ -37,6 +37,8 @@
 - Shows which switches are factory-consumed versus available
 - Assign mods to switches with custom per-switch labels
 - Gen 3.5 marks AUX 1 as factory-consumed by the bumper fogs; assign a mod to it directly, or mark it available to use like any other switch (reversible per vehicle)
+- **Capacity planning** — each switch shows its fuse rating, current draw, planned draw from the wishlist, and remaining headroom, flagged *tight* past 80% of the fuse and *over* above it
+- A mod with no recorded amp draw makes its switch report **unknown**, not *fine*. The planner won't imply a circuit is safe when it has no idea.
 
 ### Maintenance Log & Service Intervals
 - Record service events with type, date, mileage, vendor, cost, and notes
@@ -45,6 +47,7 @@
 - 20+ service-type presets (oil change, spark plugs, differential service, transmission, tires, battery, and more)
 - Set mileage- or time-based intervals for recurring services (oil every 5,000 mi, diff fluid every 30,000 mi, and so on)
 - The dashboard shows a Due Soon / Overdue card for anything approaching or past its interval, measured against the most recent service of that type
+- **Forecasting** projects mileage-based intervals against how fast you actually drive, turning "due in 3,400 mi" into a date. With too little mileage history to establish a rate, the forecast is withheld rather than guessed.
 
 ### Warranty Tracking
 - Track extended and vehicle warranties: provider, term in years and miles, start and expiration dates, contract number, claims phone, cost, and deductible
@@ -58,10 +61,22 @@
 - Calculates MPG per fill-up and plots the trend over time
 - Compares your average against the factory EPA rating for your generation
 
-### Wishlist
+### Trail Log
+- Everything else here tracks what's been done *to* the truck; this records using it
+- Log an outing with trail, location, difficulty, terrain, aired-down PSI, tire set, who came along, and photos
+- Damage notes link straight to logging the repair
+- Outings appear in the unified logbook, and one that ends past your recorded odometer bumps the vehicle's mileage
+- Trip totals report how many outings lack odometer readings rather than counting unknown miles as zero
+
+### Wishlist & Budget
 - A separate list for planned purchases, with priority, target budget, vendor links, and notes
 - One button promotes a wishlist item into the active mod tracker once you buy it
 - Compares planned spend against actual spend
+- Set a **monthly mod budget** to see committed spend, remaining runway, and which wishlist items fit inside it
+
+### Documents & Receipts
+- Attach receipts and PDFs to individual mods and service records
+- A vault for the paperwork that lives in the glovebox — registration, insurance, window sticker, warranty contracts — with expiry tracking for the ones that lapse
 
 ### My Garage
 - Multiple vehicles per account, each with its own isolated data
@@ -105,11 +120,9 @@
 - Tire spend rolls into Total Cost of Ownership
 
 ### Dashboard
-- Installed mods, mod spend, in-transit, and on-order counts
-- Maintenance spend total and last-service summary
-- Spend-by-category chart
-- Recent mods and recent maintenance
-- Service-interval and warranty alerts
+- A vehicle home page rather than a wall of alert cards: one **Needs Attention** list and one **Coming Up** list
+- Mod, spend, and maintenance summaries with a spend-by-category chart
+- Loads in a single request that reuses the same reminder and capacity code as the email digest, so the dashboard and your inbox can't disagree
 
 ### Reference Library
 Read-only factory specs for the full Ford Raptor lineup:
@@ -123,6 +136,7 @@ Engine, transmission, suspension, towing, payload, and AUX panel specs per gener
 ### Exports
 - PDF build sheet with vehicle info, installed mods, maintenance history, and spend breakdown (optionally with the window sticker)
 - CSV export of any record type — mods, maintenance, fuel, warranties, tire sets, wishlist
+- **CSV import** for fuel, maintenance, mods, specs, and wishlist history. Rows whose column count doesn't match the header are rejected with an explanation rather than imported shifted.
 
 ### Vehicle Import / Export
 - Export a vehicle to a ZIP archive (metadata, photos, window sticker, mods, maintenance)
@@ -299,11 +313,27 @@ RaptorTracker/
 │   │       └── AppContext.jsx # Auth, vehicle selection, theme
 │   ├── vite.config.js
 │   └── tailwind.config.js
+├── test/
+│   ├── smoke.js               # Schema, migrations, module load
+│   └── api.js                 # Route-level integration tests
 ├── install.sh                 # Linux server installer
 ├── uninstall.sh
 ├── CHANGELOG.md
 └── package.json
 ```
+
+---
+
+## Tests
+
+```bash
+npm test          # smoke test: schema, migrations, every module loads
+npm run test:api  # boots the app against a throwaway DB and exercises the routes
+```
+
+Both run against a temporary database in your system temp directory and never
+touch `data/`. They need `better-sqlite3` built for your Node version, so use
+one of the versions CI targets (Node 20.19 or 22).
 
 ---
 
