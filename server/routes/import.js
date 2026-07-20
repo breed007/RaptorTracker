@@ -38,6 +38,11 @@ const INSERTS = {
     cols: ['part_name', 'brand', 'part_number', 'vendor', 'vendor_url', 'category', 'status', 'purchase_date', 'install_date', 'cost', 'mileage_at_install', 'install_notes'],
     finalize: (r) => r,
   },
+  specs: {
+    table: 'vehicle_specs',
+    cols: ['category', 'name', 'value', 'unit', 'source', 'notes'],
+    finalize: (r) => ({ ...r, category: r.category || 'other' }),
+  },
   wishlist: {
     table: 'wishlist',
     cols: ['part_name', 'brand', 'part_number', 'category', 'estimated_cost', 'priority', 'vendor_name', 'vendor_url', 'notes'],

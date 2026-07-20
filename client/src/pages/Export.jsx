@@ -34,6 +34,7 @@ export default function Export() {
     { id: 'maintenance', label: 'Maintenance' },
     { id: 'mods', label: 'Modifications' },
     { id: 'wishlist', label: 'Wishlist' },
+    { id: 'specs', label: 'Spec Sheet' },
   ]
 
   const runImport = async (file, commit) => {
@@ -176,6 +177,7 @@ export default function Export() {
     { type: 'warranties', label: 'Warranties' },
     { type: 'tires', label: 'Tire Sets' },
     { type: 'wishlist', label: 'Wishlist' },
+    { type: 'specs', label: 'Spec Sheet' },
   ]
 
   const handleCsv = (type) => {

@@ -141,6 +141,18 @@ const TYPES = {
       install_notes:      { aliases: ['install_notes', 'notes', 'note', 'comment'], parse: toText },
     },
   },
+  specs: {
+    label: 'Spec sheet',
+    table: 'vehicle_specs',
+    fields: {
+      name:     { aliases: ['name', 'spec', 'item', 'label', 'description'], parse: toText, required: true },
+      value:    { aliases: ['value', 'spec_value', 'amount', 'figure'], parse: toText },
+      unit:     { aliases: ['unit', 'units', 'uom'], parse: toText },
+      category: { aliases: ['category', 'cat', 'group', 'section'], parse: toText },
+      source:   { aliases: ['source', 'reference', 'ref', 'manual'], parse: toText },
+      notes:    { aliases: ['notes', 'note', 'comment'], parse: toText },
+    },
+  },
   wishlist: {
     label: 'Wishlist',
     table: 'wishlist',
@@ -161,6 +173,7 @@ const TYPES = {
 // Constrained columns get snapped to a legal value rather than rejected.
 const MOD_CATEGORIES = ['Armor', 'Audio', 'Bed_Accessories', 'Bumpers', 'Electrical', 'Engine', 'Interior', 'Lighting', 'Performance', 'Recovery', 'Suspension', 'Tires_Wheels', 'Other'];
 const MOD_STATUSES = ['Researching', 'Ordered', 'In_Transit', 'Installed', 'Removed'];
+const SPEC_CATEGORIES = ['fluids', 'capacities', 'torque', 'electrical', 'tires', 'dimensions', 'other'];
 
 function snap(value, allowed, fallback) {
   if (!value) return fallback;
@@ -250,6 +263,9 @@ function analyze(type, text) {
         p.startsWith('deal') ? 'dealership' :
         p.startsWith('ind') || p.startsWith('shop') ? 'independent' :
         p.startsWith('own') || p.startsWith('self') || p.startsWith('diy') ? 'owner' : null;
+    }
+    if (type === 'specs') {
+      out.category = snap(out.category, SPEC_CATEGORIES, 'other');
     }
     if (type === 'wishlist' && out.priority) {
       const p = String(out.priority).toLowerCase();

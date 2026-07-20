@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import SpecSheet from '../components/SpecSheet'
 
 export default function Vehicles() {
   const [vehicles, setVehicles] = useState([])
@@ -16,6 +17,9 @@ export default function Vehicles() {
         <h1 className="page-title">Raptor Reference</h1>
         <p className="text-raptor-muted text-sm mt-1">Factory specs for the complete Ford Raptor lineup — read-only reference data.</p>
       </div>
+
+      <SpecSheet />
+
 
       <div className="space-y-3">
         {vehicles.map(v => (

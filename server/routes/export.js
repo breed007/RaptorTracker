@@ -296,6 +296,11 @@ const CSV_TYPES = {
       'term_miles', 'expiration_date', 'deductible', 'cost', 'contract_number', 'claims_phone', 'notes'],
     order: 'created_at DESC',
   },
+  specs: {
+    table: 'vehicle_specs',
+    cols: ['category', 'name', 'value', 'unit', 'source', 'notes'],
+    order: 'category, name',
+  },
   tires: {
     table: 'tire_sets',
     cols: ['name', 'tire_brand', 'tire_model', 'tire_size', 'wheel_brand', 'wheel_size', 'quantity',

@@ -222,6 +222,21 @@ function runMigrations(db) {
       created_at TEXT DEFAULT (datetime('now'))
     );
 
+    -- Owner-maintained spec sheet (fluid capacities, torque values, bulb sizes…).
+    -- Deliberately per-vehicle and user-supplied: RaptorTracker links to Ford's
+    -- official documentation rather than reproducing copyrighted service data.
+    CREATE TABLE IF NOT EXISTS vehicle_specs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_vehicle_id INTEGER NOT NULL REFERENCES user_vehicles(id) ON DELETE CASCADE,
+      category TEXT DEFAULT 'other',
+      name TEXT NOT NULL,
+      value TEXT DEFAULT '',
+      unit TEXT DEFAULT '',
+      source TEXT DEFAULT '',
+      notes TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
     -- Vehicle document vault: title, registration card, insurance card, bill of
     -- sale, and anything else worth keeping with the truck.
     CREATE TABLE IF NOT EXISTS documents (

@@ -39,7 +39,7 @@ try {
   const expectedTables = [
     'vehicles', 'user_vehicles', 'mods', 'maintenance_log',
     'vehicle_warranties', 'service_intervals', 'wishlist', 'fuel_log',
-    'app_settings', 'sent_reminders', 'tire_sets', 'mileage_log', 'documents',
+    'app_settings', 'sent_reminders', 'tire_sets', 'mileage_log', 'documents', 'vehicle_specs',
   ];
   const tables = new Set(db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(r => r.name));
   for (const t of expectedTables) check(`table ${t}`, () => { if (!tables.has(t)) throw new Error('missing'); });
@@ -96,7 +96,7 @@ try {
     'routes/upload', 'routes/summary', 'routes/export', 'routes/vin', 'routes/modTransfer',
     'routes/vehicleTransfer', 'routes/intervals', 'routes/wishlist', 'routes/fuel',
     'routes/warranty', 'routes/tco', 'routes/notifications', 'routes/tires', 'routes/recalls',
-    'routes/backup', 'routes/logbook', 'routes/mileage', 'routes/analytics', 'routes/search', 'routes/import', 'routes/auxCapacity', 'routes/forecast', 'routes/budget', 'routes/documents',
+    'routes/backup', 'routes/logbook', 'routes/mileage', 'routes/analytics', 'routes/search', 'routes/import', 'routes/auxCapacity', 'routes/forecast', 'routes/budget', 'routes/documents', 'routes/specs',
     'services/settings', 'services/mailer', 'services/reminders', 'services/backupArchive', 'services/csvImport', 'services/mileageStats', 'scheduler',
   ];
   for (const m of modules) check(`require ${m}`, () => { require(`../server/${m}`); });
@@ -120,6 +120,13 @@ try {
     if (row.date !== '2025-12-04') throw new Error(`date parsed as ${row.date}`);
     if (row.total_cost !== 90.63) throw new Error(`total parsed as ${row.total_cost}`);
     if (row.station !== 'Shell, Main St') throw new Error(`station parsed as ${row.station}`);
+  });
+
+  check('csv import handles spec sheets', () => {
+    const { analyze } = require('../server/services/csvImport');
+    const r = analyze('specs', 'Spec,Value,Unit,Section\nLug nut torque,150,lb-ft,TORQUE\n');
+    if (r.rows.length !== 1) throw new Error(`expected 1 row, got ${r.rows.length}`);
+    if (r.rows[0].category !== 'torque') throw new Error(`category snapped to ${r.rows[0].category}`);
   });
 
   check('csv import rejects shifted columns', () => {
