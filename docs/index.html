@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RaptorTracker — self-hosted build tracker for Ford Raptors</title>
+<meta name="description" content="Track mods, AUX switch capacity, maintenance, fuel economy, and cost of ownership for your Ford Raptor. Self-hosted, MIT licensed, your data stays on your server.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230f172a'/%3E%3Cpath d='M288 96 160 288h88l-24 128 128-192h-88z' fill='%23FF6B00'/%3E%3C/svg%3E">
+
+<meta property="og:title" content="RaptorTracker">
+<meta property="og:description" content="Self-hosted build tracker for Ford Raptors — mods, AUX switch capacity planning, maintenance forecasting, and cost of ownership.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://breed007.github.io/RaptorTracker/">
+<meta property="og:image" content="https://breed007.github.io/RaptorTracker/screenshots/dashboard.png">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:#0F0F0F; --card:#1A1A1A; --elev:#222; --border:#333;
+    --fg:#fff; --fg2:#AAA; --fg3:#666;
+    --accent:#FF6B00; --accent-hi:#FF8534; --navy:#003478;
+    --sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+    --display:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);
+    line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  }
+  a{color:var(--accent);text-decoration:none}
+  a:hover{color:var(--accent-hi)}
+  img{max-width:100%;height:auto;display:block}
+  code,kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+
+  /* Header */
+  header{
+    position:sticky;top:0;z-index:20;background:rgba(15,15,15,.88);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--border);
+  }
+  .nav{display:flex;align-items:center;gap:16px;height:60px}
+  .brand{display:flex;align-items:center;gap:9px;font-family:var(--display);
+    font-weight:700;font-size:1.35rem;letter-spacing:.02em;color:#fff}
+  .brand svg{width:26px;height:26px;flex:0 0 auto}
+  .nav-links{margin-left:auto;display:flex;gap:22px;align-items:center;font-size:.9rem}
+  .nav-links a{color:var(--fg2)}
+  .nav-links a:hover{color:#fff}
+  @media(max-width:640px){.nav-links a:not(.btn){display:none}}
+
+  .btn{
+    display:inline-block;padding:10px 20px;border-radius:8px;font-weight:600;
+    font-size:.92rem;border:1px solid transparent;transition:background .15s,border-color .15s;
+  }
+  .btn-primary{background:var(--accent);color:#0F0F0F}
+  .btn-primary:hover{background:var(--accent-hi);color:#0F0F0F}
+  .btn-ghost{border-color:var(--border);color:#fff;background:transparent}
+  .btn-ghost:hover{border-color:var(--fg3);color:#fff;background:var(--elev)}
+  .nav .btn{padding:7px 15px}
+
+  /* Hero */
+  .hero{padding:76px 0 56px;text-align:center;position:relative}
+  .hero::before{
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse 70% 60% at 50% 0%,rgba(255,107,0,.13),transparent 70%);
+  }
+  .hero > *{position:relative}
+  .eyebrow{
+    display:inline-block;font-size:.74rem;font-weight:600;letter-spacing:.11em;
+    text-transform:uppercase;color:var(--accent);border:1px solid rgba(255,107,0,.32);
+    background:rgba(255,107,0,.07);padding:5px 13px;border-radius:99px;margin-bottom:22px;
+  }
+  h1{
+    font-family:var(--display);font-weight:700;font-size:clamp(2.6rem,7vw,4.4rem);
+    line-height:1.03;margin:0 0 18px;letter-spacing:.005em;
+  }
+  h1 .hl{color:var(--accent)}
+  .sub{font-size:clamp(1.03rem,2.1vw,1.2rem);color:var(--fg2);max-width:620px;margin:0 auto 32px}
+  .cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .meta{margin-top:22px;font-size:.84rem;color:var(--fg3);
+    display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:0 4px}
+  .meta span{white-space:nowrap}
+  .meta i{font-style:normal;color:var(--border);margin:0 5px}
+  @media(max-width:520px){.meta i{display:none}.meta{gap:2px 14px}}
+
+  /* Shot frame */
+  .shot{
+    margin-top:52px;border:1px solid var(--border);border-radius:12px;overflow:hidden;
+    background:var(--card);box-shadow:0 22px 60px -22px rgba(0,0,0,.85);
+  }
+  .shot-bar{
+    display:flex;align-items:center;gap:7px;padding:10px 14px;
+    background:var(--elev);border-bottom:1px solid var(--border);
+  }
+  .dot{width:11px;height:11px;border-radius:50%;background:#3a3a3a}
+
+  /* Sections */
+  section{padding:66px 0;border-top:1px solid var(--border)}
+  h2{
+    font-family:var(--display);font-weight:700;font-size:clamp(1.85rem,4vw,2.5rem);
+    margin:0 0 12px;letter-spacing:.01em;
+  }
+  .lede{color:var(--fg2);max-width:640px;margin:0 0 40px;font-size:1.02rem}
+
+  .grid{display:grid;gap:18px}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(270px,1fr))}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+
+  .card{
+    background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;
+  }
+  .card h3{
+    font-size:1.06rem;margin:0 0 9px;font-weight:600;display:flex;align-items:center;gap:9px;
+  }
+  .card p{margin:0;color:var(--fg2);font-size:.94rem}
+  .card p + p{margin-top:10px}
+  .ico{
+    width:34px;height:34px;border-radius:8px;background:rgba(255,107,0,.11);
+    display:grid;place-items:center;flex:0 0 auto;
+  }
+  .ico svg{width:18px;height:18px;stroke:var(--accent);fill:none;stroke-width:2;
+    stroke-linecap:round;stroke-linejoin:round}
+
+  .feature-card{border-left:2px solid var(--accent)}
+
+  /* Feature list */
+  .flist{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    list-style:none;padding:0;margin:0}
+  .flist li{
+    background:var(--card);border:1px solid var(--border);border-radius:10px;padding:15px 17px;
+    font-size:.92rem;color:var(--fg2);
+  }
+  .flist b{color:#fff;display:block;font-weight:600;font-size:.96rem;margin-bottom:3px}
+
+  /* Code */
+  pre{
+    background:#0a0a0a;border:1px solid var(--border);border-radius:10px;padding:18px;
+    overflow-x:auto;margin:0;font-size:.86rem;line-height:1.75;
+  }
+  pre code{color:#d8d8d8}
+  .cmt{color:var(--fg3)}
+  .tok{color:var(--accent)}
+
+  .steps{counter-reset:s;list-style:none;padding:0;margin:0 0 26px;display:grid;gap:14px}
+  .steps li{counter-increment:s;padding-left:42px;position:relative;color:var(--fg2);font-size:.95rem}
+  .steps li::before{
+    content:counter(s);position:absolute;left:0;top:-1px;width:27px;height:27px;border-radius:50%;
+    background:var(--elev);border:1px solid var(--border);color:var(--accent);
+    display:grid;place-items:center;font-size:.8rem;font-weight:600;
+  }
+  .steps b{color:#fff;font-weight:600}
+
+  /* Build sheet sample */
+  .sample{
+    background:#0a0a0a;border:1px solid var(--border);border-radius:10px;padding:18px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.82rem;
+    line-height:1.75;color:#c8c8c8;white-space:pre;overflow-x:auto;
+  }
+  .sample .h{color:var(--accent);font-weight:600}
+  .sample .d{color:var(--fg3)}
+
+  /* Screenshot strip */
+  .shots{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+  .shots figure{margin:0;display:flex;flex-direction:column}
+  .shots img{border:1px solid var(--border);border-radius:10px;background:var(--card)}
+  .shots figcaption{margin-top:auto;padding-top:9px;font-size:.85rem;color:var(--fg3);text-align:center}
+
+  /* Honest box */
+  .honest{
+    background:linear-gradient(180deg,rgba(0,52,120,.19),transparent);
+    border:1px solid var(--border);border-radius:12px;padding:28px;
+  }
+  .honest ul{margin:0;padding-left:19px;color:var(--fg2);font-size:.95rem}
+  .honest li{margin-bottom:9px}
+  .honest li:last-child{margin-bottom:0}
+  .honest b{color:#fff}
+
+  footer{
+    border-top:1px solid var(--border);padding:34px 0;color:var(--fg3);font-size:.87rem;
+  }
+  .frow{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+  .frow .sp{margin-left:auto}
+  footer a{color:var(--fg2)}
+  footer a:hover{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#top">
+      <svg viewBox="0 0 512 512" aria-hidden="true">
+        <rect width="512" height="512" rx="96" fill="#0f172a"/>
+        <path d="M288 96 160 288h88l-24 128 128-192h-88z" fill="#FF6B00"/>
+      </svg>
+      RaptorTracker
+    </a>
+    <nav class="nav-links">
+      <a href="#why">Why</a>
+      <a href="#features">Features</a>
+      <a href="#install">Install</a>
+      <a class="btn btn-ghost" href="https://github.com/breed007/RaptorTracker">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <div class="wrap hero">
+    <span class="eyebrow">Self-hosted · MIT licensed</span>
+    <h1>Every part, every service,<br><span class="hl">every switch.</span></h1>
+    <p class="sub">
+      A build tracker for Ford Raptors that runs on your own server. Mods, AUX switch
+      capacity, maintenance forecasting, fuel economy, and what the truck has actually
+      cost you — in one place, owned by you.
+    </p>
+    <div class="cta">
+      <a class="btn btn-primary" href="#install">Install it</a>
+      <a class="btn btn-ghost" href="https://github.com/breed007/RaptorTracker">View source</a>
+    </div>
+    <p class="meta">
+      <span>Gen 1 → Gen 3.5</span><i>·</i><span>Node 20+</span><i>·</i><span>SQLite</span><i>·</i><span>No account, no cloud</span>
+    </p>
+
+    <div class="shot">
+      <div class="shot-bar"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
+      <img src="screenshots/dashboard.png" alt="RaptorTracker dashboard showing vehicle status, items needing attention, and upcoming service" loading="eager" width="1600" height="666">
+    </div>
+  </div>
+
+  <section id="why">
+    <div class="wrap">
+      <h2>Built for one truck in particular</h2>
+      <p class="lede">
+        Generic vehicle apps don't know your truck has six switches at specific amperages,
+        or that airing down matters. These are the parts that only make sense for a Raptor.
+      </p>
+
+      <div class="grid g3">
+        <div class="card feature-card">
+          <h3><span class="ico"><svg viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>AUX capacity planning</h3>
+          <p>
+            Factory-accurate switch layouts per generation. Assign mods to switches, record
+            amp draw, and see current load, planned load from your wishlist, and remaining
+            headroom against the fuse rating.
+          </p>
+          <p>
+            Flagged <b style="color:#eab308">tight</b> past 80% of the fuse and
+            <b style="color:#ef4444">over</b> above it — before you wire it, not after.
+          </p>
+        </div>
+
+        <div class="card feature-card">
+          <h3><span class="ico"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 3.9M15.4 6.6L8.6 10.5"/></svg></span>Forum-ready build sheets</h3>
+          <p>
+            Turn your installed mods into a list you can paste straight into a forum post
+            or signature — BBCode, Markdown, or plain text, grouped by category.
+          </p>
+          <p>
+            Your VIN, purchase price, and insurance details are never included, and prices
+            are off by default.
+          </p>
+        </div>
+
+        <div class="card feature-card">
+          <h3><span class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg></span>Unknown is reported, not assumed</h3>
+          <p>
+            A switch with an unrecorded amp draw reads <b>unknown</b>, not <em>fine</em>.
+            Trip totals say how many outings lack odometer readings instead of counting
+            those miles as zero.
+          </p>
+          <p>
+            A forecast with too little mileage history is withheld rather than guessed.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="grid g2" style="align-items:center">
+        <div>
+          <h2>Your build, ready to post</h2>
+          <p class="lede" style="margin-bottom:22px">
+            The list you already maintain by hand in a forum signature, generated from
+            records you were keeping anyway. AUX assignments included — the part nothing
+            else can produce.
+          </p>
+          <a class="btn btn-ghost" href="https://github.com/breed007/RaptorTracker#share-your-build">How it works</a>
+        </div>
+        <div class="sample"><span class="h">2021 Ford F-150 Raptor — "Code Orange"</span>
+<span class="d">Gen 3 · Code Orange · 34,210 miles</span>
+
+<span class="h">SUSPENSION</span>
+  - Fox 3.0 Internal Bypass Coilovers
+  - RPG Offroad Upper Control Arms
+
+<span class="h">BUMPERS</span>
+  - ADD Stealth Fighter Front Bumper
+
+<span class="h">LIGHTING</span>
+  - Baja Designs S8 30" Light Bar (AUX 2 + 3)
+
+<span class="h">ELECTRICAL</span>
+  - Genesis Dual Battery Kit (AUX 4)</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <h2>What it tracks</h2>
+      <p class="lede">Capture what happens to the truck, then get answers back out of it.</p>
+      <ul class="flist">
+        <li><b>Modifications</b>Part, brand, vendor, cost, install date and mileage, photos, receipts, and per-switch AUX labels.</li>
+        <li><b>Maintenance</b>Service records with dealership / independent / DIY attribution, invoices attached, and mileage or time-based intervals.</li>
+        <li><b>Forecasting</b>Projects service intervals against how fast you actually drive, so "due in 3,400 mi" becomes a date.</li>
+        <li><b>Fuel &amp; MPG</b>Per-fill economy, trend over time, and your real average against the factory EPA rating.</li>
+        <li><b>Trail log</b>Outings with trail, difficulty, terrain, aired-down PSI, tire set, damage, and photos.</li>
+        <li><b>Cost of ownership</b>Acquisition, financing, mods, maintenance, and fuel unified into cost per mile.</li>
+        <li><b>Wishlist &amp; budget</b>Planned purchases against a monthly budget, with electrical load checked before you buy.</li>
+        <li><b>Tire &amp; wheel sets</b>Multiple sets with specs, cost, and miles run on each.</li>
+        <li><b>Warranty &amp; compliance</b>Factory and extended warranties, registration, inspection, and insurance deadlines.</li>
+        <li><b>Recalls</b>Open NHTSA campaigns for your model year, convertible into a tracked service record.</li>
+        <li><b>Documents</b>The glovebox paperwork — registration, insurance, window sticker — with expiry tracking.</li>
+        <li><b>Reminders</b>A daily digest by email or Discord/Slack webhook. Off by default.</li>
+        <li><b>Import &amp; export</b>CSV in and out, PDF build sheets, and full ZIP backup and restore.</li>
+        <li><b>Works on your phone</b>Installable PWA with a quick-add screen for logging a fill-up at the pump.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>A look around</h2>
+      <p class="lede">Three of the themes ship built in, including a dark FordRaptorForum style.</p>
+      <div class="shots">
+        <figure>
+          <img src="screenshots/aux-panel.png" alt="AUX switch panel showing per-switch assignments and electrical capacity" loading="lazy">
+          <figcaption>AUX switch panel with capacity planning</figcaption>
+        </figure>
+        <figure>
+          <img src="screenshots/garage.png" alt="My Garage view listing tracked vehicles" loading="lazy">
+          <figcaption>My Garage — one or more trucks, each isolated</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section id="install">
+    <div class="wrap">
+      <h2>Run it yourself</h2>
+      <p class="lede">
+        One box, one command. It installs Node, sets up a service, generates a password,
+        and puts nginx in front of it.
+      </p>
+
+      <ol class="steps">
+        <li><b>Any Linux server</b> — a spare mini PC, a VM, or a Raspberry Pi. Node 20.19+ or 22.12+.</li>
+        <li><b>Clone and run the installer</b> as root. It handles the rest.</li>
+        <li><b>Set a real password</b> under Settings → Account on first sign-in.</li>
+      </ol>
+
+<pre><code><span class="cmt"># Grab the latest release</span>
+git clone https://github.com/breed007/RaptorTracker.git
+<span class="tok">cd</span> RaptorTracker
+
+<span class="cmt"># Install as a service, behind nginx</span>
+<span class="tok">sudo</span> bash install.sh</code></pre>
+
+      <p style="color:var(--fg2);font-size:.93rem;margin-top:18px">
+        Prefer containers? There's a <code>Dockerfile</code> and <code>docker-compose.yml</code> in the repo,
+        plus <a href="https://github.com/breed007/RaptorTracker/blob/main/docs/deployment-linux.md">Linux</a> and
+        <a href="https://github.com/breed007/RaptorTracker/blob/main/docs/deployment-docker.md">Docker</a> deployment guides.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>What this is, plainly</h2>
+      <div class="honest">
+        <ul>
+          <li><b>Self-hosted and single-owner.</b> One password, your server, your database file. There is no cloud service, no account to create, and nothing phones home.</li>
+          <li><b>Your data is yours.</b> Everything lives in one SQLite file plus an uploads folder. Back it up as a ZIP from inside the app, or just copy the directory. Export any record type to CSV whenever you like.</li>
+          <li><b>It expects you to run a server.</b> If you've never used SSH, this will be a real afternoon. The installer does the heavy lifting, but it's still a machine you have to maintain.</li>
+          <li><b>Not affiliated with Ford.</b> Reference specs come from public sources. Torque values and wiring details are not included, because those live in Ford's copyrighted workshop manual.</li>
+          <li><b>MIT licensed.</b> Fork it, change it, run it however you want.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap frow">
+    <span>MIT licensed · Not affiliated with Ford Motor Company</span>
+    <span class="sp"></span>
+    <a href="https://github.com/breed007/RaptorTracker">Source</a>
+    <a href="https://github.com/breed007/RaptorTracker/releases/latest">Releases</a>
+    <a href="https://github.com/breed007/RaptorTracker/blob/main/CHANGELOG.md">Changelog</a>
+    <a href="https://github.com/breed007/RaptorTracker/issues">Issues</a>
+  </div>
+</footer>
+
+</body>
+</html>
