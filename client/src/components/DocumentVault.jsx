@@ -34,6 +34,7 @@ export default function DocumentVault({ vehicle, onClose }) {
   const [error, setError] = useState('')
   const [form, setForm] = useState({ name: '', doc_type: 'other', expires_on: '', notes: '' })
   const fileRef = useRef(null)
+  const camRef = useRef(null)
 
   const load = useCallback(() => {
     setLoading(true)
@@ -67,7 +68,9 @@ export default function DocumentVault({ vehicle, onClose }) {
       setError('Upload failed — check your connection.')
     } finally {
       setUploading(false)
+      // Reset BOTH inputs, or capturing the same file twice won't re-fire onChange
       if (fileRef.current) fileRef.current.value = ''
+      if (camRef.current) camRef.current.value = ''
     }
   }
 
@@ -118,10 +121,23 @@ export default function DocumentVault({ vehicle, onClose }) {
               </div>
             </div>
             <input ref={fileRef} type="file" accept=".jpg,.jpeg,.png,.webp,.tiff,.tif,.pdf,.heic" className="hidden" onChange={handleFile} />
-            <button onClick={() => fileRef.current?.click()} disabled={uploading}
-              className="btn-primary text-sm disabled:opacity-50">
-              {uploading ? 'Uploading…' : 'Choose File & Upload'}
-            </button>
+            {/* capture="environment" opens the rear camera straight away on a phone */}
+            <input ref={camRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => camRef.current?.click()} disabled={uploading}
+                className="btn-primary text-sm disabled:opacity-50 flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                {uploading ? 'Uploading…' : 'Take Photo'}
+              </button>
+              <button onClick={() => fileRef.current?.click()} disabled={uploading}
+                className="btn-secondary text-sm disabled:opacity-50">
+                Choose File
+              </button>
+            </div>
             {error && <p className="text-sm text-red-500">{error}</p>}
           </div>
 
