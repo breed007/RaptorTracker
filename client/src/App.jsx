@@ -23,6 +23,7 @@ import Welcome from './pages/Welcome'
 import QuickAdd from './pages/QuickAdd'
 import Outings from './pages/Outings'
 import Account from './pages/Account'
+import ShareBuild from './pages/ShareBuild'
 
 function AppRoutes() {
   const { user, authLoading, userVehicles, vehiclesLoaded } = useApp()
@@ -53,6 +54,7 @@ function AppRoutes() {
         <Route path="/mods/new" element={<ModDetail isNew />} />
         <Route path="/mods/:id" element={<ModDetail />} />
         <Route path="/aux" element={<AuxPanel />} />
+        <Route path="/share" element={<ShareBuild />} />
         <Route path="/maintenance" element={<Maintenance />} />
         <Route path="/wishlist" element={<Wishlist />} />
         <Route path="/fuel" element={<FuelLog />} />

@@ -19,6 +19,7 @@ const navGroups = [
       { to: '/aux',      label: 'AUX Panel',   icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
       { to: '/tires',    label: 'Tire Sets',   icon: 'M12 2a10 10 0 100 20 10 10 0 000-20zm0 6a4 4 0 100 8 4 4 0 000-8z' },
       { to: '/wishlist', label: 'Wishlist',    icon: 'M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z' },
+      { to: '/share',    label: 'Share Build', icon: 'M8.684 13.342a3 3 0 100-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.368-2.684 3 3 0 00-5.368 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z' },
     ],
   },
   {

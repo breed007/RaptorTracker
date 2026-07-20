@@ -110,7 +110,7 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
     // --- Mods and AUX assignment ----------------------------------------
     r = await req('POST', '/api/mods', {
       user_vehicle_id: vid, part_name: 'Light Bar', brand: 'Baja Designs',
-      category: 'lighting', cost: 899, amp_draw: 12,
+      category: 'Lighting', status: 'Installed', cost: 899, amp_draw: 12,
       aux_switches: [{ switch_number: 2, label: 'Bar' }, { switch_number: 3, label: 'Flood' }],
       install_date: '2024-03-01',
     });
@@ -136,7 +136,7 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
     // Reassigning down to one switch must free the other, not orphan it.
     r = await req('PUT', `/api/mods/${modId}`, {
       user_vehicle_id: vid, part_name: 'Light Bar', brand: 'Baja Designs',
-      category: 'lighting', cost: 899, amp_draw: 12, install_date: '2024-03-01',
+      category: 'Lighting', status: 'Installed', cost: 899, amp_draw: 12, install_date: '2024-03-01',
       aux_switches: [{ switch_number: 2, label: 'Bar' }],
     });
     check('a mod can be narrowed to one AUX switch', () => eq(r.status, 200, 'status'));
@@ -195,6 +195,55 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
     check('an outing that ends past the odometer bumps the vehicle', () => {
       eq(r.body?.current_mileage, 25380, 'current_mileage');
     });
+
+    // --- Build sheet -------------------------------------------------------
+    r = await req('GET', `/api/share/build-sheet?vehicle_id=${vid}&format=bbcode`);
+    check('a build sheet renders installed mods', () => {
+      eq(r.status, 200, 'status');
+      eq(r.body.format, 'bbcode', 'format');
+      if (!r.body.content.includes('Light Bar')) throw new Error('the installed mod is missing');
+      if (!/\[list\]/.test(r.body.content)) throw new Error('no BBCode list markup');
+    });
+
+    check('the AUX assignment appears on the build sheet', () => {
+      if (!/AUX 2/.test(r.body.content)) throw new Error('AUX assignment missing');
+    });
+
+    // The whole feature is public output, so this is the assertion that matters.
+    check('private fields never reach the build sheet', () => {
+      const c = r.body.content;
+      for (const secret of ['1FTFW1RG5MFA00001', '68500', 'insurance']) {
+        if (c.toLowerCase().includes(String(secret).toLowerCase())) {
+          throw new Error(`"${secret}" leaked into a shareable build sheet`);
+        }
+      }
+    });
+
+    check('prices are withheld unless explicitly asked for', () => {
+      if (/899/.test(r.body.content)) throw new Error('a price appeared with costs off');
+    });
+
+    r = await req('GET', `/api/share/build-sheet?vehicle_id=${vid}&format=bbcode&costs=true`);
+    check('prices appear when opted in', () => {
+      if (!/899/.test(r.body.content)) throw new Error('price missing with costs=true');
+    });
+
+    r = await req('GET', `/api/share/build-sheet?vehicle_id=${vid}&format=markdown`);
+    check('markdown format renders', () => {
+      if (!/^## /m.test(r.body.content)) throw new Error('no markdown heading');
+      if (/\[list\]/.test(r.body.content)) throw new Error('BBCode leaked into markdown');
+    });
+
+    r = await req('GET', `/api/share/build-sheet?vehicle_id=${vid}&format=text&attribution=false`);
+    check('attribution can be turned off', () => {
+      if (/RaptorTracker/.test(r.body.content)) throw new Error('attribution still present');
+    });
+
+    r = await req('GET', '/api/share/build-sheet');
+    check('the build sheet requires a vehicle_id', () => eq(r.status, 400, 'status'));
+
+    r = await req('GET', '/api/share/build-sheet?vehicle_id=999999');
+    check('a build sheet for a missing vehicle 404s', () => eq(r.status, 404, 'status'));
 
     // --- Cross-cutting reads ----------------------------------------------
     r = await req('GET', `/api/logbook?vehicle_id=${vid}`);

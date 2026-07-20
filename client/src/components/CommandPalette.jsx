@@ -12,6 +12,7 @@ const PAGES = [
   { title: 'Maintenance', link: '/maintenance' },
   { title: 'Tire Sets', link: '/tires' },
   { title: 'Wishlist', link: '/wishlist' },
+  { title: 'Share Build', link: '/share' },
   { title: 'Fuel Log', link: '/fuel' },
   { title: 'Trail Log', link: '/outings' },
   { title: 'Warranty', link: '/warranty' },
