@@ -189,6 +189,32 @@ function zipForm(field, filePath, name) {
     eq(added.filter(f => f.endsWith('.jpg')).length, 1, 'jpg written');
   });
 
+  // ── File deletion stays inside uploads/ and inside the record ───────────────
+  await check('attachment and photo deletes cannot reach outside uploads/ (all four routes)', async () => {
+    const svc = (await a.req('POST', '/api/maintenance', { json: { user_vehicle_id: vid, service_type: 'Oil Change', date_performed: '2024-01-01' } })).body.id;
+    const mod = (await a.req('POST', '/api/mods', { json: { user_vehicle_id: vid, part_name: 'Delete Target' } })).body.id;
+    const out = (await a.req('POST', '/api/outings', { json: { user_vehicle_id: vid, name: 'Delete Target', date: '2024-01-02' } })).body.id;
+    const routes = [
+      `/api/maintenance/${svc}/attachments/`, `/api/mods/${mod}/attachments/`,
+      `/api/outings/${out}/photos/`, `/api/user-vehicles/${vid}/photos/`,
+    ];
+    for (const route of routes) {
+      const canary = path.join(DATA, 'CANARY.txt');
+      fs.writeFileSync(canary, 'must survive');
+      const r = await a.req('DELETE', `${route}..%2FCANARY.txt`);
+      eq(fs.existsSync(canary), true, `${route}: file outside uploads/ was deleted`);
+      if (r.status !== 404) throw new Error(`${route}: expected 404, got ${r.status}`);
+    }
+  });
+
+  await check("a record cannot delete another record's file", async () => {
+    fs.writeFileSync(path.join(UPLOADS, 'someone-elses.pdf'), 'registration scan');
+    const svc = (await a.req('POST', '/api/maintenance', { json: { user_vehicle_id: vid, service_type: 'Tire Rotation', date_performed: '2024-01-03' } })).body.id;
+    const r = await a.req('DELETE', `/api/maintenance/${svc}/attachments/someone-elses.pdf`);
+    eq(r.status, 404, 'status');
+    eq(fs.existsSync(path.join(UPLOADS, 'someone-elses.pdf')), true, 'unlisted file deleted');
+  });
+
   // ── Corrupt data does not take a page down ─────────────────────────────────
   await check('a corrupt photo list in one row does not break the mods list', async () => {
     await a.req('POST', '/api/mods', { json: { user_vehicle_id: vid, part_name: 'Healthy Mod' } });

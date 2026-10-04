@@ -5,6 +5,7 @@ const fs = require('fs');
 const { randomUUID: uuidv4 } = require('crypto');
 const { getDb } = require('../db');
 const { jsonList } = require('../lib/json');
+const { detachUpload } = require('../services/uploads');
 const router = express.Router();
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
@@ -239,11 +240,9 @@ router.delete('/:id/photos/:filename', (req, res) => {
   const existing = db.prepare('SELECT id, vehicle_photos, profile_photo FROM user_vehicles WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
 
-  const photoPath = `/uploads/${req.params.filename}`;
-  const current = jsonList(existing.vehicle_photos);
-  const updated = current.filter(p => p !== photoPath);
-
-  fs.unlink(path.join(UPLOAD_DIR, req.params.filename), () => {});
+  const photoPath = `/uploads/${path.basename(req.params.filename)}`;
+  const updated = detachUpload(UPLOAD_DIR, jsonList(existing.vehicle_photos), req.params.filename);
+  if (!updated) return res.status(404).json({ error: 'That photo is not on this vehicle' });
 
   let profile = existing.profile_photo;
   if (profile === photoPath) profile = updated.length > 0 ? updated[0] : null;

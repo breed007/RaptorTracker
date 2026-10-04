@@ -8,6 +8,7 @@
  * refuses to serve it even if an older version let one through.
  */
 const path = require('path');
+const fs = require('fs');
 const express = require('express');
 
 const UPLOAD_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.tif', '.tiff', '.heic', '.pdf']);
@@ -31,4 +32,20 @@ function serveUploads(uploadDir) {
   };
 }
 
-module.exports = { UPLOAD_EXTS, isAllowedUpload, serveUploads };
+/**
+ * Detach one file from a record's list and delete it — but only if the record
+ * actually lists it. The name comes from the URL, so it is reduced to a bare
+ * file name first: Express decodes %2F, and '..%2Fraptortracker.db' would
+ * otherwise reach out of the uploads folder and delete the database.
+ * Returns the remaining list, or null when the record doesn't own the file.
+ */
+function detachUpload(uploadDir, list, requestedName) {
+  const base = path.basename(String(requestedName || ''));
+  if (!base || base.startsWith('.')) return null;
+  const url = `/uploads/${base}`;
+  if (!list.includes(url)) return null;
+  fs.unlink(path.join(uploadDir, base), () => {});
+  return list.filter(p => p !== url);
+}
+
+module.exports = { UPLOAD_EXTS, isAllowedUpload, serveUploads, detachUpload };

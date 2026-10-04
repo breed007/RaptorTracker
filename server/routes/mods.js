@@ -5,6 +5,7 @@ const fs = require('fs');
 const { randomUUID: uuidv4 } = require('crypto');
 const { getDb } = require('../db');
 const { jsonList } = require('../lib/json');
+const { detachUpload } = require('../services/uploads');
 const router = express.Router();
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
@@ -192,9 +193,8 @@ router.delete('/:id/attachments/:filename', (req, res) => {
   const existing = db.prepare('SELECT id, attachments FROM mods WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
 
-  const filePath = `/uploads/${path.basename(req.params.filename)}`;
-  const updated = jsonList(existing.attachments).filter(p => p !== filePath);
-  fs.unlink(path.join(UPLOAD_DIR, path.basename(req.params.filename)), () => {});
+  const updated = detachUpload(UPLOAD_DIR, jsonList(existing.attachments), req.params.filename);
+  if (!updated) return res.status(404).json({ error: 'That file is not attached to this mod' });
   db.prepare('UPDATE mods SET attachments = ? WHERE id = ?').run(JSON.stringify(updated), req.params.id);
   res.json({ attachments: updated });
 });

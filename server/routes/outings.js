@@ -5,6 +5,7 @@ const fs = require('fs');
 const { randomUUID: uuidv4 } = require('crypto');
 const { getDb } = require('../db');
 const { jsonList } = require('../lib/json');
+const { detachUpload } = require('../services/uploads');
 
 const router = express.Router();
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
@@ -157,9 +158,8 @@ router.delete('/:id/photos/:filename', (req, res) => {
   const db = getDb();
   const existing = db.prepare('SELECT id, photos FROM outings WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
-  const p = `/uploads/${path.basename(req.params.filename)}`;
-  const updated = jsonList(existing.photos).filter(x => x !== p);
-  fs.unlink(path.join(UPLOAD_DIR, path.basename(req.params.filename)), () => {});
+  const updated = detachUpload(UPLOAD_DIR, jsonList(existing.photos), req.params.filename);
+  if (!updated) return res.status(404).json({ error: 'That photo is not on this outing' });
   db.prepare('UPDATE outings SET photos = ? WHERE id = ?').run(JSON.stringify(updated), req.params.id);
   res.json({ photos: updated });
 });
