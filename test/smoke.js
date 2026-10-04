@@ -96,12 +96,35 @@ try {
     'routes/upload', 'routes/summary', 'routes/export', 'routes/vin', 'routes/modTransfer',
     'routes/vehicleTransfer', 'routes/intervals', 'routes/wishlist', 'routes/fuel',
     'routes/warranty', 'routes/tco', 'routes/notifications', 'routes/tires', 'routes/recalls',
-    'routes/backup', 'routes/logbook', 'routes/mileage', 'routes/analytics', 'routes/search', 'routes/import', 'routes/auxCapacity', 'routes/forecast', 'routes/budget', 'routes/documents', 'routes/specs', 'routes/overview', 'routes/outings', 'routes/share',
+    'routes/backup', 'routes/logbook', 'routes/mileage', 'routes/analytics', 'routes/search', 'routes/import', 'routes/auxCapacity', 'routes/forecast', 'routes/budget', 'routes/documents', 'routes/specs', 'routes/overview', 'routes/outings', 'routes/share', 'config',
     'services/settings', 'services/mailer', 'services/reminders', 'services/backupArchive', 'services/csvImport', 'services/mileageStats', 'services/auxCapacity', 'services/buildSheet', 'scheduler',
   ];
   for (const m of modules) check(`require ${m}`, () => { require(`../server/${m}`); });
 
   // 8) Webhook URL validation guards junk
+  // Production start-up guard: placeholders from the example files must not boot.
+  check('production guard rejects placeholder and short secrets', () => {
+    const { productionProblems } = require('../server/config');
+    const strong = 'a'.repeat(16) + 'b'.repeat(16) + 'c'.repeat(16);
+    const cases = [
+      [{}, true, 'missing secret'],
+      [{ SESSION_SECRET: 'changeme-replace-with-a-long-random-string' }, true, '.env.example secret'],
+      [{ SESSION_SECRET: 'changeme_in_production' }, true, 'old compose secret'],
+      [{ SESSION_SECRET: 'tooshort' }, true, 'short secret'],
+      [{ SESSION_SECRET: strong, ADMIN_PASSWORD: 'replace-me-before-first-start' }, true, '.env.example password'],
+      [{ SESSION_SECRET: strong, ADMIN_PASSWORD: 'changeme' }, true, 'changeme password'],
+      [{ SESSION_SECRET: strong, ADMIN_PASSWORD: 'a-real-long-passphrase' }, false, 'real values'],
+    ];
+    for (const [env, shouldFail, label] of cases) {
+      const fails = productionProblems(env, { usingBootstrapPassword: true }).length > 0;
+      if (fails !== shouldFail) throw new Error(`${label}: expected ${shouldFail ? 'rejection' : 'acceptance'}`);
+    }
+    // Once a password is set in the app, a placeholder in .env no longer matters.
+    if (productionProblems({ SESSION_SECRET: strong, ADMIN_PASSWORD: 'changeme' }, { usingBootstrapPassword: false }).length) {
+      throw new Error('placeholder ADMIN_PASSWORD rejected even though the app password is set');
+    }
+  });
+
   check('assertValidWebhook rejects junk', () => {
     const { assertValidWebhook } = require('../server/services/reminders');
     let threw = false;

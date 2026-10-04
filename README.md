@@ -188,7 +188,7 @@ value takes over again.
 
 | Requirement | Version | Notes |
 |---|---|---|
-| **Node.js** | 20.19+ or 22.12+ | 22 LTS recommended. Vite 5 needs at least 20.19 or 22.12. |
+| **Node.js** | 22.12+ | 24 LTS recommended. Node 20 reached end-of-life in April 2026 and is no longer supported. |
 | **npm** | 10+ | Bundled with Node 22. |
 | **git** | any recent | For cloning and pulling updates. |
 | **Build tools** | — | Only if your platform has no prebuilt `better-sqlite3` binary. On Debian/Ubuntu: `apt install build-essential python3`. |
@@ -363,7 +363,7 @@ npm run test:upgrade  # rebuilds every released tag's database and migrates it t
 
 Both run against a temporary database in your system temp directory and never
 touch `data/`. They need `better-sqlite3` built for your Node version, so use
-one of the versions CI targets (Node 20.19 or 22).
+one of the versions CI targets (Node 22 or 24).
 
 ---
 

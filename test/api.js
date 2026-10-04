@@ -68,6 +68,13 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
     let r = await req('GET', '/api/user-vehicles');
     check('unauthenticated API request is rejected', () => eq(r.status, 401, 'status'));
 
+    r = await req('GET', '/api/health');
+    check('the health check answers without signing in', () => {
+      eq(r.status, 200, 'status');
+      eq(r.body.status, 'ok', 'health status');
+      if (!/^\d+\.\d+\.\d+/.test(r.body.version || '')) throw new Error('no version in health response');
+    });
+
     r = await req('POST', '/api/auth/login', { username: 'testadmin', password: 'wrong' });
     check('login rejects a bad password', () => eq(r.status, 401, 'status'));
 

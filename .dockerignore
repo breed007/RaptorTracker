@@ -1,0 +1,16 @@
+# Keep the build context small and free of host-specific binaries.
+node_modules
+client/node_modules
+dist
+data
+.git
+.github
+.claude
+.upgrade-stage
+docs
+test
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store

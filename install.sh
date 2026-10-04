@@ -7,8 +7,12 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# Node 22 LTS — Vite 5 needs a recent Node; 22 avoids the 20.16-vs-20.19 trap.
+# Oldest Node the app supports (Vite needs 22.12+; Node 20 is end-of-life),
+# and the version to install when Node is missing or too old. 24 is the
+# current LTS, so a fresh install gets the longest support window.
 MIN_NODE_MAJOR=22
+MIN_NODE_MINOR=12
+NODE_INSTALL_MAJOR=24
 STATE_FILE="/etc/raptortracker-install.conf"
 
 ###############################################################################
@@ -215,16 +219,18 @@ install_build_tools() {
 }
 
 ###############################################################################
-# Install Node.js (LTS — see MIN_NODE_MAJOR)
+# Install Node.js (see MIN_NODE_* and NODE_INSTALL_MAJOR)
 ###############################################################################
 install_nodejs() {
   section "Node.js"
 
   if command -v node &>/dev/null; then
-    local ver
-    ver="$(node --version | sed 's/v//' | cut -d. -f1)"
-    if (( ver >= MIN_NODE_MAJOR )); then
-      log "Node.js $(node --version) already installed — satisfies >= v${MIN_NODE_MAJOR}."
+    local ver major minor
+    ver="$(node --version | sed 's/v//')"
+    major="$(echo "$ver" | cut -d. -f1)"
+    minor="$(echo "$ver" | cut -d. -f2)"
+    if (( major > MIN_NODE_MAJOR || (major == MIN_NODE_MAJOR && minor >= MIN_NODE_MINOR) )); then
+      log "Node.js $(node --version) already installed — satisfies >= v${MIN_NODE_MAJOR}.${MIN_NODE_MINOR}."
       # npm may be a separate package on some distros even when node is present
       if command -v npm &>/dev/null; then
         log "npm $(npm --version) available."
@@ -236,19 +242,19 @@ install_nodejs() {
       fi
       return
     fi
-    warn "Node.js $(node --version) found but v${MIN_NODE_MAJOR}+ is required — upgrading via NodeSource."
+    warn "Node.js $(node --version) found but v${MIN_NODE_MAJOR}.${MIN_NODE_MINOR}+ is required — installing v${NODE_INSTALL_MAJOR} via NodeSource."
   else
-    info "Node.js not found — installing v${MIN_NODE_MAJOR} via NodeSource…"
+    info "Node.js not found — installing v${NODE_INSTALL_MAJOR} via NodeSource…"
   fi
 
   case "$PKG_MGR" in
     apt)
-      run curl -fsSL "https://deb.nodesource.com/setup_${MIN_NODE_MAJOR}.x" -o /tmp/nodesource_setup.sh
+      run curl -fsSL "https://deb.nodesource.com/setup_${NODE_INSTALL_MAJOR}.x" -o /tmp/nodesource_setup.sh
       run bash /tmp/nodesource_setup.sh
       pkg_install nodejs
       ;;
     dnf|yum)
-      run curl -fsSL "https://rpm.nodesource.com/setup_${MIN_NODE_MAJOR}.x" -o /tmp/nodesource_setup.sh
+      run curl -fsSL "https://rpm.nodesource.com/setup_${NODE_INSTALL_MAJOR}.x" -o /tmp/nodesource_setup.sh
       run bash /tmp/nodesource_setup.sh
       pkg_install nodejs
       # RHEL family needs nodejs-devel for native module compilation
@@ -260,9 +266,11 @@ install_nodejs() {
 
   command -v node &>/dev/null || die "Node.js installation failed — check $LOG_FILE"
 
-  local ver
-  ver="$(node --version | sed 's/v//' | cut -d. -f1)"
-  (( ver >= MIN_NODE_MAJOR )) || die "Node.js $(node --version) installed but v${MIN_NODE_MAJOR}+ required."
+  local nmajor nminor
+  nmajor="$(node --version | sed 's/v//' | cut -d. -f1)"
+  nminor="$(node --version | sed 's/v//' | cut -d. -f2)"
+  (( nmajor > MIN_NODE_MAJOR || (nmajor == MIN_NODE_MAJOR && nminor >= MIN_NODE_MINOR) )) \
+    || die "Node.js $(node --version) installed but v${MIN_NODE_MAJOR}.${MIN_NODE_MINOR}+ required."
 
   # npm is bundled with NodeSource packages, but verify and install separately if absent
   if ! command -v npm &>/dev/null; then

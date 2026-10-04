@@ -13,6 +13,9 @@ if (!fs.existsSync(DB_PATH_EARLY)) {
 }
 
 const { requireAuth, login, logout, me, changePassword, usingBootstrapPassword } = require('./server/middleware/auth');
+const { productionProblems } = require('./server/config');
+const { getDb } = require('./server/db');
+const APP_VERSION = require('./package.json').version;
 const rateLimit = require('express-rate-limit');
 const vehiclesRouter = require('./server/routes/vehicles');
 const userVehiclesRouter = require('./server/routes/userVehicles');
@@ -56,13 +59,17 @@ fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Never sign sessions with a public, hardcoded key in production. The installer
-// generates a random SESSION_SECRET; refuse to start if it's missing in prod.
+// Refuse to start in production on a configuration that would boot fine but
+// leave the install open: a missing or placeholder session secret, or a
+// placeholder admin password while it is still the one that signs people in.
 const IS_PROD = process.env.NODE_ENV === 'production';
-if (IS_PROD && !process.env.SESSION_SECRET) {
-  console.error('FATAL: SESSION_SECRET is not set. Refusing to start in production with a default secret.');
-  console.error('Generate one:  node -e "console.log(require(\'crypto\').randomBytes(48).toString(\'hex\'))"');
-  process.exit(1);
+if (IS_PROD) {
+  const problems = productionProblems(process.env, { usingBootstrapPassword: usingBootstrapPassword() });
+  if (problems.length) {
+    console.error('FATAL: refusing to start in production:\n');
+    for (const p of problems) console.error(`  - ${p}\n`);
+    process.exit(1);
+  }
 }
 const SESSION_SECRET = process.env.SESSION_SECRET || 'raptortracker-dev-insecure-secret';
 
@@ -99,6 +106,18 @@ const loginLimiter = rateLimit({
   skipSuccessfulRequests: true,
   skip: () => process.env.NODE_ENV === 'test' && process.env.RATE_LIMIT_IN_TEST !== 'true',
   message: { error: 'Too many sign-in attempts. Try again in 15 minutes.' },
+});
+
+// Liveness for Docker HEALTHCHECK and uptime monitors. Unauthenticated, so it
+// reports only what the login page already shows: that the app is up and its
+// version. A database that can't answer a trivial query fails the check.
+app.get('/api/health', (req, res) => {
+  try {
+    getDb().prepare('SELECT 1').get();
+    res.json({ status: 'ok', version: APP_VERSION });
+  } catch (e) {
+    res.status(503).json({ status: 'error', version: APP_VERSION });
+  }
 });
 
 // Auth endpoints (no requireAuth guard)

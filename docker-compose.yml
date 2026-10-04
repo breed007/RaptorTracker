@@ -1,19 +1,39 @@
+# RaptorTracker with Docker Compose.
+#
+#   cp .env.example .env      # then set SESSION_SECRET and ADMIN_PASSWORD
+#   docker compose up -d
+#
+# Compose reads .env from this directory. The two secrets below have no
+# default on purpose: if either is unset, Compose stops with an error instead
+# of starting the app on a password that is printed in this file.
+
 services:
   raptortracker:
+    # Prebuilt multi-arch image (amd64 + arm64, including Raspberry Pi).
+    # To build from source instead: docker compose up -d --build
+    image: ghcr.io/breed007/raptortracker:latest
     build: .
+    pull_policy: missing
     container_name: raptortracker
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${PORT:-3000}:3000"
     volumes:
       - raptortracker_data:/data
     environment:
-      - PORT=3000
-      - SESSION_SECRET=changeme_in_production
-      - ADMIN_USERNAME=admin
-      - ADMIN_PASSWORD=changeme_in_production
-      - DATA_DIR=/data
-      - UPLOAD_DIR=/data/uploads
+      SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET in .env (see .env.example)}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env (see .env.example)}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+      TZ: ${TZ:-UTC}
+      # Optional email reminders — leave blank to keep email off.
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
 
 volumes:
   raptortracker_data:

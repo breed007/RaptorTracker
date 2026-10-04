@@ -14,14 +14,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
+  test:
+    name: test (node ${{ matrix.node }}, ${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        # The versions the installer targets. better-sqlite3 ships prebuilt
-        # binaries for both, so this also catches native-module breakage.
-        node: ['20.19', '22']
+        node: ['22', '24']
+        arch: [x64, arm64]
+        include:
+          - arch: x64
+            runner: ubuntu-latest
+          # Native ARM64 Linux — the same architecture as a Raspberry Pi 4/5
+          # on 64-bit Raspberry Pi OS. Not emulated.
+          - arch: arm64
+            runner: ubuntu-24.04-arm
 
     steps:
       - uses: actions/checkout@v5
@@ -34,7 +41,7 @@ jobs:
           node-version: ${{ matrix.node }}
 
       - name: Install server dependencies
-        run: npm install
+        run: npm ci
 
       - name: Smoke test (schema, migrations, module load)
         run: npm test
@@ -48,7 +55,7 @@ jobs:
         run: npm run test:upgrade
 
       - name: Install client dependencies
-        run: npm install --prefix client
+        run: npm ci --prefix client
 
       - name: Build frontend
         run: npm run build
@@ -60,3 +67,49 @@ jobs:
             test -f "$f" || { echo "missing $f"; exit 1; }
           done
           echo "build output looks complete"
+
+  docker:
+    name: docker image (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build the image from a clean checkout
+        run: docker build -t raptortracker:ci .
+
+      - name: Refuses to start on placeholder secrets
+        run: |
+          set +e
+          docker run --rm -e SESSION_SECRET=changeme_in_production \
+            -e ADMIN_PASSWORD=changeme_in_production raptortracker:ci > out.log 2>&1
+          code=$?
+          cat out.log
+          if [ "$code" -eq 0 ]; then echo "container started on placeholder secrets"; exit 1; fi
+          grep -q "refusing to start" out.log
+
+      - name: Boots and passes its health check
+        run: |
+          docker run -d --name rt -p 3000:3000 \
+            -e SESSION_SECRET="$(openssl rand -hex 48)" \
+            -e ADMIN_PASSWORD="ci-$(openssl rand -hex 12)" \
+            raptortracker:ci
+          for i in $(seq 1 30); do
+            status=$(docker inspect -f '{{.State.Health.Status}}' rt)
+            echo "health: $status"
+            [ "$status" = "healthy" ] && break
+            sleep 3
+          done
+          docker logs rt
+          [ "$(docker inspect -f '{{.State.Health.Status}}' rt)" = "healthy" ]
+          curl -fsS http://localhost:3000/api/health
+          echo
+          curl -fsS -o /dev/null http://localhost:3000/
