@@ -1,12 +1,13 @@
 const express = require('express');
 const { getDb } = require('../db');
+const { jsonList } = require('../lib/json');
 const router = express.Router();
 
 function parseVehicle(v) {
   return {
     ...v,
-    engine_options: JSON.parse(v.engine_options || '[]'),
-    aux_switch_layout: JSON.parse(v.aux_switch_layout || '[]')
+    engine_options: jsonList(v.engine_options),
+    aux_switch_layout: jsonList(v.aux_switch_layout)
   };
 }
 

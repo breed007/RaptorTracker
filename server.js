@@ -17,6 +17,9 @@ const { productionProblems } = require('./server/config');
 const { getDb } = require('./server/db');
 const APP_VERSION = require('./package.json').version;
 const rateLimit = require('express-rate-limit');
+const { serveUploads } = require('./server/services/uploads');
+const { SqliteSessionStore } = require('./server/services/sessionStore');
+const { securityHeaders } = require('./server/middleware/securityHeaders');
 const vehiclesRouter = require('./server/routes/vehicles');
 const userVehiclesRouter = require('./server/routes/userVehicles');
 const modsRouter = require('./server/routes/mods');
@@ -78,22 +81,25 @@ const SESSION_SECRET = process.env.SESSION_SECRET || 'raptortracker-dev-insecure
 // meaning one attacker could lock the owner out. Default to one proxy hop.
 app.set('trust proxy', process.env.TRUST_PROXY ? Number(process.env.TRUST_PROXY) || process.env.TRUST_PROXY : 1);
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.disable('x-powered-by');
+app.use(securityHeaders({ https: process.env.COOKIE_SECURE === 'true' }));
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
 app.use(session({
   secret: SESSION_SECRET,
+  store: new SqliteSessionStore({ dataDir: DATA_DIR_EARLY }),
   resave: false,
   saveUninitialized: false,
   cookie: {
+    httpOnly: true,
+    sameSite: 'lax',
     // Set COOKIE_SECURE=true when serving over HTTPS so the cookie isn't sent in cleartext
     secure: process.env.COOKIE_SECURE === 'true',
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   }
 }));
 
-// Serve uploaded files
-app.use('/uploads', express.static(UPLOAD_DIR));
 
 // A single shared password with no throttle is brute-forceable, and the
 // install docs walk people through exposing this to the internet. Disabled
@@ -125,6 +131,10 @@ app.post('/api/auth/login', loginLimiter, login);
 app.post('/api/auth/logout', logout);
 app.get('/api/auth/me', me);
 app.post('/api/auth/password', requireAuth, changePassword);
+
+// Uploaded files include registration and insurance scans, so they sit behind
+// the same login as the API. Only allow-listed file types are ever served.
+app.use('/uploads', requireAuth, serveUploads(UPLOAD_DIR));
 
 // All other API routes require auth
 app.use('/api', requireAuth);
@@ -161,6 +171,10 @@ app.use('/api/logbook', logbookRouter);
 app.use('/api/mileage', mileageRouter);
 app.use('/api/analytics', analyticsRouter);
 
+// An unknown API path is a 404 in JSON — not the app's HTML page with a 200,
+// which the client would try to parse as data.
+app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
+
 // Serve React frontend in production
 const DIST_DIR = path.join(__dirname, 'dist');
 if (fs.existsSync(DIST_DIR)) {
@@ -172,7 +186,24 @@ if (fs.existsSync(DIST_DIR)) {
 
 // Only bind a port when run directly. Requiring this file (integration tests)
 // gets the configured app without a listening socket or a live cron scheduler.
+// Last-resort error handler. Anything a route didn't handle lands here as a
+// JSON 500 with the detail in the server log, instead of Express's default
+// HTML page (which includes a stack trace outside production).
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+  const status = err.status || err.statusCode || 500;
+  if (status >= 500) console.error(`[error] ${req.method} ${req.originalUrl}:`, err.stack || err);
+  const message = status >= 500 ? 'Something went wrong on the server. The details are in the server log.' : err.message;
+  res.status(status).json({ error: message });
+});
+
 if (require.main === module) {
+  // Log, don't crash silently, on a promise nobody awaited. PM2 or Docker
+  // restarts the process on a real crash; this keeps the reason in the log.
+  process.on('unhandledRejection', (reason) => {
+    console.error('[error] unhandled promise rejection:', reason && reason.stack ? reason.stack : reason);
+  });
+
   app.listen(PORT, () => {
     console.log(`RaptorTracker running on http://localhost:${PORT}`);
     try {

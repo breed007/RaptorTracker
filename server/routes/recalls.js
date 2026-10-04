@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
+const { jsonList } = require('../lib/json');
 
 // NHTSA recalls are cataloged by base model (e.g. "F-150"), not the Raptor
 // trim, so map our stored model names down to what NHTSA expects.
@@ -58,7 +59,7 @@ router.get('/', async (req, res) => {
   `).get(vehicle_id);
   if (!row) return res.status(404).json({ error: 'Not found' });
 
-  const dismissed = JSON.parse(row.dismissed_recalls || '[]');
+  const dismissed = jsonList(row.dismissed_recalls);
   const make = row.make;
   const model = baseModel(row.model);
   const year = row.model_year;
@@ -93,7 +94,7 @@ router.put('/dismiss', (req, res) => {
   const uv = db.prepare('SELECT id, dismissed_recalls FROM user_vehicles WHERE id = ?').get(vehicle_id);
   if (!uv) return res.status(404).json({ error: 'Not found' });
 
-  let dismissed = JSON.parse(uv.dismissed_recalls || '[]');
+  let dismissed = jsonList(uv.dismissed_recalls);
   if (dismiss) {
     if (!dismissed.includes(campaign)) dismissed.push(campaign);
   } else {

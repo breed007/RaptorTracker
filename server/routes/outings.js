@@ -2,8 +2,9 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID: uuidv4 } = require('crypto');
 const { getDb } = require('../db');
+const { jsonList } = require('../lib/json');
 
 const router = express.Router();
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
@@ -34,7 +35,7 @@ function parseRow(r) {
   if (r.end_date && r.date) {
     days = Math.max(1, Math.round((new Date(r.end_date + 'T12:00:00') - new Date(r.date + 'T12:00:00')) / 86400000) + 1);
   }
-  return { ...r, photos: JSON.parse(r.photos || '[]'), miles, days };
+  return { ...r, photos: jsonList(r.photos), miles, days };
 }
 
 function body(req) {
@@ -134,7 +135,7 @@ router.delete('/:id', (req, res) => {
   const existing = db.prepare('SELECT id, photos FROM outings WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
   let list = [];
-  try { list = JSON.parse(existing.photos || '[]'); } catch (_) { list = []; }
+  try { list = jsonList(existing.photos); } catch (_) { list = []; }
   for (const p of list) fs.unlink(path.join(UPLOAD_DIR, path.basename(p)), () => {});
   db.prepare('DELETE FROM outings WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
@@ -147,7 +148,7 @@ router.post('/:id/photos', photoUpload.array('photos', 20), (req, res) => {
   const existing = db.prepare('SELECT id, photos FROM outings WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
   if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'No files uploaded' });
-  const updated = [...JSON.parse(existing.photos || '[]'), ...req.files.map(f => `/uploads/${f.filename}`)];
+  const updated = [...jsonList(existing.photos), ...req.files.map(f => `/uploads/${f.filename}`)];
   db.prepare('UPDATE outings SET photos = ? WHERE id = ?').run(JSON.stringify(updated), req.params.id);
   res.json({ photos: updated });
 });
@@ -157,7 +158,7 @@ router.delete('/:id/photos/:filename', (req, res) => {
   const existing = db.prepare('SELECT id, photos FROM outings WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
   const p = `/uploads/${path.basename(req.params.filename)}`;
-  const updated = JSON.parse(existing.photos || '[]').filter(x => x !== p);
+  const updated = jsonList(existing.photos).filter(x => x !== p);
   fs.unlink(path.join(UPLOAD_DIR, path.basename(req.params.filename)), () => {});
   db.prepare('UPDATE outings SET photos = ? WHERE id = ?').run(JSON.stringify(updated), req.params.id);
   res.json({ photos: updated });

@@ -54,6 +54,12 @@ jobs:
       - name: Upgrade tests (every released tag -> HEAD)
         run: npm run test:upgrade
 
+      # Boots the real server and attacks it: decompression bombs, path
+      # traversal, symlinks, smuggled script files, unauthenticated uploads,
+      # stale sessions. Builds its hostile archives with python3.
+      - name: Security tests
+        run: npm run test:security
+
       - name: Install client dependencies
         run: npm ci --prefix client
 

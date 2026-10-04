@@ -3,6 +3,7 @@ const PDFDocument = require('pdfkit');
 const path = require('path');
 const fs = require('fs');
 const { getDb } = require('../db');
+const { jsonList } = require('../lib/json');
 const router = express.Router();
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
@@ -35,11 +36,11 @@ router.get('/pdf/:vehicle_id', (req, res) => {
   `).get(vehicle_id);
   if (!uv) return res.status(404).json({ error: 'Vehicle not found' });
 
-  const auxLayout = JSON.parse(uv.aux_switch_layout || '[]');
+  const auxLayout = jsonList(uv.aux_switch_layout);
 
   const mods = db.prepare(
     "SELECT * FROM mods WHERE user_vehicle_id = ? AND status = 'Installed' ORDER BY category, part_name"
-  ).all(vehicle_id).map(m => ({ ...m, photos: JSON.parse(m.photos || '[]') }));
+  ).all(vehicle_id).map(m => ({ ...m, photos: jsonList(m.photos) }));
 
   const maintenance = db.prepare(
     'SELECT * FROM maintenance_log WHERE user_vehicle_id = ? ORDER BY date_performed DESC'

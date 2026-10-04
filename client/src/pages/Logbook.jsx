@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
+import { internalPath } from '../lib/links'
 
 const TYPES = {
   vehicle:  { label: 'Vehicle',     dot: 'bg-purple-500', chip: 'text-purple-600 dark:text-purple-400' },
@@ -109,7 +110,7 @@ export default function Logbook() {
                   return (
                     <div key={i} className="relative">
                       <span className={`absolute -left-[1.45rem] top-3 w-2.5 h-2.5 rounded-full ring-2 ring-raptor-base ${cfg.dot}`} />
-                      {e.link ? <Link to={e.link} className="block">{body}</Link> : body}
+                      {internalPath(e.link) ? <Link to={internalPath(e.link)} className="block">{body}</Link> : body}
                     </div>
                   )
                 })}

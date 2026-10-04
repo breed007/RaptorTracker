@@ -104,7 +104,12 @@ async function changePassword(req, res) {
   }
 
   await setPassword(new_password);
-  res.json({ ok: true });
+  // A changed password should end any session someone else may be holding.
+  // This one stays signed in.
+  if (req.sessionStore && typeof req.sessionStore.destroyAllExcept === 'function') {
+    req.sessionStore.destroyAllExcept(req.sessionID);
+  }
+  res.json({ ok: true, otherSessionsSignedOut: true });
 }
 
 module.exports = {

@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext'
 import StatsCard from '../components/StatsCard'
 import SpendChart from '../components/SpendChart'
 import StatusBadge from '../components/StatusBadge'
+import { internalPath } from '../lib/links'
 
 const money = (v, dp = 0) =>
   v == null ? '—' : '$' + Number(v).toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp })
@@ -215,8 +216,8 @@ export default function Dashboard() {
                   )}
                 </div>
               )
-              return a.link
-                ? <Link key={i} to={a.link} className="block">{body}</Link>
+              return internalPath(a.link)
+                ? <Link key={i} to={internalPath(a.link)} className="block">{body}</Link>
                 : <div key={i}>{body}</div>
             })}
             {allAttention.length > shownAttention.length && (

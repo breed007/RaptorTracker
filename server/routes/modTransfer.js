@@ -2,10 +2,13 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const archiver = require('archiver');
-const AdmZip = require('adm-zip');
+const { openZip } = require('../services/zipReader');
+const { isAllowedUpload } = require('../services/uploads');
+const { DATA_DIR } = require('../db');
 const multer = require('multer');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID: uuidv4 } = require('crypto');
 const { getDb } = require('../db');
+const { jsonList } = require('../lib/json');
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
 const router = express.Router();
@@ -41,7 +44,7 @@ function buildPayload(vehicle, mods, photoPathFn) {
       generation: vehicle.generation,
     },
     mods: mods.map(m => {
-      const photos = JSON.parse(m.photos || '[]');
+      const photos = jsonList(m.photos);
       const { id, user_vehicle_id, created_at, updated_at, ...rest } = m;
       return { ...rest, photos: photos.map(photoPathFn) };
     }),
@@ -91,7 +94,7 @@ router.get('/export/zip', (req, res) => {
   // Collect unique image filenames across all mods
   const imageFilenames = new Set();
   mods.forEach(m => {
-    JSON.parse(m.photos || '[]').forEach(p => imageFilenames.add(path.basename(p)));
+    jsonList(m.photos).forEach(p => imageFilenames.add(path.basename(p)));
   });
 
   // Build payload with paths remapped to images/ directory inside ZIP
@@ -112,7 +115,8 @@ router.get('/export/zip', (req, res) => {
 
 const importUpload = multer({
   storage: multer.diskStorage({
-    destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+    // Not UPLOAD_DIR: that folder is served to the browser.
+    destination: (req, file, cb) => { const d = path.join(DATA_DIR, 'tmp'); fs.mkdirSync(d, { recursive: true }); cb(null, d); },
     filename: (req, file, cb) => {
       const ext = path.extname(file.originalname).toLowerCase();
       cb(null, `import-${uuidv4()}${ext}`);
@@ -126,7 +130,7 @@ const importUpload = multer({
   limits: { fileSize: 200 * 1024 * 1024 },
 });
 
-router.post('/import', importUpload.single('file'), (req, res) => {
+router.post('/import', importUpload.single('file'), async (req, res) => {
   const { vehicle_id } = req.query;
   if (!vehicle_id) return res.status(400).json({ error: 'vehicle_id required' });
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
@@ -140,31 +144,39 @@ router.post('/import', importUpload.single('file'), (req, res) => {
 
   const ext = path.extname(req.file.originalname).toLowerCase();
   let payload;
-  const extractedImages = {}; // origFname -> Buffer
+  const extractedImages = {}; // original file name -> /uploads/<new name>, already on disk
+  const written = [];
+  const discard = () => written.forEach(f => fs.rm(f, { force: true }, () => {}));
 
+  let zip = null;
   try {
     if (ext === '.json') {
       const raw = fs.readFileSync(req.file.path, 'utf8');
       payload = JSON.parse(raw);
     } else {
-      const zip = new AdmZip(req.file.path);
-      const modsEntry = zip.getEntry('mods.json');
+      zip = await openZip(req.file.path);
+      const modsEntry = zip.find('mods.json');
       if (!modsEntry) throw new Error('ZIP does not contain mods.json');
-      payload = JSON.parse(modsEntry.getData().toString('utf8'));
-      zip.getEntries().forEach(entry => {
-        if (entry.entryName.startsWith('images/') && !entry.isDirectory) {
-          extractedImages[path.basename(entry.entryName)] = entry.getData();
-        }
-      });
+      payload = JSON.parse((await zip.read(modsEntry, 50 * 1024 * 1024)).toString('utf8'));
+      for (const entry of zip.filter(n => n.startsWith('images/') && isAllowedUpload(n))) {
+        const orig = path.basename(entry.fileName);
+        const newFname = `${uuidv4()}${path.extname(orig)}`;
+        const dest = path.join(UPLOAD_DIR, newFname);
+        await zip.extractTo(entry, dest, 100 * 1024 * 1024);
+        written.push(dest);
+        extractedImages[orig] = `/uploads/${newFname}`;
+      }
     }
   } catch (err) {
-    fs.unlink(req.file.path, () => {});
+    discard();
     return res.status(400).json({ error: `Could not parse file: ${err.message}` });
   } finally {
+    if (zip) zip.close();
     fs.unlink(req.file.path, () => {});
   }
 
   if (!payload?.mods || !Array.isArray(payload.mods)) {
+    discard();
     return res.status(400).json({ error: 'Invalid format: missing mods array' });
   }
 
@@ -188,11 +200,15 @@ router.post('/import', importUpload.single('file'), (req, res) => {
       for (const photoPath of (mod.photos || [])) {
         const origFname = path.basename(photoPath);
         if (extractedImages[origFname]) {
+          newPhotos.push(extractedImages[origFname]);
+        } else if (photoPath.startsWith('/uploads/') && isAllowedUpload(origFname) && fs.existsSync(path.join(UPLOAD_DIR, origFname))) {
+          // Copy rather than share: two mods pointing at one file means deleting
+          // either one breaks the other's photo.
           const newFname = `${uuidv4()}${path.extname(origFname)}`;
-          fs.writeFileSync(path.join(UPLOAD_DIR, newFname), extractedImages[origFname]);
+          const dest = path.join(UPLOAD_DIR, newFname);
+          fs.copyFileSync(path.join(UPLOAD_DIR, origFname), dest);
+          written.push(dest);
           newPhotos.push(`/uploads/${newFname}`);
-        } else if (photoPath.startsWith('/uploads/') && fs.existsSync(path.join(UPLOAD_DIR, origFname))) {
-          newPhotos.push(photoPath);
         }
       }
 
@@ -222,6 +238,7 @@ router.post('/import', importUpload.single('file'), (req, res) => {
   try {
     doImport();
   } catch (err) {
+    discard();
     return res.status(500).json({ error: `Import failed: ${err.message}` });
   }
 

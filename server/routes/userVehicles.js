@@ -2,8 +2,9 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID: uuidv4 } = require('crypto');
 const { getDb } = require('../db');
+const { jsonList } = require('../lib/json');
 const router = express.Router();
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
@@ -12,9 +13,9 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
 //  - dismissed warnings: clear the warning note but keep the factory designation
 //  - reclaimed switches: fully convert a factory slot into a normal available slot
 function applyAuxOverrides(uv) {
-  const layout = JSON.parse(uv.aux_switch_layout || '[]');
-  const dismissed = JSON.parse(uv.dismissed_aux_warnings || '[]');
-  const reclaimed = JSON.parse(uv.reclaimed_aux_switches || '[]');
+  const layout = jsonList(uv.aux_switch_layout);
+  const dismissed = jsonList(uv.dismissed_aux_warnings);
+  const reclaimed = jsonList(uv.reclaimed_aux_switches);
   return layout.map(slot => {
     if (reclaimed.includes(slot.switch_number)) {
       return { ...slot, factory_used: false, warning_note: null, default_label: 'User Available', reclaimed: true };
@@ -78,7 +79,7 @@ router.get('/', (req, res) => {
   res.json(rows.map(uv => ({
     ...uv,
     aux_switch_layout: applyAuxOverrides(uv),
-    vehicle_photos: JSON.parse(uv.vehicle_photos || '[]')
+    vehicle_photos: jsonList(uv.vehicle_photos)
   })));
 });
 
@@ -139,8 +140,8 @@ router.get('/:id', (req, res) => {
   res.json({
     ...uv,
     aux_switch_layout: applyAuxOverrides(uv),
-    engine_options: JSON.parse(uv.engine_options || '[]'),
-    vehicle_photos: JSON.parse(uv.vehicle_photos || '[]')
+    engine_options: jsonList(uv.engine_options),
+    vehicle_photos: jsonList(uv.vehicle_photos)
   });
 });
 
@@ -222,7 +223,7 @@ router.post('/:id/photos', vehiclePhotoUpload.array('photos', 20), (req, res) =>
   if (!existing) return res.status(404).json({ error: 'Not found' });
   if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'No files uploaded' });
 
-  const current = JSON.parse(existing.vehicle_photos || '[]');
+  const current = jsonList(existing.vehicle_photos);
   const added = req.files.map(f => `/uploads/${f.filename}`);
   const updated = [...current, ...added];
   const profile = existing.profile_photo || added[0];
@@ -239,7 +240,7 @@ router.delete('/:id/photos/:filename', (req, res) => {
   if (!existing) return res.status(404).json({ error: 'Not found' });
 
   const photoPath = `/uploads/${req.params.filename}`;
-  const current = JSON.parse(existing.vehicle_photos || '[]');
+  const current = jsonList(existing.vehicle_photos);
   const updated = current.filter(p => p !== photoPath);
 
   fs.unlink(path.join(UPLOAD_DIR, req.params.filename), () => {});
@@ -259,7 +260,7 @@ router.put('/:id/profile-photo', (req, res) => {
   const existing = db.prepare('SELECT id, vehicle_photos FROM user_vehicles WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
 
-  const photos = JSON.parse(existing.vehicle_photos || '[]');
+  const photos = jsonList(existing.vehicle_photos);
   if (!photos.includes(photoPath)) return res.status(400).json({ error: 'Photo not in gallery' });
 
   db.prepare('UPDATE user_vehicles SET profile_photo = ? WHERE id = ?').run(photoPath, req.params.id);
@@ -276,7 +277,7 @@ router.put('/:id/aux-warning-dismiss', (req, res) => {
   const uv = db.prepare('SELECT id, dismissed_aux_warnings FROM user_vehicles WHERE id = ?').get(req.params.id);
   if (!uv) return res.status(404).json({ error: 'Not found' });
 
-  let dismissed = JSON.parse(uv.dismissed_aux_warnings || '[]');
+  let dismissed = jsonList(uv.dismissed_aux_warnings);
   if (dismiss) {
     if (!dismissed.includes(switch_number)) dismissed.push(switch_number);
   } else {
@@ -299,7 +300,7 @@ router.put('/:id/aux-reclaim', (req, res) => {
   const uv = db.prepare('SELECT id, reclaimed_aux_switches FROM user_vehicles WHERE id = ?').get(req.params.id);
   if (!uv) return res.status(404).json({ error: 'Not found' });
 
-  let reclaimed = JSON.parse(uv.reclaimed_aux_switches || '[]');
+  let reclaimed = jsonList(uv.reclaimed_aux_switches);
   if (reclaim) {
     if (!reclaimed.includes(switch_number)) reclaimed.push(switch_number);
   } else {

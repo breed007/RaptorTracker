@@ -1,12 +1,13 @@
 // AUX electrical capacity computation, shared by the /api/aux-capacity route
 // and the dashboard overview so both agree on what counts as over-fused.
 const { getDb } = require('../db');
+const { jsonList } = require('../lib/json');
 
 // Per-vehicle AUX overrides, mirroring userVehicles.applyAuxOverrides
 function layoutFor(uv) {
-  const layout = JSON.parse(uv.aux_switch_layout || '[]');
-  const dismissed = JSON.parse(uv.dismissed_aux_warnings || '[]');
-  const reclaimed = JSON.parse(uv.reclaimed_aux_switches || '[]');
+  const layout = jsonList(uv.aux_switch_layout);
+  const dismissed = jsonList(uv.dismissed_aux_warnings);
+  const reclaimed = jsonList(uv.reclaimed_aux_switches);
   return layout.map(slot => {
     if (reclaimed.includes(slot.switch_number)) {
       return { ...slot, factory_used: false, warning_note: null, default_label: 'User Available', reclaimed: true };
@@ -56,7 +57,7 @@ function computeCapacity(db, vehicleId) {
   `).all(vehicleId).map(m => ({
     ...m,
     switches: (() => {
-      const arr = JSON.parse(m.aux_switches || '[]');
+      const arr = jsonList(m.aux_switches);
       if (arr.length) return arr.map(s => parseInt(s.switch_number)).filter(n => !isNaN(n));
       return m.aux_switch ? [m.aux_switch] : [];
     })(),

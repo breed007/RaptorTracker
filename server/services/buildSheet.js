@@ -10,6 +10,7 @@
  * off by default. A build list is meant to be public; what the truck cost is
  * not, and a share feature that leaks it by default is worse than no feature.
  */
+const { jsonList } = require('../lib/json');
 
 // Order categories the way people describe a build, not alphabetically.
 const CATEGORY_ORDER = [
@@ -50,7 +51,7 @@ function gather(db, vehicleId) {
   `).all(vehicleId).map(m => {
     let switches = [];
     try {
-      switches = JSON.parse(m.aux_switches || '[]')
+      switches = jsonList(m.aux_switches)
         .map(s => parseInt(s.switch_number, 10)).filter(n => !isNaN(n)).sort((a, b) => a - b);
     } catch (_) { switches = []; }
     return { ...m, switches };

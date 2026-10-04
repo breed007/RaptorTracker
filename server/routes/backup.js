@@ -2,7 +2,8 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const AdmZip = require('adm-zip');
+const { openZip } = require('../services/zipReader');
+const { isAllowedUpload } = require('../services/uploads');
 const Database = require('better-sqlite3');
 const { getDb, closeDb, DB_PATH, DATA_DIR } = require('../db');
 const { pipeBackupTo, listBackups, runScheduledBackup, BACKUP_DIR } = require('../services/backupArchive');
@@ -99,26 +100,33 @@ router.delete('/file/:name', (req, res) => {
 });
 
 // POST /api/restore — replace the database and uploads from a backup ZIP
-router.post('/restore', restoreUpload.single('backup'), (req, res) => {
+router.post('/restore', restoreUpload.single('backup'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No backup file uploaded' });
 
   const uploadedZipPath = req.file.path;
   const tmpDbPath = path.join(DATA_DIR, `restore-tmp-${Date.now()}.db`);
   const dbSnapshot = `${DB_PATH}.pre-restore`;
   const uploadsSnapshot = `${UPLOAD_DIR}.pre-restore`;
-  const cleanup = () => { try { fs.unlinkSync(uploadedZipPath); } catch (_) {} };
+  let zip = null;
+  const cleanup = () => {
+    if (zip) zip.close();
+    try { fs.unlinkSync(uploadedZipPath); } catch (_) {}
+  };
 
   try {
-    const zip = new AdmZip(uploadedZipPath);
-    const entries = zip.getEntries();
-    const dbEntry = entries.find(e => e.entryName === 'raptortracker.db' || e.entryName.endsWith('/raptortracker.db'));
+    // Streamed, size-checked extraction: a restore no longer needs the whole
+    // archive in memory, so it works on a Raspberry Pi with a large backup.
+    zip = await openZip(uploadedZipPath);
+    const dbEntry = zip.find(n => n === 'raptortracker.db' || n.endsWith('/raptortracker.db'));
     if (!dbEntry) {
       cleanup();
       return res.status(400).json({ error: 'Not a valid RaptorTracker backup (raptortracker.db not found in archive).' });
     }
 
     // 1) Write the candidate DB to a temp file and validate it BEFORE touching anything live
-    fs.writeFileSync(tmpDbPath, dbEntry.getData());
+    // Photos live in uploads/, so even years of records keep the database in
+    // the tens of MB. Anything near this ceiling is not a RaptorTracker backup.
+    await zip.extractTo(dbEntry, tmpDbPath, 512 * 1024 * 1024);
     try {
       const test = new Database(tmpDbPath, { readonly: true });
       // Will throw if this isn't a RaptorTracker database
@@ -151,14 +159,11 @@ router.post('/restore', restoreUpload.single('backup'), (req, res) => {
     if (fs.existsSync(UPLOAD_DIR)) { try { fs.renameSync(UPLOAD_DIR, uploadsSnapshot); } catch (_) {} }
     fs.mkdirSync(UPLOAD_DIR, { recursive: true });
     let restoredFiles = 0;
-    for (const entry of entries) {
-      if (entry.isDirectory) continue;
-      if (entry.entryName.startsWith('uploads/')) {
-        const base = path.basename(entry.entryName);
-        if (!base) continue;
-        fs.writeFileSync(path.join(UPLOAD_DIR, base), entry.getData());
-        restoredFiles++;
-      }
+    for (const entry of zip.filter(n => n.startsWith('uploads/'))) {
+      const base = path.basename(entry.fileName);
+      if (!base || base.startsWith('.') || !isAllowedUpload(base)) continue;
+      await zip.extractTo(entry, path.join(UPLOAD_DIR, base));
+      restoredFiles++;
     }
 
     cleanup();

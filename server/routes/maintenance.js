@@ -2,8 +2,9 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID: uuidv4 } = require('crypto');
 const { getDb } = require('../db');
+const { jsonList } = require('../lib/json');
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
 const router = express.Router();
@@ -28,7 +29,7 @@ const attachmentUpload = multer({
 });
 
 function parseRow(r) {
-  return { ...r, attachments: JSON.parse(r.attachments || '[]') };
+  return { ...r, attachments: jsonList(r.attachments) };
 }
 
 router.get('/', (req, res) => {
@@ -80,7 +81,7 @@ router.delete('/:id', (req, res) => {
   const existing = db.prepare('SELECT id, attachments FROM maintenance_log WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
   // Clean up attachment files
-  const attachments = JSON.parse(existing.attachments || '[]');
+  const attachments = jsonList(existing.attachments);
   for (const p of attachments) {
     fs.unlink(path.join(UPLOAD_DIR, path.basename(p)), () => {});
   }
@@ -96,7 +97,7 @@ router.post('/:id/attachments', attachmentUpload.array('attachments', 10), (req,
   if (!existing) return res.status(404).json({ error: 'Not found' });
   if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'No files uploaded' });
 
-  const current = JSON.parse(existing.attachments || '[]');
+  const current = jsonList(existing.attachments);
   const added = req.files.map(f => `/uploads/${f.filename}`);
   const updated = [...current, ...added];
 
@@ -111,7 +112,7 @@ router.delete('/:id/attachments/:filename', (req, res) => {
   if (!existing) return res.status(404).json({ error: 'Not found' });
 
   const filePath = `/uploads/${req.params.filename}`;
-  const current = JSON.parse(existing.attachments || '[]');
+  const current = jsonList(existing.attachments);
   const updated = current.filter(p => p !== filePath);
 
   fs.unlink(path.join(UPLOAD_DIR, req.params.filename), () => {});

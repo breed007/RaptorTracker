@@ -2,8 +2,9 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID: uuidv4 } = require('crypto');
 const { getDb } = require('../db');
+const { jsonList } = require('../lib/json');
 const router = express.Router();
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
@@ -25,9 +26,9 @@ const receiptUpload = multer({
 function parseMod(m) {
   return {
     ...m,
-    photos: JSON.parse(m.photos || '[]'),
-    aux_switches: JSON.parse(m.aux_switches || '[]'),
-    attachments: JSON.parse(m.attachments || '[]'),
+    photos: jsonList(m.photos),
+    aux_switches: jsonList(m.aux_switches),
+    attachments: jsonList(m.attachments),
   };
 }
 
@@ -164,7 +165,7 @@ router.delete('/:id', (req, res) => {
   // Remove the mod's files so deleting a mod doesn't orphan uploads on disk
   for (const key of ['photos', 'attachments']) {
     let list = [];
-    try { list = JSON.parse(existing[key] || '[]'); } catch (_) { list = []; }
+    try { list = jsonList(existing[key]); } catch (_) { list = []; }
     for (const p of list) fs.unlink(path.join(UPLOAD_DIR, path.basename(p)), () => {});
   }
 
@@ -180,7 +181,7 @@ router.post('/:id/attachments', receiptUpload.array('attachments', 10), (req, re
   if (!existing) return res.status(404).json({ error: 'Not found' });
   if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'No files uploaded' });
 
-  const current = JSON.parse(existing.attachments || '[]');
+  const current = jsonList(existing.attachments);
   const updated = [...current, ...req.files.map(f => `/uploads/${f.filename}`)];
   db.prepare('UPDATE mods SET attachments = ? WHERE id = ?').run(JSON.stringify(updated), req.params.id);
   res.json({ attachments: updated });
@@ -192,7 +193,7 @@ router.delete('/:id/attachments/:filename', (req, res) => {
   if (!existing) return res.status(404).json({ error: 'Not found' });
 
   const filePath = `/uploads/${path.basename(req.params.filename)}`;
-  const updated = JSON.parse(existing.attachments || '[]').filter(p => p !== filePath);
+  const updated = jsonList(existing.attachments).filter(p => p !== filePath);
   fs.unlink(path.join(UPLOAD_DIR, path.basename(req.params.filename)), () => {});
   db.prepare('UPDATE mods SET attachments = ? WHERE id = ?').run(JSON.stringify(updated), req.params.id);
   res.json({ attachments: updated });

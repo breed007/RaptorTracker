@@ -2,10 +2,13 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const archiver = require('archiver');
-const AdmZip = require('adm-zip');
+const { openZip } = require('../services/zipReader');
+const { isAllowedUpload } = require('../services/uploads');
+const { DATA_DIR } = require('../db');
 const multer = require('multer');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID: uuidv4 } = require('crypto');
 const { getDb } = require('../db');
+const { jsonList } = require('../lib/json');
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
 const router = express.Router();
@@ -27,13 +30,13 @@ router.get('/:id/export', (req, res) => {
 
   const mods = db.prepare(
     'SELECT * FROM mods WHERE user_vehicle_id = ? ORDER BY created_at ASC'
-  ).all(uv.id).map(m => ({ ...m, photos: JSON.parse(m.photos || '[]') }));
+  ).all(uv.id).map(m => ({ ...m, photos: jsonList(m.photos) }));
 
   const maintenance = db.prepare(
     'SELECT service_type, date_performed, mileage, cost, vendor, notes FROM maintenance_log WHERE user_vehicle_id = ? ORDER BY date_performed DESC'
   ).all(uv.id);
 
-  const vehiclePhotos = JSON.parse(uv.vehicle_photos || '[]');
+  const vehiclePhotos = jsonList(uv.vehicle_photos);
   const dateStr = new Date().toISOString().slice(0, 10);
   const fname = `${safeFilename(uv.nickname)}-${dateStr}.zip`;
 
@@ -100,7 +103,8 @@ router.get('/:id/export', (req, res) => {
 
 const importUpload = multer({
   storage: multer.diskStorage({
-    destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+    // Not UPLOAD_DIR: that folder is served to the browser.
+    destination: (req, file, cb) => { const d = path.join(DATA_DIR, 'tmp'); fs.mkdirSync(d, { recursive: true }); cb(null, d); },
     filename: (req, file, cb) => cb(null, `vimport-${uuidv4()}.zip`),
   }),
   fileFilter: (req, file, cb) => {
@@ -110,36 +114,41 @@ const importUpload = multer({
   limits: { fileSize: 500 * 1024 * 1024 },
 });
 
-router.post('/import', importUpload.single('file'), (req, res) => {
+router.post('/import', importUpload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
   const db = getDb();
   let payload;
-  const extractedImages = {};
+  // zip path -> /uploads/<new name>. Images stream straight to disk rather than
+  // being held in memory; anything written is removed again if the import fails.
+  const imageMap = {};
+  const written = [];
+  const discard = () => written.forEach(f => fs.rm(f, { force: true }, () => {}));
+  const IMAGE_DIRS = ['vehicle-photos/', 'sticker/', 'mod-images/'];
 
+  let zip = null;
   try {
-    const zip = new AdmZip(req.file.path);
-    const vehicleEntry = zip.getEntry('vehicle.json');
+    zip = await openZip(req.file.path);
+    const vehicleEntry = zip.find('vehicle.json');
     if (!vehicleEntry) throw new Error('ZIP does not contain vehicle.json');
-    payload = JSON.parse(vehicleEntry.getData().toString('utf8'));
+    payload = JSON.parse((await zip.read(vehicleEntry, 50 * 1024 * 1024)).toString('utf8'));
 
-    zip.getEntries().forEach(entry => {
-      if (!entry.isDirectory && (
-        entry.entryName.startsWith('vehicle-photos/') ||
-        entry.entryName.startsWith('sticker/') ||
-        entry.entryName.startsWith('mod-images/')
-      )) {
-        extractedImages[entry.entryName] = entry.getData();
-      }
-    });
+    for (const entry of zip.filter(n => IMAGE_DIRS.some(d => n.startsWith(d)) && isAllowedUpload(n))) {
+      const newFname = `${uuidv4()}${path.extname(entry.fileName) || '.jpg'}`;
+      const dest = path.join(UPLOAD_DIR, newFname);
+      await zip.extractTo(entry, dest, 100 * 1024 * 1024);
+      written.push(dest);
+      imageMap[entry.fileName] = `/uploads/${newFname}`;
+    }
   } catch (err) {
-    fs.unlink(req.file.path, () => {});
+    discard();
     return res.status(400).json({ error: `Could not parse ZIP: ${err.message}` });
   } finally {
+    if (zip) zip.close();
     fs.unlink(req.file.path, () => {});
   }
 
-  if (!payload?.vehicle) return res.status(400).json({ error: 'Invalid format: missing vehicle data' });
+  if (!payload?.vehicle) { discard(); return res.status(400).json({ error: 'Invalid format: missing vehicle data' }); }
 
   const v = payload.vehicle;
   const ref = v.vehicle_ref || {};
@@ -151,19 +160,13 @@ router.post('/import', importUpload.single('file'), (req, res) => {
   `).get(ref.make || 'Ford', ref.model || 'F-150 Raptor', ref.generation || '');
 
   if (!refVehicle) {
+    discard();
     return res.status(400).json({
       error: `No matching vehicle reference found for "${ref.make} ${ref.model} ${ref.generation}". Ensure this vehicle model is available in RaptorTracker.`,
     });
   }
 
-  function writeImage(zipPath) {
-    const buf = extractedImages[zipPath];
-    if (!buf) return null;
-    const ext = path.extname(zipPath) || '.jpg';
-    const newFname = `${uuidv4()}${ext}`;
-    fs.writeFileSync(path.join(UPLOAD_DIR, newFname), buf);
-    return `/uploads/${newFname}`;
-  }
+  const writeImage = (zipPath) => imageMap[zipPath] || null;
 
   let importResult;
   try {
@@ -258,6 +261,7 @@ router.post('/import', importUpload.single('file'), (req, res) => {
       return { vehicleId: newVehicleId, nickname: v.nickname, modsImported, modsSkipped, maintImported };
     })();
   } catch (err) {
+    discard();
     return res.status(500).json({ error: `Import failed: ${err.message}` });
   }
 

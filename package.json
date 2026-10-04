@@ -14,10 +14,10 @@
     "db:init": "node server/db/init.js",
     "test": "node test/smoke.js",
     "test:api": "node test/api.js",
-    "test:upgrade": "node test/upgrade.js"
+    "test:upgrade": "node test/upgrade.js",
+    "test:security": "node test/security.js"
   },
   "dependencies": {
-    "adm-zip": "^0.5.16",
     "archiver": "^7.0.1",
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^13.0.3",
@@ -26,10 +26,10 @@
     "express-rate-limit": "^8.6.0",
     "express-session": "^1.18.0",
     "multer": "^2.0.0",
-    "node-cron": "^3.0.3",
-    "nodemailer": "^6.9.13",
+    "node-cron": "^4.6.0",
+    "nodemailer": "^10.0.14",
     "pdfkit": "^0.15.0",
-    "uuid": "^9.0.1"
+    "yauzl": "^3.4.0"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
@@ -37,6 +37,9 @@
   },
   "overrides": {
     "glob": "^11.0.0",
-    "rimraf": "^5.0.0"
+    "rimraf": "^5.0.0",
+    "minimatch@^10": {
+      "brace-expansion": "^5.0.12"
+    }
   }
 }

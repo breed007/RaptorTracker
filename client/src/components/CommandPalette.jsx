@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
+import { internalPath } from '../lib/links'
 
 // Pages reachable by name, so the palette doubles as a nav jump-list
 const PAGES = [
@@ -63,7 +64,11 @@ export default function CommandPalette({ open, onClose }) {
 
   const items = [...pageMatches, ...results]
 
-  const go = (item) => { if (!item) return; onClose(); navigate(item.link) }
+  const go = (item) => {
+    const to = item && internalPath(item.link)
+    if (!to) return
+    onClose(); navigate(to)
+  }
 
   const onKeyDown = (e) => {
     if (e.key === 'ArrowDown') { e.preventDefault(); setActive(a => Math.min(a + 1, items.length - 1)) }
