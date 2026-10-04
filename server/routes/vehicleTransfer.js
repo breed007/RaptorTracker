@@ -8,7 +8,9 @@ const { DATA_DIR } = require('../db');
 const multer = require('multer');
 const { randomUUID: uuidv4 } = require('crypto');
 const { getDb } = require('../db');
-const { jsonList } = require('../lib/json');
+const { exportVehicle, importVehicle, isFormat3 } = require('../services/vehicleTransfer');
+const { localDate } = require('../lib/dates');
+const APP_VERSION = require('../../package.json').version;
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
 const router = express.Router();
@@ -18,28 +20,16 @@ function safeFilename(str) {
 }
 
 // ── Export Vehicle ZIP ─────────────────────────────────────────────────────────
+// Format 3: every per-vehicle table plus every file they reference. Meant for
+// moving a truck between your own installs — it includes purchase, financing,
+// and insurance details, so it isn't something to hand to a buyer.
 
 router.get('/:id/export', (req, res) => {
   const db = getDb();
-  const uv = db.prepare(`
-    SELECT uv.*, v.make, v.model, v.generation, v.variant
-    FROM user_vehicles uv JOIN vehicles v ON uv.vehicle_id = v.id
-    WHERE uv.id = ?
-  `).get(req.params.id);
-  if (!uv) return res.status(404).json({ error: 'Vehicle not found' });
+  const result = exportVehicle(db, req.params.id, { appVersion: APP_VERSION });
+  if (!result) return res.status(404).json({ error: 'Vehicle not found' });
 
-  const mods = db.prepare(
-    'SELECT * FROM mods WHERE user_vehicle_id = ? ORDER BY created_at ASC'
-  ).all(uv.id).map(m => ({ ...m, photos: jsonList(m.photos) }));
-
-  const maintenance = db.prepare(
-    'SELECT service_type, date_performed, mileage, cost, vendor, notes FROM maintenance_log WHERE user_vehicle_id = ? ORDER BY date_performed DESC'
-  ).all(uv.id);
-
-  const vehiclePhotos = jsonList(uv.vehicle_photos);
-  const dateStr = new Date().toISOString().slice(0, 10);
-  const fname = `${safeFilename(uv.nickname)}-${dateStr}.zip`;
-
+  const fname = `${safeFilename(result.manifest.vehicle.nickname)}-${localDate()}.zip`;
   res.setHeader('Content-Disposition', `attachment; filename="${fname}"`);
   res.setHeader('Content-Type', 'application/zip');
 
@@ -48,54 +38,11 @@ router.get('/:id/export', (req, res) => {
     if (!res.headersSent) res.status(500).json({ error: err.message });
   });
   archive.pipe(res);
-
-  const payload = {
-    version: 2,
-    exported_at: new Date().toISOString(),
-    vehicle: {
-      nickname: uv.nickname,
-      model_year: uv.model_year,
-      color: uv.color,
-      vin: uv.vin,
-      package_options: uv.package_options,
-      notes: uv.notes,
-      purchase_price: uv.purchase_price,
-      purchase_date: uv.purchase_date,
-      seller_name: uv.seller_name,
-      seller_contact: uv.seller_contact,
-      service_dealership: uv.service_dealership,
-      service_dealership_contact: uv.service_dealership_contact,
-      vehicle_ref: { make: uv.make, model: uv.model, generation: uv.generation, variant: uv.variant },
-      vehicle_photos: vehiclePhotos.map(p => `vehicle-photos/${path.basename(p)}`),
-      profile_photo: uv.profile_photo ? `vehicle-photos/${path.basename(uv.profile_photo)}` : null,
-      window_sticker: uv.window_sticker ? `sticker/${path.basename(uv.window_sticker)}` : null,
-    },
-    mods: mods.map(m => {
-      const { id, user_vehicle_id, created_at, updated_at, ...rest } = m;
-      return { ...rest, photos: m.photos.map(p => `mod-images/${path.basename(p)}`) };
-    }),
-    maintenance,
-  };
-
-  archive.append(JSON.stringify(payload, null, 2), { name: 'vehicle.json' });
-
-  for (const p of vehiclePhotos) {
-    const filePath = path.join(UPLOAD_DIR, path.basename(p));
-    if (fs.existsSync(filePath)) archive.file(filePath, { name: `vehicle-photos/${path.basename(p)}` });
+  archive.append(JSON.stringify(result.manifest, null, 2), { name: 'vehicle.json' });
+  for (const name of result.files) {
+    const filePath = path.join(UPLOAD_DIR, name);
+    if (isAllowedUpload(name) && fs.existsSync(filePath)) archive.file(filePath, { name: `files/${name}` });
   }
-
-  if (uv.window_sticker) {
-    const filePath = path.join(UPLOAD_DIR, path.basename(uv.window_sticker));
-    if (fs.existsSync(filePath)) archive.file(filePath, { name: `sticker/${path.basename(uv.window_sticker)}` });
-  }
-
-  const modImageFilenames = new Set();
-  mods.forEach(m => m.photos.forEach(p => modImageFilenames.add(path.basename(p))));
-  for (const imgName of modImageFilenames) {
-    const filePath = path.join(UPLOAD_DIR, imgName);
-    if (fs.existsSync(filePath)) archive.file(filePath, { name: `mod-images/${imgName}` });
-  }
-
   archive.finalize();
 });
 
@@ -124,7 +71,8 @@ router.post('/import', importUpload.single('file'), async (req, res) => {
   const imageMap = {};
   const written = [];
   const discard = () => written.forEach(f => fs.rm(f, { force: true }, () => {}));
-  const IMAGE_DIRS = ['vehicle-photos/', 'sticker/', 'mod-images/'];
+  // vehicle-photos/, sticker/, mod-images/ are the older layout; files/ is format 3.
+  const IMAGE_DIRS = ['vehicle-photos/', 'sticker/', 'mod-images/', 'files/'];
 
   let zip = null;
   try {
@@ -146,6 +94,25 @@ router.post('/import', importUpload.single('file'), async (req, res) => {
   } finally {
     if (zip) zip.close();
     fs.unlink(req.file.path, () => {});
+  }
+
+  if (isFormat3(payload)) {
+    const fileMap = {};
+    for (const [zipPath, newPath] of Object.entries(imageMap)) {
+      if (zipPath.startsWith('files/')) fileMap[path.basename(zipPath)] = newPath;
+    }
+    try {
+      const summary = importVehicle(db, payload, fileMap);
+      return res.status(201).json({
+        ok: true, format: 3, vehicleId: summary.vehicleId, nickname: summary.nickname,
+        counts: summary.counts, skippedTables: summary.skippedTables,
+        // kept for the existing import dialog
+        modsImported: summary.counts.mods || 0, maintImported: summary.counts.maintenance_log || 0,
+      });
+    } catch (err) {
+      discard();
+      return res.status(err.status || 500).json({ error: `Import failed: ${err.message}` });
+    }
   }
 
   if (!payload?.vehicle) { discard(); return res.status(400).json({ error: 'Invalid format: missing vehicle data' }); }

@@ -3,6 +3,7 @@ const multer = require('multer');
 const router = express.Router();
 const { getDb } = require('../db');
 const { analyze, TYPES } = require('../services/csvImport');
+const { refreshCurrentMileage } = require('../services/odometer');
 
 // CSVs are small; keep them in memory rather than littering the data dir.
 const upload = multer({
@@ -119,19 +120,8 @@ router.post('/csv', upload.single('file'), (req, res) => {
     return res.status(500).json({ error: `Import failed and was rolled back: ${err.message}`, ...preview });
   }
 
-  // Keep the vehicle's current mileage honest after a bulk import
-  try {
-    const maxOdo = db.prepare(`
-      SELECT MAX(m) AS m FROM (
-        SELECT MAX(odometer) AS m FROM fuel_log WHERE user_vehicle_id = @v
-        UNION ALL SELECT MAX(mileage) FROM maintenance_log WHERE user_vehicle_id = @v
-        UNION ALL SELECT MAX(odometer) FROM mileage_log WHERE user_vehicle_id = @v
-      )`).get({ v: Number(vehicle_id) });
-    if (maxOdo?.m) {
-      db.prepare('UPDATE user_vehicles SET current_mileage = ? WHERE id = ? AND (current_mileage IS NULL OR current_mileage < ?)')
-        .run(maxOdo.m, Number(vehicle_id), maxOdo.m);
-    }
-  } catch (_) { /* non-fatal */ }
+  // Imported history counts toward the vehicle's mileage like anything else.
+  try { refreshCurrentMileage(db, Number(vehicle_id)); } catch (_) { /* non-fatal */ }
 
   res.json({ committed: true, inserted, ...preview });
 });

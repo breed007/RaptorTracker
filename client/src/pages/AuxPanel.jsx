@@ -154,6 +154,11 @@ export default function AuxPanel() {
                 {capacity.summary.tight} near capacity
               </span>
             )}
+            {capacity.summary.conflicts > 0 && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-500">
+                {capacity.summary.conflicts} sharing a factory circuit
+              </span>
+            )}
             <Link to="/wishlist" className="ml-auto text-xs text-raptor-accent hover:underline">Plan in Wishlist →</Link>
           </div>
           <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
@@ -166,11 +171,29 @@ export default function AuxPanel() {
               <span className="text-raptor-secondary">Factory-used: <span className="text-raptor-primary font-semibold">{capacity.summary.factoryUsed}</span></span>
             )}
           </div>
-          {capacity.unassigned?.length > 0 && (
-            <p className="text-xs text-raptor-muted mt-2">
-              {capacity.unassigned.length} wishlist item{capacity.unassigned.length === 1 ? '' : 's'} draw power but
-              {capacity.unassigned.length === 1 ? " hasn't" : " haven't"} been assigned a switch yet.
-            </p>
+          {capacity.needsHome?.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-raptor-border space-y-1.5">
+              <div className="text-xs font-semibold text-raptor-secondary uppercase tracking-wide">Needs a switch</div>
+              {capacity.needsHome.map(item => (
+                <div key={`${item.kind}-${item.id}`} className="text-sm flex flex-wrap items-baseline gap-x-2">
+                  <span className="text-raptor-primary">{item.name}</span>
+                  <span className="text-raptor-muted text-xs">
+                    {item.amps}A · {item.kind === 'mod' ? (item.status || 'mod').toLowerCase() : 'wishlist'}
+                  </span>
+                  {item.tooBig ? (
+                    <span className="text-xs text-red-500 font-medium">
+                      More than any switch carries ({capacity.summary.largestFuse}A max). Plan a relay and its own fused circuit.
+                    </span>
+                  ) : item.fits.length > 0 ? (
+                    <span className="text-xs text-green-600 dark:text-green-400">
+                      Fits on AUX {item.fits.join(', ')}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-yellow-600 dark:text-yellow-500">No free switch has room for it.</span>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}
@@ -211,12 +234,13 @@ export default function AuxPanel() {
             <div className="mt-2">
               <div className="flex items-center justify-between text-xs mb-1 gap-2">
                 <span className="text-raptor-muted">
-                  {cap.totalAmps}A of {cap.fuse_amps}A
+                  {cap.unknownDraw && cap.totalAmps === 0 ? '?' : `${cap.totalAmps}A${cap.unknownDraw ? '+' : ''}`} of {cap.fuse_amps}A
                   {cap.plannedAmps > 0 && <span className="text-raptor-accent"> · {cap.plannedAmps}A planned</span>}
                 </span>
                 {cap.status === 'over' && <span className="text-red-500 font-semibold flex-shrink-0">over fuse</span>}
                 {cap.status === 'tight' && <span className="text-yellow-600 dark:text-yellow-500 font-semibold flex-shrink-0">near limit</span>}
-                {cap.status === 'ok' && cap.unknownDraw && <span className="text-raptor-muted flex-shrink-0">draw unknown</span>}
+                {cap.status === 'conflict' && <span className="text-yellow-600 dark:text-yellow-500 font-semibold flex-shrink-0">shares factory circuit</span>}
+                {(cap.status === 'ok' || cap.status === 'conflict') && cap.unknownDraw && <span className="text-raptor-muted flex-shrink-0">draw unknown</span>}
               </div>
               <div className="h-1.5 rounded-full bg-raptor-elevated overflow-hidden">
                 <div

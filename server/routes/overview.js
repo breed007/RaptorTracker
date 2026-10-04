@@ -62,6 +62,16 @@ router.get('/', (req, res) => {
       });
     }
   }
+  // A part on its way that no switch can carry needs a plan before it arrives.
+  for (const item of (capacity?.needsHome || []).filter(i => i.tooBig)) {
+    attention.push({
+      severity: 'warning',
+      category: 'electrical',
+      title: `${item.name} draws more than any AUX switch carries`,
+      detail: `${item.amps}A against a ${capacity.summary.largestFuse}A largest fuse — it needs a relay and its own circuit`,
+      link: '/aux',
+    });
+  }
 
   const order = { critical: 0, warning: 1 };
   attention.sort((a, b) => (order[a.severity] - order[b.severity]) || a.category.localeCompare(b.category));

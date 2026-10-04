@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
+import { localDate } from '../lib/dates'
 
 const SERVICE_TYPES = [
   'Oil Change', 'Tire Rotation', 'Air Filter (Engine)', 'Air Filter (Cabin)',
@@ -9,7 +10,7 @@ const SERVICE_TYPES = [
   'Transmission Fluid', 'Brake Fluid', 'Fuel Filter',
 ]
 
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => localDate()
 
 const TABS = [
   { id: 'fuel', label: 'Fuel' },
@@ -33,12 +34,13 @@ const DOC_TYPES = [
  * Big targets, minimum fields, stays put so you can log another.
  */
 export default function QuickAdd() {
-  const { selectedVehicleId, selectedVehicle } = useApp()
+  const { selectedVehicleId, selectedVehicle, refreshVehicles } = useApp()
   const [tab, setTab] = useState('fuel')
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState(null) // { type, text }
 
-  const [fuel, setFuel] = useState({ date: today(), odometer: '', gallons: '', price_per_gallon: '', total_cost: '', station: '' })
+  const blankFuel = () => ({ date: today(), odometer: '', gallons: '', price_per_gallon: '', total_cost: '', station: '', full_tank: true })
+  const [fuel, setFuel] = useState(blankFuel)
   const [odo, setOdo] = useState({ date: today(), odometer: '', note: '' })
   const [svc, setSvc] = useState({ service_type: '', date_performed: today(), mileage: '', cost: '', service_provider_type: '', vendor: '' })
 
@@ -53,6 +55,7 @@ export default function QuickAdd() {
       if (!res.ok) { setMsg({ type: 'err', text: data.error || 'Could not save.' }); return false }
       setMsg({ type: 'ok', text: 'Saved.' })
       onDone?.()
+      refreshVehicles?.()
       return true
     } catch {
       setMsg({ type: 'err', text: 'Could not save — check your connection.' })
@@ -140,8 +143,8 @@ export default function QuickAdd() {
       price_per_gallon: fuel.price_per_gallon !== '' ? fuel.price_per_gallon : null,
       total_cost: fuel.total_cost !== '' ? fuel.total_cost : null,
       station: fuel.station || null,
-      full_tank: true,
-    }, () => setFuel({ date: today(), odometer: '', gallons: '', price_per_gallon: '', total_cost: '', station: '' }))
+      full_tank: fuel.full_tank,
+    }, () => setFuel(blankFuel()))
   }
 
   const submitOdo = async (e) => {
@@ -172,6 +175,10 @@ export default function QuickAdd() {
   }
 
   const field = 'input-field text-base py-3' // larger touch targets on phones
+  // Examples read as examples, not as values already filled in; the odometer
+  // hint is this truck's last reading rather than a made-up number.
+  const lastOdo = selectedVehicle?.current_mileage
+  const odoHint = lastOdo ? `Last: ${Number(lastOdo).toLocaleString()}` : 'e.g. 31,900'
 
   return (
     <div className="max-w-md mx-auto space-y-4">
@@ -207,20 +214,20 @@ export default function QuickAdd() {
         <form onSubmit={submitFuel} className="card p-4 space-y-3">
           <div>
             <label className="label">Odometer *</label>
-            <input type="number" inputMode="numeric" value={fuel.odometer} onChange={e => setFuel(f => ({ ...f, odometer: e.target.value }))} className={field} placeholder="24500" required />
+            <input type="number" inputMode="numeric" value={fuel.odometer} onChange={e => setFuel(f => ({ ...f, odometer: e.target.value }))} className={field} placeholder={odoHint} required />
           </div>
           <div>
             <label className="label">Gallons *</label>
-            <input type="number" inputMode="decimal" step="0.001" value={fuel.gallons} onChange={e => setFuel(f => ({ ...f, gallons: e.target.value }))} className={field} placeholder="26.2" required />
+            <input type="number" inputMode="decimal" step="0.001" value={fuel.gallons} onChange={e => setFuel(f => ({ ...f, gallons: e.target.value }))} className={field} placeholder="e.g. 26.2" required />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">$ / gal</label>
-              <input type="number" inputMode="decimal" step="0.001" value={fuel.price_per_gallon} onChange={e => setFuel(f => ({ ...f, price_per_gallon: e.target.value }))} className={field} placeholder="3.459" />
+              <input type="number" inputMode="decimal" step="0.001" value={fuel.price_per_gallon} onChange={e => setFuel(f => ({ ...f, price_per_gallon: e.target.value }))} className={field} placeholder="e.g. 3.459" />
             </div>
             <div>
               <label className="label">Total $</label>
-              <input type="number" inputMode="decimal" step="0.01" value={fuel.total_cost} onChange={e => setFuel(f => ({ ...f, total_cost: e.target.value }))} className={field} placeholder="auto" />
+              <input type="number" inputMode="decimal" step="0.01" value={fuel.total_cost} onChange={e => setFuel(f => ({ ...f, total_cost: e.target.value }))} className={field} placeholder="Calculated" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -230,9 +237,21 @@ export default function QuickAdd() {
             </div>
             <div>
               <label className="label">Station</label>
-              <input type="text" value={fuel.station} onChange={e => setFuel(f => ({ ...f, station: e.target.value }))} className={field} placeholder="Costco" />
+              <input type="text" value={fuel.station} onChange={e => setFuel(f => ({ ...f, station: e.target.value }))} className={field} placeholder="e.g. Costco" />
             </div>
           </div>
+          <label className="flex items-start gap-3 py-1 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={fuel.full_tank}
+              onChange={e => setFuel(f => ({ ...f, full_tank: e.target.checked }))}
+              className="mt-0.5 w-5 h-5 accent-raptor-accent"
+            />
+            <span>
+              <span className="block text-sm text-raptor-primary">Filled the tank</span>
+              <span className="block text-xs text-raptor-muted">Turn off for a partial fill. MPG is only measured between full tanks.</span>
+            </span>
+          </label>
           <button type="submit" disabled={saving} className="btn-primary w-full py-3 text-base disabled:opacity-50">
             {saving ? 'Saving…' : 'Log Fill-up'}
           </button>
@@ -243,7 +262,7 @@ export default function QuickAdd() {
         <form onSubmit={submitOdo} className="card p-4 space-y-3">
           <div>
             <label className="label">Odometer *</label>
-            <input type="number" inputMode="numeric" value={odo.odometer} onChange={e => setOdo(o => ({ ...o, odometer: e.target.value }))} className={field} placeholder="24500" required />
+            <input type="number" inputMode="numeric" value={odo.odometer} onChange={e => setOdo(o => ({ ...o, odometer: e.target.value }))} className={field} placeholder={odoHint} required />
           </div>
           <div>
             <label className="label">Date</label>
@@ -275,13 +294,13 @@ export default function QuickAdd() {
             </div>
             <div>
               <label className="label">Mileage</label>
-              <input type="number" inputMode="numeric" value={svc.mileage} onChange={e => setSvc(s => ({ ...s, mileage: e.target.value }))} className={field} placeholder="24500" />
+              <input type="number" inputMode="numeric" value={svc.mileage} onChange={e => setSvc(s => ({ ...s, mileage: e.target.value }))} className={field} placeholder={odoHint} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Cost</label>
-              <input type="number" inputMode="decimal" step="0.01" value={svc.cost} onChange={e => setSvc(s => ({ ...s, cost: e.target.value }))} className={field} placeholder="0.00" />
+              <input type="number" inputMode="decimal" step="0.01" value={svc.cost} onChange={e => setSvc(s => ({ ...s, cost: e.target.value }))} className={field} placeholder="e.g. 89.99" />
             </div>
             <div>
               <label className="label">Serviced by</label>

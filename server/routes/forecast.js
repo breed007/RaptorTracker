@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
 const { mileageTrend, usageRate, round2 } = require('../services/mileageStats');
+const { localDate } = require('../lib/dates');
 
 const DAY_MS = 86400000;
-const iso = (d) => d.toISOString().slice(0, 10);
+const iso = (d) => localDate(d);
 const addDays = (date, days) => new Date(date.getTime() + days * DAY_MS);
 const addMonths = (dateStr, months) => {
   const d = new Date(dateStr + 'T12:00:00');

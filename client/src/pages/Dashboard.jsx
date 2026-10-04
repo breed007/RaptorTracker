@@ -5,6 +5,7 @@ import StatsCard from '../components/StatsCard'
 import SpendChart from '../components/SpendChart'
 import StatusBadge from '../components/StatusBadge'
 import { internalPath } from '../lib/links'
+import { localDate } from '../lib/dates'
 
 const money = (v, dp = 0) =>
   v == null ? '—' : '$' + Number(v).toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp })
@@ -72,7 +73,7 @@ export default function Dashboard() {
       body: JSON.stringify({
         user_vehicle_id: selectedVehicleId,
         service_type: r.campaign ? `Recall ${r.campaign}` : 'Recall service',
-        date_performed: new Date().toISOString().slice(0, 10),
+        date_performed: localDate(),
         service_provider_type: 'dealership',
         notes,
       }),

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import Nav from './Nav'
 import CommandPalette from './CommandPalette'
+import Toaster from './Toaster'
 
 export default function Layout({ children }) {
   const [navOpen, setNavOpen] = useState(false)
@@ -18,6 +19,8 @@ export default function Layout({ children }) {
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [])
+
+  const location = useLocation()
 
   return (
     <div className="flex min-h-screen bg-raptor-base">
@@ -82,8 +85,9 @@ export default function Layout({ children }) {
         </footer>
       </div>
 
-      {/* Floating quick-add — phone only, where fuel/odometer logging happens */}
-      <Link
+      {/* Floating quick-add — phone only, where fuel/odometer logging happens.
+          Hidden on the Quick Add page itself, where it would link to itself. */}
+      {location.pathname !== '/quick' && <Link
         to="/quick"
         className="lg:hidden fixed bottom-5 right-5 z-30 w-14 h-14 rounded-full bg-raptor-accent text-white shadow-lg flex items-center justify-center active:scale-95 transition-transform"
         aria-label="Quick add"
@@ -91,8 +95,9 @@ export default function Layout({ children }) {
         <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
         </svg>
-      </Link>
+      </Link>}
 
+      <Toaster />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
     </div>
   )

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import ConfirmModal from '../components/ConfirmModal'
+import { localDate } from '../lib/dates'
 
 const CheckIcon = () => (
   <svg className="w-4 h-4 text-raptor-accent flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -106,7 +107,7 @@ export default function Export() {
   const handleBackup = () => {
     const a = document.createElement('a')
     a.href = '/api/backup'
-    a.download = `raptortracker-backup-${new Date().toISOString().slice(0, 10)}.zip`
+    a.download = `raptortracker-backup-${localDate()}.zip`
     a.click()
   }
 
@@ -158,7 +159,7 @@ export default function Export() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       const nickname = selectedVehicle?.nickname?.replace(/[^a-z0-9]/gi, '-') || 'Raptor'
-      const date = new Date().toISOString().slice(0, 10)
+      const date = localDate()
       a.href = url
       a.download = `RaptorTracker-${nickname}-${date}.pdf`
       a.click()
@@ -182,7 +183,7 @@ export default function Export() {
 
   const handleCsv = (type) => {
     if (!selectedVehicleId) return
-    const date = new Date().toISOString().slice(0, 10)
+    const date = localDate()
     const a = document.createElement('a')
     a.href = `/api/export/csv/${type}/${selectedVehicleId}`
     a.download = `RaptorTracker-${type}-${date}.csv`
@@ -285,7 +286,7 @@ export default function Export() {
       </button>
 
       <p className="text-xs text-raptor-muted text-center">
-        File: RaptorTracker-{(selectedVehicle?.nickname || 'Raptor').replace(/[^a-z0-9]/gi, '-')}-{new Date().toISOString().slice(0, 10)}.pdf
+        File: RaptorTracker-{(selectedVehicle?.nickname || 'Raptor').replace(/[^a-z0-9]/gi, '-')}-{localDate()}.pdf
       </p>
 
       {/* CSV export */}

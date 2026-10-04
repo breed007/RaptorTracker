@@ -350,11 +350,17 @@ export default function FuelLog() {
   const avgMpg = stats?.avgMpg ? parseFloat(stats.avgMpg) : null
   const hasFactoryMpg = factoryMpg.city != null || factoryMpg.hwy != null
 
+  // Your average is mixed driving, so compare it with EPA combined — the
+  // 55% city / 45% highway harmonic blend EPA itself publishes — not highway,
+  // which made every truck look worse than it is.
+  const combinedMpg = factoryMpg.city != null && factoryMpg.hwy != null
+    ? 1 / (0.55 / Number(factoryMpg.city) + 0.45 / Number(factoryMpg.hwy))
+    : null
   let comparisonLine = null
-  if (avgMpg != null && factoryMpg.hwy != null) {
-    const diff = avgMpg - Number(factoryMpg.hwy)
+  if (avgMpg != null && combinedMpg != null) {
+    const diff = avgMpg - combinedMpg
     const sign = diff >= 0 ? '+' : ''
-    comparisonLine = `Your avg: ${avgMpg.toFixed(1)} mpg vs. factory highway: ${factoryMpg.hwy} mpg (${sign}${diff.toFixed(1)})`
+    comparisonLine = `Your average: ${avgMpg.toFixed(1)} mpg vs. EPA combined: ${combinedMpg.toFixed(1)} mpg (${sign}${diff.toFixed(1)})`
   }
 
   // ── No vehicle guard ───────────────────────────────────────────────────────
@@ -447,6 +453,11 @@ export default function FuelLog() {
                 Highway: <span className="font-semibold text-raptor-primary">{factoryMpg.hwy} mpg</span>
               </span>
             )}
+            {combinedMpg != null && (
+              <span className="text-raptor-secondary">
+                Combined: <span className="font-semibold text-raptor-primary">{combinedMpg.toFixed(1)} mpg</span>
+              </span>
+            )}
           </div>
           {comparisonLine && (
             <p className="text-sm text-raptor-secondary">{comparisonLine}</p>
@@ -496,7 +507,7 @@ export default function FuelLog() {
                 value={form.odometer}
                 onChange={e => setField('odometer', e.target.value)}
                 className="input-field"
-                placeholder="e.g. 24500"
+                placeholder="e.g. 31,900"
                 min="0"
                 step="1"
                 required

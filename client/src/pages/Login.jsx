@@ -1,32 +1,12 @@
 import React, { useState } from 'react'
 import { useApp } from '../context/AppContext'
 
-function RaptorTruckLogo() {
+// The same bolt mark as the home-screen icon, favicon, and landing page, so
+// the first screen a new owner sees matches the icon they tapped.
+function BoltMark() {
   return (
-    <svg
-      viewBox="0 0 80 50"
-      fill="currentColor"
-      className="w-full h-full"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      {/* Truck body */}
-      <path d="M2 44 L2 31 Q2 27 6 25 L27 25 L27 10 Q27 7 31 6 L54 6 Q58 6 61 10 L68 22 L73 24 Q77 24 78 28 L78 44 Z" />
-      {/* Cab window */}
-      <path d="M32 9 L32 22 L62 22 L57 11 Q56 9 54 9 Z" fill="rgba(255,255,255,0.18)" />
-      {/* Bed divider line */}
-      <line x1="27" y1="25" x2="27" y2="44" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
-      {/* Front wheel */}
-      <circle cx="15" cy="41" r="10" fill="currentColor" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-      <circle cx="15" cy="41" r="6" fill="rgba(0,0,0,0.3)" />
-      <circle cx="15" cy="41" r="2.5" fill="rgba(255,255,255,0.25)" />
-      {/* Rear wheel */}
-      <circle cx="64" cy="41" r="10" fill="currentColor" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-      <circle cx="64" cy="41" r="6" fill="rgba(0,0,0,0.3)" />
-      <circle cx="64" cy="41" r="2.5" fill="rgba(255,255,255,0.25)" />
-      {/* Front bumper / light */}
-      <rect x="76" y="30" width="3" height="6" rx="1" fill="rgba(255,255,255,0.6)" />
-      {/* Exhaust */}
-      <rect x="2" y="28" width="1.5" height="4" rx="0.5" fill="rgba(255,255,255,0.3)" />
+    <svg viewBox="0 0 512 512" className="w-12 h-12" aria-hidden="true">
+      <path d="M288 96 160 288h88l-24 128 128-192h-88z" fill="#FF6B00" />
     </svg>
   )
 }
@@ -68,12 +48,10 @@ export default function Login() {
         {/* Logo + wordmark */}
         <div className="text-center mb-8">
           <div
-            className="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-4 text-white"
-            style={{ backgroundColor: 'var(--rl-sidebar-bg)' }}
+            className="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-4"
+            style={{ backgroundColor: '#0f172a' }}
           >
-            <div className="w-14 h-10">
-              <RaptorTruckLogo />
-            </div>
+            <BoltMark />
           </div>
           <h1 className="font-display font-bold text-4xl text-raptor-primary tracking-wide">RaptorTracker</h1>
           <p className="text-raptor-muted text-sm mt-1">Ford Raptor Build Tracker</p>
@@ -82,25 +60,27 @@ export default function Login() {
         <div className="card p-6 shadow-sm w-full">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="label">Username</label>
+              <label className="label" htmlFor="login-username">Username</label>
               <input
+                id="login-username"
                 type="text"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
                 className="input-field"
-                placeholder="admin"
+                required
                 autoComplete="username"
                 autoFocus
               />
             </div>
             <div>
-              <label className="label">Password</label>
+              <label className="label" htmlFor="login-password">Password</label>
               <input
+                id="login-password"
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 className="input-field"
-                placeholder="••••••••"
+                required
                 autoComplete="current-password"
               />
             </div>

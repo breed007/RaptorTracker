@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import ConfirmModal from '../components/ConfirmModal'
 import StatsCard from '../components/StatsCard'
+import { localDate } from '../lib/dates'
 
 const DIFFICULTY_CLS = {
   easy: 'bg-green-500/15 text-green-600 dark:text-green-400',
@@ -12,7 +13,7 @@ const DIFFICULTY_CLS = {
 }
 
 const EMPTY = {
-  name: '', date: new Date().toISOString().slice(0, 10), end_date: '',
+  name: '', date: localDate(), end_date: '',
   location: '', trail_name: '', difficulty: '', terrain: '',
   odometer_start: '', odometer_end: '', tire_psi_front: '', tire_psi_rear: '',
   tire_set_id: '', companions: '', conditions: '', damage: '', notes: '',

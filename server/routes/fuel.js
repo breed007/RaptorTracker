@@ -1,6 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
+const { afterWrite } = require('../services/odometer');
+
+// Forms send booleans, numbers, or strings. Only an explicit 'no' is a partial
+// fill; anything else (including the field being absent) is a full tank.
+const isFull = (v) => !(v === false || v === 0 || v === '0' || v === 'false');
 
 // GET /api/fuel?vehicle_id=X
 router.get('/', (req, res) => {
@@ -81,17 +86,12 @@ router.post('/', (req, res) => {
   `).run(user_vehicle_id, date, parseInt(odometer), parseFloat(gallons),
          price_per_gallon || null, computedTotal,
          station || null, notes || null,
-         full_tank !== false ? 1 : 0,
+         isFull(full_tank) ? 1 : 0,
          trip_type || 'mixed');
 
-  // Bump current_mileage on the vehicle if this is the highest odometer seen
-  const uv = db.prepare('SELECT current_mileage FROM user_vehicles WHERE id = ?').get(user_vehicle_id);
-  if (!uv?.current_mileage || parseInt(odometer) > uv.current_mileage) {
-    db.prepare('UPDATE user_vehicles SET current_mileage = ? WHERE id = ?')
-      .run(parseInt(odometer), user_vehicle_id);
-  }
-
-  res.json(db.prepare('SELECT * FROM fuel_log WHERE id = ?').get(r.lastInsertRowid));
+  const { warning } = afterWrite(db, user_vehicle_id,
+    { date, odometer, self: { source: 'fuel_log', id: r.lastInsertRowid } });
+  res.json({ ...db.prepare('SELECT * FROM fuel_log WHERE id = ?').get(r.lastInsertRowid), odometerWarning: warning });
 });
 
 // PUT /api/fuel/:id
@@ -99,6 +99,8 @@ router.put('/:id', (req, res) => {
   const { date, odometer, gallons, price_per_gallon, total_cost,
           station, notes, full_tank, trip_type } = req.body;
   const db = getDb();
+  const existing = db.prepare('SELECT user_vehicle_id FROM fuel_log WHERE id = ?').get(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'Not found' });
   const computedTotal = total_cost != null ? total_cost
     : (price_per_gallon ? Math.round(price_per_gallon * gallons * 100) / 100 : null);
   db.prepare(`
@@ -108,14 +110,20 @@ router.put('/:id', (req, res) => {
   `).run(date, parseInt(odometer), parseFloat(gallons),
          price_per_gallon || null, computedTotal,
          station || null, notes || null,
-         full_tank !== false ? 1 : 0,
+         isFull(full_tank) ? 1 : 0,
          trip_type || 'mixed', req.params.id);
-  res.json(db.prepare('SELECT * FROM fuel_log WHERE id = ?').get(req.params.id));
+  const { warning } = afterWrite(db, existing.user_vehicle_id,
+    { date, odometer, self: { source: 'fuel_log', id: req.params.id } });
+  res.json({ ...db.prepare('SELECT * FROM fuel_log WHERE id = ?').get(req.params.id), odometerWarning: warning });
 });
 
 // DELETE /api/fuel/:id
 router.delete('/:id', (req, res) => {
-  getDb().prepare('DELETE FROM fuel_log WHERE id = ?').run(req.params.id);
+  const db = getDb();
+  const existing = db.prepare('SELECT user_vehicle_id FROM fuel_log WHERE id = ?').get(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'Not found' });
+  db.prepare('DELETE FROM fuel_log WHERE id = ?').run(req.params.id);
+  afterWrite(db, existing.user_vehicle_id);
   res.json({ ok: true });
 });
 

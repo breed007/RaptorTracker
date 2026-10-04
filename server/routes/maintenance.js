@@ -5,6 +5,8 @@ const fs = require('fs');
 const { randomUUID: uuidv4 } = require('crypto');
 const { getDb } = require('../db');
 const { jsonList } = require('../lib/json');
+const { afterWrite } = require('../services/odometer');
+const { toNum, toInt } = require('../lib/parse');
 const { detachUpload } = require('../services/uploads');
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
@@ -54,16 +56,18 @@ router.post('/', (req, res) => {
     INSERT INTO maintenance_log (user_vehicle_id, service_type, date_performed, mileage, cost, vendor, notes, service_provider_type, attachments)
     VALUES (?,?,?,?,?,?,?,?,'[]')
   `).run(user_vehicle_id, service_type, date_performed,
-         mileage ? parseInt(mileage) : null,
-         cost != null ? parseFloat(cost) : null,
+         toInt(mileage), toNum(cost),
          vendor || null, notes || null, provider);
+  // A service logged at a higher mileage moves the truck forward, like a fill-up.
+  const { warning } = afterWrite(db, user_vehicle_id,
+    { date: date_performed, odometer: mileage, self: { source: 'maintenance_log', id: result.lastInsertRowid } });
   const created = db.prepare('SELECT * FROM maintenance_log WHERE id = ?').get(result.lastInsertRowid);
-  res.status(201).json(parseRow(created));
+  res.status(201).json({ ...parseRow(created), odometerWarning: warning });
 });
 
 router.put('/:id', (req, res) => {
   const db = getDb();
-  const existing = db.prepare('SELECT id FROM maintenance_log WHERE id = ?').get(req.params.id);
+  const existing = db.prepare('SELECT id, user_vehicle_id FROM maintenance_log WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
   const { service_type, date_performed, mileage, cost, vendor, notes, service_provider_type } = req.body;
   const provider = ['dealership', 'independent', 'owner'].includes(service_provider_type) ? service_provider_type : null;
@@ -71,15 +75,16 @@ router.put('/:id', (req, res) => {
     UPDATE maintenance_log SET service_type=?, date_performed=?, mileage=?, cost=?, vendor=?, notes=?, service_provider_type=?
     WHERE id=?
   `).run(service_type, date_performed,
-         mileage ? parseInt(mileage) : null,
-         cost != null ? parseFloat(cost) : null,
+         toInt(mileage), toNum(cost),
          vendor || null, notes || null, provider, req.params.id);
-  res.json({ ok: true });
+  const { warning } = afterWrite(db, existing.user_vehicle_id,
+    { date: date_performed, odometer: mileage, self: { source: 'maintenance_log', id: req.params.id } });
+  res.json({ ok: true, odometerWarning: warning });
 });
 
 router.delete('/:id', (req, res) => {
   const db = getDb();
-  const existing = db.prepare('SELECT id, attachments FROM maintenance_log WHERE id = ?').get(req.params.id);
+  const existing = db.prepare('SELECT id, user_vehicle_id, attachments FROM maintenance_log WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
   // Clean up attachment files
   const attachments = jsonList(existing.attachments);
@@ -87,6 +92,7 @@ router.delete('/:id', (req, res) => {
     fs.unlink(path.join(UPLOAD_DIR, path.basename(p)), () => {});
   }
   db.prepare('DELETE FROM maintenance_log WHERE id = ?').run(req.params.id);
+  afterWrite(db, existing.user_vehicle_id);
   res.json({ ok: true });
 });
 

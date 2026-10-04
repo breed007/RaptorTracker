@@ -91,6 +91,12 @@ function computeCapacity(db, vehicleId) {
       else if (totalAmps > fuse * 0.8) status = 'tight';
     }
 
+    // A factory-wired switch already powers something (the bumper fogs on
+    // Gen 3.5). A mod assigned here shares that circuit unless the owner has
+    // reclaimed the switch — worth saying out loud, not counting as "factory".
+    const conflict = !!slot.factory_used && onIt.length > 0;
+    if (conflict && status === 'ok') status = 'conflict';
+
     return {
       switch_number: n,
       fuse_amps: fuse,
@@ -98,6 +104,7 @@ function computeCapacity(db, vehicleId) {
       factory_used: !!slot.factory_used,
       reclaimed: !!slot.reclaimed,
       available: !slot.factory_used && onIt.length === 0,
+      conflict,
       mods: onIt,
       planned: plannedOnIt,
       currentAmps, plannedAmps, totalAmps,
@@ -108,22 +115,46 @@ function computeCapacity(db, vehicleId) {
   });
 
   const usable = switches.filter(s => !s.factory_used);
+  // "Too big" is judged against every fuse on the panel, factory-wired ones
+  // included: a part that would fit a reclaimed AUX 1 isn't too big, it just
+  // has nowhere free to go yet.
+  const largestFuse = Math.max(0, ...switches.map(s => s.fuse_amps || 0));
+
+  // Things that draw power but have no switch yet: planned wishlist items, and
+  // mods still on the way (ordered, in transit, researching). Installed mods
+  // with no switch are assumed to be wired elsewhere — a winch on the battery,
+  // say — and left alone. For each, say which free switches could carry it,
+  // or that none can: the case this planner exists to catch before wiring.
+  const needsHome = [
+    ...planned.filter(w => !w.aux_switch && w.amp_draw > 0)
+      .map(w => ({ kind: 'wishlist', id: w.id, name: w.part_name, amps: w.amp_draw, priority: w.priority })),
+    ...mods.filter(m => !m.switches.length && m.amp_draw > 0 && m.status !== 'Installed')
+      .map(m => ({ kind: 'mod', id: m.id, name: m.part_name, amps: m.amp_draw, status: m.status })),
+  ].map(item => {
+    const fits = usable
+      .filter(s => s.mods.length === 0 && s.planned.length === 0 && s.fuse_amps && item.amps <= s.fuse_amps * 0.8)
+      .map(s => s.switch_number);
+    return { ...item, fits, tooBig: largestFuse > 0 && item.amps > largestFuse };
+  });
+
   const summary = {
     total: switches.length,
-    factoryUsed: switches.filter(s => s.factory_used).length,
-    occupied: usable.filter(s => s.mods.length > 0).length,
+    factoryUsed: switches.filter(s => s.factory_used && !s.conflict).length,
+    occupied: switches.filter(s => s.mods.length > 0).length,
     free: usable.filter(s => s.mods.length === 0 && s.planned.length === 0).length,
     spokenFor: usable.filter(s => s.mods.length === 0 && s.planned.length > 0).length,
     over: switches.filter(s => s.status === 'over').length,
     tight: switches.filter(s => s.status === 'tight').length,
+    conflicts: switches.filter(s => s.conflict).length,
+    unknownDraw: switches.filter(s => s.unknownDraw).length,
+    tooBig: needsHome.filter(i => i.tooBig).length,
+    largestFuse,
   };
 
-  // Wishlist items with a draw but no switch chosen yet — these need somewhere to go
-  const unassigned = planned
-    .filter(w => !w.aux_switch)
-    .map(w => ({ id: w.id, name: w.part_name, amps: w.amp_draw, priority: w.priority }));
+  // `unassigned` kept for older clients; `needsHome` is the full list.
+  const unassigned = needsHome.filter(i => i.kind === 'wishlist');
 
-  return { hasAux: true, switches, summary, unassigned };
+  return { hasAux: true, switches, summary, needsHome, unassigned };
 }
 
 

@@ -203,6 +203,36 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
       eq(r.body?.current_mileage, 25380, 'current_mileage');
     });
 
+    // --- One source of truth for mileage -----------------------------------
+    r = await req('POST', '/api/maintenance', {
+      user_vehicle_id: vid, service_type: 'Tire Rotation', date_performed: '2024-06-20', mileage: 26000,
+    });
+    check('a service logged at a higher mileage moves the truck forward', () => eq(r.status, 201, 'status'));
+    r = await req('GET', `/api/user-vehicles/${vid}`);
+    check('current mileage follows the service', () => eq(r.body.current_mileage, 26000, 'current_mileage'));
+
+    r = await req('POST', '/api/fuel', {
+      user_vehicle_id: vid, date: '2024-06-05', odometer: 24000, gallons: 20, full_tank: true,
+    });
+    check('a reading lower than an earlier one comes back with a warning', () => {
+      truthy(r.body.odometerWarning, 'odometerWarning');
+      truthy(/lower than/.test(r.body.odometerWarning), `warning text: ${r.body.odometerWarning}`);
+    });
+
+    r = await req('POST', '/api/mileage', { user_vehicle_id: vid, date: '2024-06-21', odometer: 260000 });
+    const typoId = r.body.id;
+    check('an extra-digit jump is flagged', () => {
+      truthy(/extra digit/.test(r.body.odometerWarning || ''), `warning text: ${r.body.odometerWarning}`);
+      eq(r.body.current_mileage, 260000, 'saved anyway');
+    });
+    r = await req('DELETE', `/api/mileage/${typoId}`);
+    check('deleting the typo brings the truck back down', () => eq(r.body.current_mileage, 26000, 'current_mileage'));
+
+    r = await req('POST', '/api/fuel', {
+      user_vehicle_id: vid, date: '2024-06-22', odometer: 26100, gallons: 10, full_tank: 0,
+    });
+    check('a partial fill sent as 0 is stored as partial', () => eq(r.body.full_tank, 0, 'full_tank'));
+
     // --- Build sheet -------------------------------------------------------
     r = await req('GET', `/api/share/build-sheet?vehicle_id=${vid}&format=bbcode`);
     check('a build sheet renders installed mods', () => {
@@ -280,6 +310,127 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
 
     r = await req('DELETE', '/api/outings/999999');
     check('deleting a missing outing 404s', () => eq(r.status, 404, 'status'));
+
+    // --- Vehicle transfer carries everything ---------------------------------
+    // Fill the tables the old export dropped, then round-trip the vehicle.
+    fs.writeFileSync(path.join(process.env.UPLOAD_DIR, 'transfer-photo.jpg'), 'jpeg bytes');
+    const tire = (await req('POST', '/api/tires', { user_vehicle_id: vid, name: 'Transfer KO2s', install_date: '2024-02-01', odometer_installed: 24100 })).body;
+    await req('POST', '/api/outings', { user_vehicle_id: vid, name: 'Transfer Outing', date: '2024-06-15', tire_set_id: tire.id });
+    await req('POST', '/api/warranty', { user_vehicle_id: vid, warranty_name: 'Transfer ESP', provider: 'Ford', start_date: '2024-01-15', term_years: 5 });
+    await req('POST', '/api/wishlist', { user_vehicle_id: vid, part_name: 'Transfer Winch', priority: 'High', amp_draw: 30 });
+    await req('POST', '/api/mods', {
+      user_vehicle_id: vid, part_name: 'Transfer Mod', status: 'Installed', amp_draw: 4.5,
+      aux_switches: [{ switch_number: 5, label: 'Rocks' }], photos: ['/uploads/transfer-photo.jpg'],
+    });
+
+    const exported = await fetch(`${base}/api/user-vehicles/${vid}/export`, { headers: { Cookie: cookie } });
+    check('a vehicle exports', () => eq(exported.status, 200, 'status'));
+    const zipBytes = Buffer.from(await exported.arrayBuffer());
+    const fd = new FormData();
+    fd.append('file', new Blob([zipBytes], { type: 'application/zip' }), 'truck.zip');
+    const imported = await fetch(`${base}/api/user-vehicles/import`, { method: 'POST', body: fd, headers: { Cookie: cookie } });
+    const imp = await imported.json();
+    check('the export imports as a new vehicle', () => {
+      eq(imported.status, 201, `status (${JSON.stringify(imp)})`);
+      eq(imp.format, 3, 'format');
+    });
+    const newVid = imp.vehicleId;
+
+    {
+      const Database = require('better-sqlite3');
+      const db = new Database(path.join(tmp, 'raptortracker.db'), { readonly: true });
+      const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(t => t.name)
+        .filter(t => t !== 'sent_reminders' && db.prepare(`PRAGMA table_info(${t})`).all().some(c => c.name === 'user_vehicle_id'));
+      check('every per-vehicle table arrives with the same number of rows', () => {
+        const diffs = tables.map(t => {
+          const n = (id) => db.prepare(`SELECT COUNT(*) n FROM ${t} WHERE user_vehicle_id = ?`).get(id).n;
+          return [t, n(vid), n(newVid)];
+        }).filter(([, a, b]) => a !== b);
+        if (diffs.length) throw new Error(diffs.map(([t, a, b]) => `${t}: ${a} -> ${b}`).join(', '));
+      });
+      check("an outing's tire set points at the imported copy, not the original", () => {
+        const o = db.prepare("SELECT tire_set_id FROM outings WHERE user_vehicle_id = ? AND name = 'Transfer Outing'").get(newVid);
+        const t = db.prepare("SELECT id FROM tire_sets WHERE user_vehicle_id = ? AND name = 'Transfer KO2s'").get(newVid);
+        eq(o.tire_set_id, t.id, 'tire_set_id');
+      });
+      check('AUX assignments, amp draw, and photos survive the trip', () => {
+        const m = db.prepare("SELECT * FROM mods WHERE user_vehicle_id = ? AND part_name = 'Transfer Mod'").get(newVid);
+        eq(JSON.parse(m.aux_switches)[0].switch_number, 5, 'aux switch');
+        eq(m.amp_draw, 4.5, 'amp_draw');
+        const photo = JSON.parse(m.photos)[0];
+        truthy(photo && photo !== '/uploads/transfer-photo.jpg', 'photo renamed on import');
+        eq(fs.readFileSync(path.join(process.env.UPLOAD_DIR, path.basename(photo)), 'utf8'), 'jpeg bytes', 'photo contents');
+      });
+      check('the imported vehicle has the same mileage', () => {
+        const a = db.prepare('SELECT current_mileage FROM user_vehicles WHERE id = ?').get(vid).current_mileage;
+        const b = db.prepare('SELECT current_mileage FROM user_vehicles WHERE id = ?').get(newVid).current_mileage;
+        eq(b, a, 'current_mileage');
+      });
+      db.close();
+    }
+
+    r = await req('DELETE', `/api/user-vehicles/${newVid}`);
+    check("deleting the copy removes its files but leaves the original's", () => {
+      truthy(r.body.filesRemoved >= 1, 'files removed');
+      truthy(fs.existsSync(path.join(process.env.UPLOAD_DIR, 'transfer-photo.jpg')), "original vehicle's photo kept");
+    });
+
+    r = await req('GET', `/api/aux-capacity?vehicle_id=${vid}`);
+    check('a planned part bigger than any switch is flagged, with no switch offered', () => {
+      const winch = (r.body.needsHome || []).find(i => i.name === 'Transfer Winch');
+      truthy(winch, 'winch listed as needing a switch');
+      eq(winch.tooBig, true, 'tooBig');
+      eq(winch.fits.length, 0, 'switches offered');
+    });
+    r = await req('GET', `/api/overview?vehicle_id=${vid}`);
+    check('the dashboard calls it out before it arrives', () => {
+      truthy((r.body.attention || []).some(a => /Transfer Winch draws more than any AUX switch/.test(a.title)), 'attention item');
+    });
+
+    // Mod export/import keeps what the old importer dropped.
+    {
+      const mz = await fetch(`${base}/api/mods/export/zip?vehicle_id=${vid}`, { headers: { Cookie: cookie } });
+      const mfd = new FormData();
+      mfd.append('file', new Blob([Buffer.from(await mz.arrayBuffer())], { type: 'application/zip' }), 'mods.zip');
+      const mi = await fetch(`${base}/api/mods/import?vehicle_id=${vid}`, { method: 'POST', body: mfd, headers: { Cookie: cookie } });
+      check('mods re-import', () => eq(mi.status, 200, 'status'));
+      const copies = (await req('GET', `/api/mods?vehicle_id=${vid}`)).body.filter(m => m.part_name === 'Transfer Mod');
+      check('a re-imported mod keeps amp draw, AUX switches, and its own copy of the photo', () => {
+        eq(copies.length, 2, 'original + copy');
+        const copy = copies.find(m => m.photos[0] !== '/uploads/transfer-photo.jpg');
+        truthy(copy, 'copy has its own photo file');
+        eq(copy.amp_draw, 4.5, 'amp_draw');
+        eq(copy.aux_switches[0].switch_number, 5, 'aux switch');
+      });
+    }
+
+    // Exports made by earlier versions still import.
+    {
+      const archiver = require('archiver');
+      const { PassThrough } = require('stream');
+      const legacy = {
+        version: 2,
+        vehicle: { nickname: 'Legacy Export', model_year: 2019, vehicle_ref: { make: 'Ford', model: 'F-150 Raptor', generation: 'Gen 2' } },
+        mods: [{ part_name: 'Legacy Bumper', category: 'Bumpers', status: 'Installed' }],
+        maintenance: [{ service_type: 'Oil Change', date_performed: '2023-01-01', mileage: 12000 }],
+      };
+      const chunks = [];
+      const sink = new PassThrough(); sink.on('data', c => chunks.push(c));
+      const done = new Promise(resolve => sink.on('end', resolve));
+      const zip = archiver('zip'); zip.pipe(sink);
+      zip.append(JSON.stringify(legacy), { name: 'vehicle.json' });
+      await zip.finalize(); await done;
+      const lfd = new FormData();
+      lfd.append('file', new Blob([Buffer.concat(chunks)], { type: 'application/zip' }), 'legacy.zip');
+      const lr = await fetch(`${base}/api/user-vehicles/import`, { method: 'POST', body: lfd, headers: { Cookie: cookie } });
+      const lb = await lr.json();
+      check('an export from an earlier version still imports', () => {
+        eq(lr.status, 201, `status (${JSON.stringify(lb)})`);
+        truthy(lb.vehicleId || lb.vehicle_id || lb.id, 'new vehicle id');
+      });
+      const legacyId = lb.vehicleId || lb.vehicle_id || lb.id;
+      if (legacyId) await req('DELETE', `/api/user-vehicles/${legacyId}`);
+    }
 
     // --- Cascade: removing the truck removes its records -------------------
     r = await req('DELETE', `/api/user-vehicles/${vid}`);

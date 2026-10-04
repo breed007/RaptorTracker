@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import ConfirmModal from '../components/ConfirmModal'
+import { localDate } from '../lib/dates'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -39,7 +40,7 @@ function modExpiryDate(mod) {
   if (!mod.warranty_start_date || !mod.warranty_months) return null
   const d = new Date(mod.warranty_start_date + 'T12:00:00')
   d.setMonth(d.getMonth() + mod.warranty_months)
-  return d.toISOString().split('T')[0]
+  return localDate(d)
 }
 
 // ── Empty form defaults ───────────────────────────────────────────────────────

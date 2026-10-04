@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
+const { afterWrite } = require('../services/odometer');
+const { toInt } = require('../lib/parse');
+const { localDate } = require('../lib/dates');
 
 // Ford factory service intervals by generation
 function getFactoryIntervals(generation) {
@@ -157,13 +160,20 @@ router.post('/load-factory', (req, res) => {
   res.json({ ok: true, count: factoryList.length });
 });
 
-// PATCH /api/intervals/mileage  — update the vehicle's current mileage
+// PATCH /api/intervals/mileage — "update current mileage". Recorded as a dated
+// odometer reading rather than overwriting the number, so the vehicle's
+// mileage always traces back to a record you can see and correct.
 router.patch('/mileage', (req, res) => {
   const { vehicle_id, current_mileage } = req.body;
   if (!vehicle_id) return res.status(400).json({ error: 'vehicle_id required' });
-  getDb().prepare('UPDATE user_vehicles SET current_mileage = ? WHERE id = ?')
-    .run(current_mileage || null, vehicle_id);
-  res.json({ ok: true });
+  const odo = toInt(current_mileage);
+  if (odo === null || odo <= 0) return res.status(400).json({ error: 'current_mileage must be a positive number' });
+  const db = getDb();
+  const today = localDate();
+  const r = db.prepare("INSERT INTO mileage_log (user_vehicle_id, date, odometer, note) VALUES (?, ?, ?, 'Updated from Maintenance')")
+    .run(vehicle_id, today, odo);
+  const result = afterWrite(db, vehicle_id, { date: today, odometer: odo, self: { source: 'mileage_log', id: r.lastInsertRowid } });
+  res.json({ ok: true, current_mileage: result.current_mileage, odometerWarning: result.warning });
 });
 
 module.exports = { router, getFactoryIntervals };

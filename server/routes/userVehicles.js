@@ -6,6 +6,8 @@ const { randomUUID: uuidv4 } = require('crypto');
 const { getDb } = require('../db');
 const { jsonList } = require('../lib/json');
 const { detachUpload } = require('../services/uploads');
+const { refreshCurrentMileage } = require('../services/odometer');
+const { referencedFiles, removeUnreferenced } = require('../services/uploadRefs');
 const router = express.Router();
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
@@ -176,6 +178,8 @@ router.put('/:id', (req, res) => {
     insurance_provider || null, insurance_policy || null, insurance_phone || null, insurance_expiry || null,
     req.params.id
   );
+  // Purchase mileage is a reading too.
+  refreshCurrentMileage(db, req.params.id);
   res.json({ ok: true });
 });
 
@@ -183,8 +187,12 @@ router.delete('/:id', (req, res) => {
   const db = getDb();
   const existing = db.prepare('SELECT id FROM user_vehicles WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
+  // Note the vehicle's files first; the delete cascades through its records,
+  // then whatever nothing else still points at is removed from disk.
+  const files = referencedFiles(db, existing.id);
   db.prepare('DELETE FROM user_vehicles WHERE id = ?').run(req.params.id);
-  res.json({ ok: true });
+  const filesRemoved = removeUnreferenced(db, UPLOAD_DIR, files);
+  res.json({ ok: true, filesRemoved });
 });
 
 router.post('/:id/window-sticker', stickerUpload.single('sticker'), (req, res) => {

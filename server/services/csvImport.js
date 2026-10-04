@@ -5,6 +5,8 @@
 // loosely, "$1,234.56" and "12/4/25" are understood, and every rejected row is
 // reported with its line number instead of failing the whole file.
 
+const { localDate } = require('../lib/dates');
+
 // ── Parsing ───────────────────────────────────────────────────────────────────
 
 // RFC4180-ish parser: handles quoted fields containing commas, newlines, and
@@ -76,7 +78,7 @@ function toDate(v) {
     return `${yr}-${String(mo).padStart(2, '0')}-${String(da).padStart(2, '0')}`;
   }
   const d = new Date(s);
-  if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+  if (!isNaN(d.getTime())) return localDate(d);
   return null;
 }
 

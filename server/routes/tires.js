@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
+const { afterWrite, checkReading } = require('../services/odometer');
 
 const COLS = [
   'name', 'tire_brand', 'tire_model', 'tire_size', 'wheel_brand', 'wheel_size',
@@ -52,6 +53,12 @@ router.get('/', (req, res) => {
   res.json(rows.map(r => withMiles(r, uv?.current_mileage)));
 });
 
+function tireWarning(db, vehicleId, data, id) {
+  const self = { source: 'tire_sets', id };
+  return checkReading(db, vehicleId, { date: data.install_date, odometer: data.odometer_installed, self })
+    || checkReading(db, vehicleId, { date: data.removed_date, odometer: data.odometer_removed, self });
+}
+
 router.post('/', (req, res) => {
   const { user_vehicle_id } = req.body;
   if (!user_vehicle_id) return res.status(400).json({ error: 'user_vehicle_id required' });
@@ -62,26 +69,31 @@ router.post('/', (req, res) => {
     INSERT INTO tire_sets (user_vehicle_id, ${COLS.join(', ')})
     VALUES (@user_vehicle_id, ${COLS.map(c => '@' + c).join(', ')})
   `).run({ user_vehicle_id, ...data });
-  res.status(201).json(db.prepare('SELECT * FROM tire_sets WHERE id = ?').get(r.lastInsertRowid));
+  const warning = tireWarning(db, user_vehicle_id, data, r.lastInsertRowid);
+  afterWrite(db, user_vehicle_id);
+  res.status(201).json({ ...db.prepare('SELECT * FROM tire_sets WHERE id = ?').get(r.lastInsertRowid), odometerWarning: warning });
 });
 
 router.put('/:id', (req, res) => {
   const db = getDb();
-  const existing = db.prepare('SELECT id FROM tire_sets WHERE id = ?').get(req.params.id);
+  const existing = db.prepare('SELECT id, user_vehicle_id FROM tire_sets WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
   const data = coerce(req.body);
   if (!data.name) return res.status(400).json({ error: 'name is required' });
   db.prepare(`
     UPDATE tire_sets SET ${COLS.map(c => c + '=@' + c).join(', ')} WHERE id=@id
   `).run({ ...data, id: req.params.id });
-  res.json(db.prepare('SELECT * FROM tire_sets WHERE id = ?').get(req.params.id));
+  const warning = tireWarning(db, existing.user_vehicle_id, data, req.params.id);
+  afterWrite(db, existing.user_vehicle_id);
+  res.json({ ...db.prepare('SELECT * FROM tire_sets WHERE id = ?').get(req.params.id), odometerWarning: warning });
 });
 
 router.delete('/:id', (req, res) => {
   const db = getDb();
-  const existing = db.prepare('SELECT id FROM tire_sets WHERE id = ?').get(req.params.id);
+  const existing = db.prepare('SELECT id, user_vehicle_id FROM tire_sets WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
   db.prepare('DELETE FROM tire_sets WHERE id = ?').run(req.params.id);
+  afterWrite(db, existing.user_vehicle_id);
   res.json({ ok: true });
 });
 

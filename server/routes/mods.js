@@ -6,6 +6,7 @@ const { randomUUID: uuidv4 } = require('crypto');
 const { getDb } = require('../db');
 const { jsonList } = require('../lib/json');
 const { detachUpload } = require('../services/uploads');
+const { afterWrite } = require('../services/odometer');
 const router = express.Router();
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
@@ -105,8 +106,10 @@ router.post('/', (req, res) => {
     amp_draw != null && amp_draw !== '' ? parseFloat(amp_draw) : null
   );
 
+  const { warning } = afterWrite(db, user_vehicle_id,
+    { date: install_date, odometer: mileage_at_install, self: { source: 'mods', id: result.lastInsertRowid } });
   const created = db.prepare('SELECT * FROM mods WHERE id = ?').get(result.lastInsertRowid);
-  res.status(201).json(parseMod(created));
+  res.status(201).json({ ...parseMod(created), odometerWarning: warning });
 });
 
 router.get('/:id', (req, res) => {
@@ -118,7 +121,7 @@ router.get('/:id', (req, res) => {
 
 router.put('/:id', (req, res) => {
   const db = getDb();
-  const existing = db.prepare('SELECT id FROM mods WHERE id = ?').get(req.params.id);
+  const existing = db.prepare('SELECT id, user_vehicle_id FROM mods WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
 
   const {
@@ -155,12 +158,14 @@ router.put('/:id', (req, res) => {
     amp_draw != null && amp_draw !== '' ? parseFloat(amp_draw) : null,
     req.params.id
   );
-  res.json({ ok: true });
+  const { warning } = afterWrite(db, existing.user_vehicle_id,
+    { date: install_date, odometer: mileage_at_install, self: { source: 'mods', id: req.params.id } });
+  res.json({ ok: true, odometerWarning: warning });
 });
 
 router.delete('/:id', (req, res) => {
   const db = getDb();
-  const existing = db.prepare('SELECT id, photos, attachments FROM mods WHERE id = ?').get(req.params.id);
+  const existing = db.prepare('SELECT id, user_vehicle_id, photos, attachments FROM mods WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
 
   // Remove the mod's files so deleting a mod doesn't orphan uploads on disk
@@ -171,6 +176,7 @@ router.delete('/:id', (req, res) => {
   }
 
   db.prepare('DELETE FROM mods WHERE id = ?').run(req.params.id);
+  afterWrite(db, existing.user_vehicle_id);
   res.json({ ok: true });
 });
 

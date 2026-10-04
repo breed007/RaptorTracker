@@ -5,6 +5,7 @@ const fs = require('fs');
 const { randomUUID: uuidv4 } = require('crypto');
 const { getDb } = require('../db');
 const { jsonList } = require('../lib/json');
+const { checkReading, refreshCurrentMileage } = require('../services/odometer');
 const { detachUpload } = require('../services/uploads');
 
 const router = express.Router();
@@ -93,6 +94,18 @@ router.get('/', (req, res) => {
   });
 });
 
+// An outing carries two readings. An end below the start is its own mistake;
+// otherwise each reading is checked against the rest of the vehicle's history.
+function outingWarning(db, vehicleId, data, id) {
+  if (data.odometer_start && data.odometer_end && data.odometer_end < data.odometer_start) {
+    return `The ending odometer (${data.odometer_end.toLocaleString('en-US')}) is lower than the starting one ` +
+      `(${data.odometer_start.toLocaleString('en-US')}). Saved anyway.`;
+  }
+  const self = { source: 'outings', id };
+  return checkReading(db, vehicleId, { date: data.date, odometer: data.odometer_start, self })
+    || checkReading(db, vehicleId, { date: data.end_date || data.date, odometer: data.odometer_end, self });
+}
+
 // POST /api/outings
 router.post('/', (req, res) => {
   const { user_vehicle_id } = req.body;
@@ -107,19 +120,15 @@ router.post('/', (req, res) => {
     VALUES (@user_vehicle_id, ${COLS.map(c => '@' + c).join(', ')}, '[]')
   `).run({ user_vehicle_id, ...data });
 
-  // Keep the vehicle's odometer honest if this outing ended higher
-  if (data.odometer_end) {
-    db.prepare('UPDATE user_vehicles SET current_mileage = ? WHERE id = ? AND (current_mileage IS NULL OR current_mileage < ?)')
-      .run(data.odometer_end, user_vehicle_id, data.odometer_end);
-  }
-
-  res.status(201).json(parseRow(db.prepare('SELECT * FROM outings WHERE id = ?').get(r.lastInsertRowid)));
+  const warning = outingWarning(db, user_vehicle_id, data, r.lastInsertRowid);
+  refreshCurrentMileage(db, user_vehicle_id);
+  res.status(201).json({ ...parseRow(db.prepare('SELECT * FROM outings WHERE id = ?').get(r.lastInsertRowid)), odometerWarning: warning });
 });
 
 // PUT /api/outings/:id
 router.put('/:id', (req, res) => {
   const db = getDb();
-  const existing = db.prepare('SELECT id FROM outings WHERE id = ?').get(req.params.id);
+  const existing = db.prepare('SELECT id, user_vehicle_id FROM outings WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
   const data = body(req);
   if (!data.name) return res.status(400).json({ error: 'name is required' });
@@ -127,7 +136,9 @@ router.put('/:id', (req, res) => {
 
   db.prepare(`UPDATE outings SET ${COLS.map(c => `${c}=@${c}`).join(', ')} WHERE id=@id`)
     .run({ ...data, id: req.params.id });
-  res.json(parseRow(db.prepare('SELECT * FROM outings WHERE id = ?').get(req.params.id)));
+  const warning = outingWarning(db, existing.user_vehicle_id, data, req.params.id);
+  refreshCurrentMileage(db, existing.user_vehicle_id);
+  res.json({ ...parseRow(db.prepare('SELECT * FROM outings WHERE id = ?').get(req.params.id)), odometerWarning: warning });
 });
 
 // DELETE /api/outings/:id

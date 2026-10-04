@@ -193,6 +193,18 @@ function run() {
       'service_intervals', 'wishlist', 'fuel_log', 'app_settings', 'sent_reminders',
       'tire_sets', 'mileage_log', 'documents', 'vehicle_specs', 'outings',
     ];
+    // From 1.0 the vehicle's mileage is recomputed from its records. The
+    // fixture's typed current_mileage (41,234) is above every record, so the
+    // first recalculation after upgrading must keep it, not drop it.
+    if ((inserted.used.user_vehicles || []).includes('current_mileage')) {
+      check('a typed current mileage survives the first recalculation', () => {
+        const { refreshCurrentMileage } = require(path.join(ROOT, 'server/services/odometer'));
+        eq(refreshCurrentMileage(db, inserted.uvId), FIXTURE.user_vehicles.current_mileage, 'current_mileage');
+        const carried = db.prepare("SELECT odometer FROM mileage_log WHERE user_vehicle_id = ? AND note LIKE 'Carried over%'").get(inserted.uvId);
+        eq(carried && carried.odometer, FIXTURE.user_vehicles.current_mileage, 'carried-over reading');
+      });
+    }
+
     check('every current table exists after upgrading', () => {
       const have = new Set(db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(r => r.name));
       const missing = required.filter(t => !have.has(t));

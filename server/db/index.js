@@ -305,6 +305,28 @@ function runMigrations(db) {
       }
     } catch (_) {}
   }
+
+  carryOverTypedMileage(db);
+}
+
+// From 1.0, a vehicle's mileage is the highest odometer reading across its
+// records. Earlier versions let you type a current mileage that no record
+// backs up; recomputing would silently drop it. Once, on upgrade, turn any
+// such number into a dated reading so it is kept — and visible — as a record.
+function carryOverTypedMileage(db) {
+  const FLAG = 'migration_mileage_readings_v1';
+  if (db.prepare('SELECT 1 FROM app_settings WHERE key = ?').get(FLAG)) return;
+  const { highestReading } = require('../services/odometer');
+  const today = require('../lib/dates').localDate();
+  const insert = db.prepare(
+    "INSERT INTO mileage_log (user_vehicle_id, date, odometer, note) VALUES (?, ?, ?, 'Carried over from an earlier version')");
+  db.transaction(() => {
+    for (const v of db.prepare('SELECT id, current_mileage FROM user_vehicles WHERE current_mileage > 0').all()) {
+      const best = highestReading(db, v.id);
+      if (!best || v.current_mileage > best.odometer) insert.run(v.id, today, v.current_mileage);
+    }
+    db.prepare("INSERT INTO app_settings (key, value) VALUES (?, 'done')").run(FLAG);
+  })();
 }
 
 // Close the singleton connection (used by the restore flow before swapping the

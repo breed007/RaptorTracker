@@ -44,9 +44,13 @@ function buildPayload(vehicle, mods, photoPathFn) {
       generation: vehicle.generation,
     },
     mods: mods.map(m => {
-      const photos = jsonList(m.photos);
       const { id, user_vehicle_id, created_at, updated_at, ...rest } = m;
-      return { ...rest, photos: photos.map(photoPathFn) };
+      return {
+        ...rest,
+        photos: jsonList(m.photos).map(photoPathFn),
+        attachments: jsonList(m.attachments).map(photoPathFn),
+        aux_switches: jsonList(m.aux_switches),
+      };
     }),
   };
 }
@@ -95,6 +99,7 @@ router.get('/export/zip', (req, res) => {
   const imageFilenames = new Set();
   mods.forEach(m => {
     jsonList(m.photos).forEach(p => imageFilenames.add(path.basename(p)));
+    jsonList(m.attachments).forEach(p => imageFilenames.add(path.basename(p)));
   });
 
   // Build payload with paths remapped to images/ directory inside ZIP
@@ -180,13 +185,32 @@ router.post('/import', importUpload.single('file'), async (req, res) => {
     return res.status(400).json({ error: 'Invalid format: missing mods array' });
   }
 
-  const insertMod = db.prepare(`
-    INSERT INTO mods
-      (user_vehicle_id, part_name, part_number, brand, vendor, vendor_url,
-       category, status, purchase_date, install_date, cost, mileage_at_install,
-       aux_switch, aux_label, install_notes, wiring_notes, photos)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-  `);
+  // Insert every column both the export and this install know about, so
+  // amp draw, multi-switch AUX assignments, receipts, and warranty details
+  // travel instead of being dropped. A newer export's unknown columns are
+  // ignored; an older export's missing ones stay empty.
+  const modCols = new Set(db.prepare('PRAGMA table_info(mods)').all().map(c => c.name));
+  const NEVER = new Set(['id', 'user_vehicle_id', 'created_at', 'updated_at']);
+
+  // Files named in the payload: use the copy extracted from the ZIP, or copy an
+  // existing upload — never share one file between two mods, or deleting
+  // either breaks the other.
+  const remapFiles = (list) => {
+    const out = [];
+    for (const p of jsonList(list)) {
+      const origFname = path.basename(String(p));
+      if (extractedImages[origFname]) {
+        out.push(extractedImages[origFname]);
+      } else if (String(p).startsWith('/uploads/') && isAllowedUpload(origFname) && fs.existsSync(path.join(UPLOAD_DIR, origFname))) {
+        const newFname = `${uuidv4()}${path.extname(origFname)}`;
+        const dest = path.join(UPLOAD_DIR, newFname);
+        fs.copyFileSync(path.join(UPLOAD_DIR, origFname), dest);
+        written.push(dest);
+        out.push(`/uploads/${newFname}`);
+      }
+    }
+    return out;
+  };
 
   let imported = 0;
   let skipped = 0;
@@ -194,43 +218,23 @@ router.post('/import', importUpload.single('file'), async (req, res) => {
   const doImport = db.transaction(() => {
     for (const mod of payload.mods) {
       if (!mod.part_name) { skipped++; continue; }
-
-      // Remap photos: extracted ZIP images get new UUIDs; bare /uploads/ paths kept if file exists
-      const newPhotos = [];
-      for (const photoPath of (mod.photos || [])) {
-        const origFname = path.basename(photoPath);
-        if (extractedImages[origFname]) {
-          newPhotos.push(extractedImages[origFname]);
-        } else if (photoPath.startsWith('/uploads/') && isAllowedUpload(origFname) && fs.existsSync(path.join(UPLOAD_DIR, origFname))) {
-          // Copy rather than share: two mods pointing at one file means deleting
-          // either one breaks the other's photo.
-          const newFname = `${uuidv4()}${path.extname(origFname)}`;
-          const dest = path.join(UPLOAD_DIR, newFname);
-          fs.copyFileSync(path.join(UPLOAD_DIR, origFname), dest);
-          written.push(dest);
-          newPhotos.push(`/uploads/${newFname}`);
-        }
+      const data = {};
+      for (const [k, v] of Object.entries(mod)) {
+        if (modCols.has(k) && !NEVER.has(k)) data[k] = (v !== null && typeof v === 'object') ? JSON.stringify(v) : v;
       }
-
-      insertMod.run(
-        vehicle_id,
-        mod.part_name,
-        mod.part_number || null,
-        mod.brand || null,
-        mod.vendor || null,
-        mod.vendor_url || null,
-        mod.category || 'Other',
-        mod.status || 'Researching',
-        mod.purchase_date || null,
-        mod.install_date || null,
-        mod.cost != null ? parseFloat(mod.cost) : null,
-        mod.mileage_at_install ? parseInt(mod.mileage_at_install) : null,
-        mod.aux_switch ? parseInt(mod.aux_switch) : null,
-        mod.aux_label || null,
-        mod.install_notes || null,
-        mod.wiring_notes || null,
-        JSON.stringify(newPhotos)
-      );
+      data.user_vehicle_id = vehicle_id;
+      data.category = data.category || 'Other';
+      data.status = data.status || 'Researching';
+      if (modCols.has('photos')) data.photos = JSON.stringify(remapFiles(mod.photos));
+      if (modCols.has('attachments')) data.attachments = JSON.stringify(remapFiles(mod.attachments));
+      // Older exports carry only the single legacy switch; newer ones the list.
+      const switches = jsonList(mod.aux_switches);
+      if (modCols.has('aux_switches')) {
+        data.aux_switches = JSON.stringify(switches.length ? switches
+          : (mod.aux_switch ? [{ switch_number: Number(mod.aux_switch), label: mod.aux_label || '' }] : []));
+      }
+      const cols = Object.keys(data);
+      db.prepare(`INSERT INTO mods (${cols.join(', ')}) VALUES (${cols.map(c => '@' + c).join(', ')})`).run(data);
       imported++;
     }
   });

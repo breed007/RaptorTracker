@@ -184,7 +184,7 @@ function ServiceIntervals({ vehicleId }) {
                     value={mileageVal}
                     onChange={e => setMileageVal(e.target.value)}
                     className="input-field w-28 text-sm py-1 px-2"
-                    placeholder="e.g. 24500"
+                    placeholder="e.g. 31,900"
                   />
                   <button onClick={handleSaveMileage} disabled={saving} className="btn-primary text-xs py-1 px-2">Save</button>
                   <button onClick={() => setMileageEdit(false)} className="btn-secondary text-xs py-1 px-2">Cancel</button>

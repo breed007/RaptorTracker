@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import ConfirmModal from '../components/ConfirmModal'
 import DocumentVault from '../components/DocumentVault'
+import { localDate } from '../lib/dates'
 
 // Valid VIN: 17 chars, no I O Q
 const VIN_RE = /^[A-HJ-NPR-Z0-9]{17}$/
@@ -352,7 +353,7 @@ export default function Garage() {
   }, [transferMenuOpen])
 
   const handleExportVehicle = useCallback((vehicleId, nickname) => {
-    const date = new Date().toISOString().slice(0, 10)
+    const date = localDate()
     const safeName = (nickname || 'vehicle').replace(/[^a-z0-9]/gi, '-')
     const a = document.createElement('a')
     a.href = `/api/user-vehicles/${vehicleId}/export`
