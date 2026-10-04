@@ -96,46 +96,14 @@ if (!uvColumns.includes('window_sticker')) {
   console.log('Migration: added window_sticker to user_vehicles');
 }
 
-// AUX layouts shared across Gen 2 and Gen 3
-const auxLayoutGen2Gen3 = JSON.stringify([
-  { switch_number: 1, fuse_amps: 15, default_label: 'Factory Fog Lights (Primary)', factory_used: true, warning_note: null },
-  { switch_number: 2, fuse_amps: 15, default_label: 'Factory Fog Lights (Secondary)', factory_used: true, warning_note: null },
-  { switch_number: 3, fuse_amps: 10, default_label: 'User Available', factory_used: false, warning_note: null },
-  { switch_number: 4, fuse_amps: 10, default_label: 'User Available', factory_used: false, warning_note: null },
-  { switch_number: 5, fuse_amps: 5,  default_label: 'User Available', factory_used: false, warning_note: null },
-  { switch_number: 6, fuse_amps: 5,  default_label: 'User Available', factory_used: false, warning_note: null }
-]);
-
-const auxLayoutGen35 = JSON.stringify([
-  {
-    switch_number: 1, fuse_amps: 15, default_label: 'Bumper Fogs (Pair 2, Blacked-Out)',
-    factory_used: true,
-    warning_note: 'Factory wired to bumper fogs (pair 2, blacked-out covers). This wire is CONSUMED by Ford. Reclaiming AUX 1 requires a fog light splitter + relocation harness (e.g. SPV Parts relocation kit).'
-  },
-  { switch_number: 2, fuse_amps: 15, default_label: 'User Available', factory_used: false, warning_note: null },
-  { switch_number: 3, fuse_amps: 15, default_label: 'User Available', factory_used: false, warning_note: null },
-  { switch_number: 4, fuse_amps: 10, default_label: 'User Available', factory_used: false, warning_note: null },
-  { switch_number: 5, fuse_amps: 5,  default_label: 'User Available', factory_used: false, warning_note: null },
-  { switch_number: 6, fuse_amps: 5,  default_label: 'User Available', factory_used: false, warning_note: null }
-]);
-
-const auxLayoutBronco = JSON.stringify([
-  { switch_number: 1, fuse_amps: 15, default_label: 'Switch 1', factory_used: false, warning_note: null },
-  { switch_number: 2, fuse_amps: 15, default_label: 'Switch 2', factory_used: false, warning_note: null },
-  { switch_number: 3, fuse_amps: 10, default_label: 'Switch 3', factory_used: false, warning_note: null },
-  { switch_number: 4, fuse_amps: 10, default_label: 'Switch 4', factory_used: false, warning_note: null },
-  { switch_number: 5, fuse_amps: 5,  default_label: 'Switch 5', factory_used: false, warning_note: null },
-  { switch_number: 6, fuse_amps: 5,  default_label: 'Switch 6', factory_used: false, warning_note: null }
-]);
-
-const auxLayoutRanger = JSON.stringify([
-  { switch_number: 1, fuse_amps: 15, default_label: 'Factory Fog Lights', factory_used: true, warning_note: null },
-  { switch_number: 2, fuse_amps: 15, default_label: 'Factory Fog Lights', factory_used: true, warning_note: null },
-  { switch_number: 3, fuse_amps: 10, default_label: 'User Available', factory_used: false, warning_note: null },
-  { switch_number: 4, fuse_amps: 10, default_label: 'User Available', factory_used: false, warning_note: null },
-  { switch_number: 5, fuse_amps: 5,  default_label: 'User Available', factory_used: false, warning_note: null },
-  { switch_number: 6, fuse_amps: 5,  default_label: 'User Available', factory_used: false, warning_note: null }
-]);
+// Factory AUX layouts live in one reference module, with a source cited for
+// each generation. Gen 2 and Gen 3 used to share a single copied constant,
+// which is how Gen 3's (different) ratings were wrong for so long.
+const { layoutFor } = require('../reference/auxLayouts');
+const aux = (model, generation) => {
+  const l = layoutFor(model, generation);
+  return { aux_switch_count: l ? l.switches.length : 0, aux_switch_layout: JSON.stringify(l ? l.switches : []) };
+};
 
 const vehicles = [
   {
@@ -153,8 +121,7 @@ const vehicles = [
     torque: null,
     suspension_notes: 'Fox Racing internal-bypass shocks',
     tire_size: '315/70R17 BFG All-Terrain',
-    aux_switch_count: 0,
-    aux_switch_layout: '[]',
+    ...aux('F-150 Raptor', 'Gen 1'),
     notes: 'First generation. SuperCab 2010 only, SuperCrew added 2011. SVT (Special Vehicle Team) prefix used on all Gen 1 models. No overhead AUX switch panel.'
   },
   {
@@ -171,8 +138,7 @@ const vehicles = [
     torque: 510,
     suspension_notes: 'Fox Racing 3.0 internal-bypass shocks with external reservoirs. Live Valve shocks added for 2019 model year.',
     tire_size: '315/70R17 BFG KO2',
-    aux_switch_count: 6,
-    aux_switch_layout: auxLayoutGen2Gen3,
+    ...aux('F-150 Raptor', 'Gen 2'),
     notes: 'Dropped V8 vs Gen 1. Aluminum body. First gen with AUX switch overhead panel. 10-speed SelectShift automatic transmission.'
   },
   {
@@ -190,8 +156,7 @@ const vehicles = [
     torque: 645,
     suspension_notes: 'Fox Live Valve. Rear suspension switched from leaf springs to coil-spring 5-link with Panhard bar — major change vs Gen 2.',
     tire_size: '35" standard; 37" available (Raptor 37 package)',
-    aux_switch_count: 6,
-    aux_switch_layout: auxLayoutGen2Gen3,
+    ...aux('F-150 Raptor', 'Gen 3'),
     notes: 'Raptor R variant introduced for 2022 MY with 5.2L Carnivore supercharged V8. First gen with coil rear suspension. 10-speed SelectShift automatic.'
   },
   {
@@ -209,8 +174,7 @@ const vehicles = [
     torque: 640,
     suspension_notes: 'FOX Dual Live Valve — position-sensitive compression control and continuously variable rebound, front and rear tuned separately. Significant upgrade over Gen 3 Live Valve.',
     tire_size: '35" standard; 37" available',
-    aux_switch_count: 6,
-    aux_switch_layout: auxLayoutGen35,
+    ...aux('F-150 Raptor', 'Gen 3.5'),
     notes: 'Mid-cycle refresh of Gen 3. HUD added. Raptor R bumped to 720hp for 2024. Wire color codes changed in 2024 vs Gen 3. AUX 1 factory-consumed by bumper fogs — see AUX panel for details. AUX 3 bumped to 15A (was 10A on Gen 2/3).'
   },
   {
@@ -227,8 +191,7 @@ const vehicles = [
     torque: 440,
     suspension_notes: 'HOSS 4.0 system — FOX Live Valve 3.1 internal bypass semi-active dampers. 13" front / 14" rear wheel travel. Front and rear tuned independently.',
     tire_size: '37" all-terrain (17" wheels)',
-    aux_switch_count: 6,
-    aux_switch_layout: auxLayoutBronco,
+    ...aux('Bronco Raptor', 'Gen 1'),
     notes: '4-door SUV body. Removable doors and roof panels. True dual exhaust with 4 selectable modes (Normal, Sport, Quiet, Baja). Integrated Rigid LED fog lamps standard. Extended wheelbase vs standard Bronco (+8.6 inches). Semi-float Dana 50 rear, Dana 44 AdvanTEK front. 3.06:1 4LO ratio, up to 67.7:1 crawl ratio. G.O.A.T. modes including Baja mode. AUX switch architecture differs from F-150 Raptor.'
   },
   {
@@ -245,8 +208,7 @@ const vehicles = [
     torque: 430,
     suspension_notes: 'Fox 2.5 Live Valve internal bypass shocks',
     tire_size: '33" BFG KO2 (17" wheels)',
-    aux_switch_count: 6,
-    aux_switch_layout: auxLayoutRanger,
+    ...aux('Ranger Raptor', 'Gen 1 (NA)'),
     notes: 'Mid-size sibling to F-150 Raptor. North America debut 2024 (global market since 2019). Trail Control and Trail 1-Pedal Drive standard. HUD added for 2024 refresh. 10-speed SelectShift automatic.'
   }
 ];

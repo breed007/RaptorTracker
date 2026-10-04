@@ -25,6 +25,9 @@ export default function AuxPanel() {
   const [auxCount, setAuxCount] = useState(0)
   const [reclaiming, setReclaiming] = useState(null) // switch_number being reclaimed/restored
   const [capacity, setCapacity] = useState(null)
+  const [editingFuses, setEditingFuses] = useState(false)
+  const [fuseDraft, setFuseDraft] = useState({})
+  const [fuseError, setFuseError] = useState('')
 
   // Instant paint from context, then corrected by the fresh fetch below
   useEffect(() => {
@@ -37,7 +40,7 @@ export default function AuxPanel() {
   // The vehicle GET applies dismissed AUX warnings server-side, so this keeps
   // the panel in sync after mod edits and after a warning is dismissed
   // (context's copy of the layout is only loaded once at login).
-  useEffect(() => {
+  const reload = () => {
     if (!selectedVehicleId) return
     fetch(`/api/mods?vehicle_id=${selectedVehicleId}`)
       .then(r => r.json())
@@ -56,7 +59,26 @@ export default function AuxPanel() {
       .then(r => r.ok ? r.json() : null)
       .then(setCapacity)
       .catch(() => {})
-  }, [selectedVehicleId])
+  }
+  useEffect(reload, [selectedVehicleId])
+
+  // An owner's own fuse rating for a switch. Ford's figure stays the default
+  // and is always shown beside it; null goes back to it.
+  const saveFuse = async (switchNumber, value) => {
+    setFuseError('')
+    const res = await fetch(`/api/user-vehicles/${selectedVehicleId}/aux-fuse`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ switch_number: switchNumber, fuse_amps: value === '' ? null : value }),
+    })
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}))
+      setFuseError(d.error || 'Could not save that rating.')
+      return
+    }
+    setFuseDraft(d => { const n = { ...d }; delete n[switchNumber]; return n })
+    reload()
+  }
 
   // Quick lookup of per-switch electrical load
   const capBySwitch = {}
@@ -171,6 +193,50 @@ export default function AuxPanel() {
               <span className="text-raptor-secondary">Factory-used: <span className="text-raptor-primary font-semibold">{capacity.summary.factoryUsed}</span></span>
             )}
           </div>
+          {capacity.source?.text && (
+            <p className="text-xs text-raptor-muted mt-3">
+              <span className="text-raptor-secondary">Default ratings:</span> {capacity.source.text}
+              {capacity.source.confidence === 'community' && ' Check your own fuse box before relying on them.'}
+              {' '}
+              <button type="button" onClick={() => setEditingFuses(v => !v)} className="text-raptor-accent hover:underline">
+                {editingFuses ? 'Done editing' : 'Edit fuse ratings'}
+              </button>
+            </p>
+          )}
+          {editingFuses && (
+            <div className="mt-3 pt-3 border-t border-raptor-border space-y-2">
+              <p className="text-xs text-raptor-muted">
+                Set the fuse your truck actually has on each switch: a rewired circuit, or a correction.
+                The planner uses your value; Ford's stays one click away.
+              </p>
+              {(capacity.switches || []).map(sw => {
+                const draft = fuseDraft[sw.switch_number]
+                const value = draft !== undefined ? draft : String(sw.fuse_amps ?? '')
+                return (
+                  <div key={sw.switch_number} className="flex items-center gap-3 flex-wrap text-sm">
+                    <label htmlFor={`fuse-${sw.switch_number}`} className="font-mono text-xs w-12 text-raptor-secondary">AUX {sw.switch_number}</label>
+                    <input
+                      id={`fuse-${sw.switch_number}`}
+                      type="number" min="1" max="60" step="0.5" inputMode="decimal"
+                      value={value}
+                      onChange={e => setFuseDraft(d => ({ ...d, [sw.switch_number]: e.target.value }))}
+                      className="input-field w-20 py-1"
+                    />
+                    <span className="text-xs text-raptor-muted">A · Ford: {sw.fuse_amps_default}A</span>
+                    {draft !== undefined && draft !== String(sw.fuse_amps) && (
+                      <button type="button" onClick={() => saveFuse(sw.switch_number, draft)} className="btn-primary text-xs px-3 py-1">Save</button>
+                    )}
+                    {sw.fuse_overridden && (
+                      <button type="button" onClick={() => saveFuse(sw.switch_number, '')} className="text-xs text-raptor-accent hover:underline">
+                        Reset to {sw.fuse_amps_default}A
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+              {fuseError && <p className="text-xs text-red-500">{fuseError}</p>}
+            </div>
+          )}
           {capacity.needsHome?.length > 0 && (
             <div className="mt-3 pt-3 border-t border-raptor-border space-y-1.5">
               <div className="text-xs font-semibold text-raptor-secondary uppercase tracking-wide">Needs a switch</div>
@@ -222,6 +288,11 @@ export default function AuxPanel() {
                 <span className="text-xs font-mono font-semibold text-raptor-secondary">
                   AUX {slot.switch_number} — {slot.fuse_amps}A
                 </span>
+                {slot.fuse_overridden && (
+                  <span className="text-[0.65rem] text-raptor-accent font-medium" title={`Ford's rating is ${slot.fuse_amps_default}A`}>
+                    your rating
+                  </span>
+                )}
               </div>
               {!assignedMod && !slot.factory_used && (
                 <span className="text-xs text-raptor-muted font-medium">Available</span>

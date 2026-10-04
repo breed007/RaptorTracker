@@ -100,7 +100,9 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
     // --- Add a truck ----------------------------------------------------
     // Pick a generation that actually has an AUX panel — Gen 1 has none, and
     // the AUX assertions below would pass vacuously against it.
-    const ref = r.body.find(v => v.aux_switch_count > 0);
+    // Pinned to Gen 3 so the electrical expectations below don't depend on
+    // the order of the reference list (Gen 1 has switches too, at 30 A).
+    const ref = r.body.find(v => v.model === 'F-150 Raptor' && v.generation === 'Gen 3');
     check('a reference generation with an AUX panel exists', () => truthy(ref, 'AUX-equipped reference vehicle'));
     const refId = ref?.id;
     r = await req('POST', '/api/user-vehicles', {
@@ -138,6 +140,27 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
       const assigned = (r.body.switches || []).filter(s => s.mods.some(m => m.id === modId));
       eq(assigned.length, 2, 'switches showing the mod');
       eq(assigned[0].currentAmps, 12, 'amp draw on the switch');
+    });
+
+    // An owner's own fuse rating replaces Ford's default, and resets cleanly.
+    r = await req('PUT', `/api/user-vehicles/${vid}/aux-fuse`, { switch_number: 2, fuse_amps: 20 });
+    check('an owner can set their own fuse rating for a switch', () => eq(r.status, 200, 'status'));
+    r = await req('GET', `/api/aux-capacity?vehicle_id=${vid}`);
+    check('the capacity planner uses it, and still shows Ford\'s figure', () => {
+      const s2 = r.body.switches.find(s => s.switch_number === 2);
+      eq(s2.fuse_amps, 20, 'effective rating');
+      eq(s2.fuse_amps_default, 15, "Ford's default");
+      eq(s2.fuse_overridden, true, 'flagged as overridden');
+      truthy(r.body.source && r.body.source.text, 'source of the defaults');
+    });
+    r = await req('PUT', `/api/user-vehicles/${vid}/aux-fuse`, { switch_number: 2, fuse_amps: 500 });
+    check('an impossible rating is refused', () => eq(r.status, 400, 'status'));
+    r = await req('PUT', `/api/user-vehicles/${vid}/aux-fuse`, { switch_number: 2, fuse_amps: null });
+    r = await req('GET', `/api/aux-capacity?vehicle_id=${vid}`);
+    check('resetting goes back to Ford\'s rating', () => {
+      const s2 = r.body.switches.find(s => s.switch_number === 2);
+      eq(s2.fuse_amps, 15, 'effective rating');
+      eq(s2.fuse_overridden, false, 'not overridden');
     });
 
     // Reassigning down to one switch must free the other, not orphan it.

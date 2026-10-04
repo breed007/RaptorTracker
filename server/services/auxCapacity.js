@@ -3,19 +3,7 @@
 const { getDb } = require('../db');
 const { jsonList } = require('../lib/json');
 
-// Per-vehicle AUX overrides, mirroring userVehicles.applyAuxOverrides
-function layoutFor(uv) {
-  const layout = jsonList(uv.aux_switch_layout);
-  const dismissed = jsonList(uv.dismissed_aux_warnings);
-  const reclaimed = jsonList(uv.reclaimed_aux_switches);
-  return layout.map(slot => {
-    if (reclaimed.includes(slot.switch_number)) {
-      return { ...slot, factory_used: false, warning_note: null, default_label: 'User Available', reclaimed: true };
-    }
-    if (dismissed.includes(slot.switch_number)) return { ...slot, warning_note: null };
-    return slot;
-  });
-}
+const { effectiveLayout } = require('./auxLayout');
 
 const round1 = (n) => Math.round(n * 10) / 10;
 
@@ -32,19 +20,15 @@ const round1 = (n) => Math.round(n * 10) / 10;
  */
 function computeCapacity(db, vehicleId) {
   const uv = db.prepare(`
-    SELECT uv.dismissed_aux_warnings, uv.reclaimed_aux_switches,
-           v.aux_switch_count, v.aux_switch_layout AS ref_layout
+    SELECT uv.dismissed_aux_warnings, uv.reclaimed_aux_switches, uv.aux_fuse_overrides, uv.model_year,
+           v.aux_switch_count, v.aux_switch_layout AS ref_layout, v.aux_source, v.aux_source_confidence
     FROM user_vehicles uv JOIN vehicles v ON uv.vehicle_id = v.id
     WHERE uv.id = ?
   `).get(vehicleId);
   if (!uv) return null;
 
   // The user_vehicles row has no layout of its own; it comes from the reference vehicle
-  const layout = layoutFor({
-    aux_switch_layout: uv.ref_layout,
-    dismissed_aux_warnings: uv.dismissed_aux_warnings,
-    reclaimed_aux_switches: uv.reclaimed_aux_switches,
-  });
+  const layout = effectiveLayout({ ...uv, aux_switch_layout: uv.ref_layout });
 
   if (!layout.length) {
     return { hasAux: false, switches: [], summary: null, unassigned: [] };
@@ -101,6 +85,8 @@ function computeCapacity(db, vehicleId) {
       switch_number: n,
       fuse_amps: fuse,
       label: slot.default_label,
+      fuse_amps_default: slot.fuse_amps_default,
+      fuse_overridden: !!slot.fuse_overridden,
       factory_used: !!slot.factory_used,
       reclaimed: !!slot.reclaimed,
       available: !slot.factory_used && onIt.length === 0,
@@ -154,7 +140,8 @@ function computeCapacity(db, vehicleId) {
   // `unassigned` kept for older clients; `needsHome` is the full list.
   const unassigned = needsHome.filter(i => i.kind === 'wishlist');
 
-  return { hasAux: true, switches, summary, needsHome, unassigned };
+  const source = { text: uv.aux_source || null, confidence: uv.aux_source_confidence || null };
+  return { hasAux: true, switches, summary, needsHome, unassigned, source };
 }
 
 

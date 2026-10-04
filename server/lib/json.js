@@ -21,3 +21,15 @@ function jsonList(value) {
 }
 
 module.exports = { jsonList };
+
+// Same idea for stored objects (per-switch overrides): a bad value is empty.
+function jsonObject(value) {
+  if (value && typeof value === 'object' && !Array.isArray(value)) return value;
+  if (value == null || value === '') return {};
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch (_) { return {}; }
+}
+
+module.exports.jsonObject = jsonObject;

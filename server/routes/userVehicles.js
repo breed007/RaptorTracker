@@ -4,10 +4,11 @@ const path = require('path');
 const fs = require('fs');
 const { randomUUID: uuidv4 } = require('crypto');
 const { getDb } = require('../db');
-const { jsonList } = require('../lib/json');
+const { jsonList, jsonObject } = require('../lib/json');
 const { detachUpload } = require('../services/uploads');
 const { refreshCurrentMileage } = require('../services/odometer');
 const { referencedFiles, removeUnreferenced } = require('../services/uploadRefs');
+const { effectiveLayout, MIN_AMPS, MAX_AMPS } = require('../services/auxLayout');
 const router = express.Router();
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
@@ -15,20 +16,6 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
 // Apply per-vehicle AUX overrides to a layout coming from the reference vehicle.
 //  - dismissed warnings: clear the warning note but keep the factory designation
 //  - reclaimed switches: fully convert a factory slot into a normal available slot
-function applyAuxOverrides(uv) {
-  const layout = jsonList(uv.aux_switch_layout);
-  const dismissed = jsonList(uv.dismissed_aux_warnings);
-  const reclaimed = jsonList(uv.reclaimed_aux_switches);
-  return layout.map(slot => {
-    if (reclaimed.includes(slot.switch_number)) {
-      return { ...slot, factory_used: false, warning_note: null, default_label: 'User Available', reclaimed: true };
-    }
-    if (dismissed.includes(slot.switch_number)) {
-      return { ...slot, warning_note: null };
-    }
-    return slot;
-  });
-}
 
 const vehiclePhotoStorage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOAD_DIR),
@@ -72,7 +59,7 @@ router.get('/', (req, res) => {
   const db = getDb();
   const rows = db.prepare(`
     SELECT uv.*, v.make, v.model, v.generation, v.variant,
-           v.aux_switch_count, v.aux_switch_layout,
+           v.aux_switch_count, v.aux_switch_layout, v.aux_source, v.aux_source_confidence,
            (SELECT COUNT(*) FROM mods m WHERE m.user_vehicle_id = uv.id) as mod_count,
            (SELECT COALESCE(SUM(cost),0) FROM mods m WHERE m.user_vehicle_id = uv.id AND m.status = 'Installed') as total_spend
     FROM user_vehicles uv
@@ -81,7 +68,7 @@ router.get('/', (req, res) => {
   `).all();
   res.json(rows.map(uv => ({
     ...uv,
-    aux_switch_layout: applyAuxOverrides(uv),
+    aux_switch_layout: effectiveLayout(uv),
     vehicle_photos: jsonList(uv.vehicle_photos)
   })));
 });
@@ -130,7 +117,7 @@ router.get('/:id', (req, res) => {
   const db = getDb();
   const uv = db.prepare(`
     SELECT uv.*, v.make, v.model, v.generation, v.variant,
-           v.aux_switch_count, v.aux_switch_layout, v.engine_options,
+           v.aux_switch_count, v.aux_switch_layout, v.aux_source, v.aux_source_confidence, v.engine_options,
            v.horsepower, v.torque, v.suspension_notes, v.tire_size, v.notes as vehicle_notes,
            (SELECT COUNT(*) FROM mods m WHERE m.user_vehicle_id = uv.id) as mod_count,
            (SELECT COUNT(*) FROM mods m WHERE m.user_vehicle_id = uv.id AND m.status = 'Installed') as installed_count,
@@ -142,7 +129,7 @@ router.get('/:id', (req, res) => {
   if (!uv) return res.status(404).json({ error: 'Not found' });
   res.json({
     ...uv,
-    aux_switch_layout: applyAuxOverrides(uv),
+    aux_switch_layout: effectiveLayout(uv),
     engine_options: jsonList(uv.engine_options),
     vehicle_photos: jsonList(uv.vehicle_photos)
   });
@@ -295,6 +282,30 @@ router.put('/:id/aux-warning-dismiss', (req, res) => {
     .run(JSON.stringify(dismissed), req.params.id);
 
   res.json({ ok: true, dismissed_aux_warnings: dismissed });
+});
+
+// PUT /api/user-vehicles/:id/aux-fuse — this truck's own rating for one
+// switch. Ford's figure stays the default; { fuse_amps: null } goes back to it.
+// For a rewired circuit, or a correction to the reference data.
+router.put('/:id/aux-fuse', (req, res) => {
+  const db = getDb();
+  const uv = db.prepare('SELECT id, aux_fuse_overrides FROM user_vehicles WHERE id = ?').get(req.params.id);
+  if (!uv) return res.status(404).json({ error: 'Not found' });
+  const sw = parseInt(req.body.switch_number, 10);
+  if (!Number.isInteger(sw) || sw < 1 || sw > 12) return res.status(400).json({ error: 'switch_number must be 1-12' });
+
+  const overrides = jsonObject(uv.aux_fuse_overrides);
+  if (req.body.fuse_amps === null || req.body.fuse_amps === '' || req.body.fuse_amps === undefined) {
+    delete overrides[String(sw)];
+  } else {
+    const amps = Number(req.body.fuse_amps);
+    if (!Number.isFinite(amps) || amps < MIN_AMPS || amps > MAX_AMPS) {
+      return res.status(400).json({ error: `Fuse rating must be between ${MIN_AMPS} and ${MAX_AMPS} A` });
+    }
+    overrides[String(sw)] = Math.round(amps * 10) / 10;
+  }
+  db.prepare('UPDATE user_vehicles SET aux_fuse_overrides = ? WHERE id = ?').run(JSON.stringify(overrides), uv.id);
+  res.json({ ok: true, aux_fuse_overrides: overrides });
 });
 
 // PUT /api/user-vehicles/:id/aux-reclaim

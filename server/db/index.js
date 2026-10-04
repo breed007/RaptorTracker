@@ -291,20 +291,18 @@ function runMigrations(db) {
     }
   }
 
-  // Fix Gen 3.5 AUX 2: should be factory_used: false (available), not factory_used: true
-  const gen35 = db.prepare("SELECT id, aux_switch_layout FROM vehicles WHERE generation = 'Gen 3.5'").get();
-  if (gen35) {
-    try {
-      const layout = JSON.parse(gen35.aux_switch_layout || '[]');
-      const aux2 = layout.find(s => s.switch_number === 2);
-      if (aux2 && aux2.factory_used === true && aux2.default_label === 'Factory Fog Lights (Primary)') {
-        aux2.factory_used = false;
-        aux2.default_label = 'User Available';
-        db.prepare('UPDATE vehicles SET aux_switch_layout = ? WHERE id = ?')
-          .run(JSON.stringify(layout), gen35.id);
-      }
-    } catch (_) {}
+  // AUX reference data and per-vehicle fuse overrides
+  const vCols2 = db.prepare('PRAGMA table_info(vehicles)').all().map(c => c.name);
+  if (!vCols2.includes('aux_source')) db.prepare('ALTER TABLE vehicles ADD COLUMN aux_source TEXT').run();
+  if (!vCols2.includes('aux_source_confidence')) db.prepare('ALTER TABLE vehicles ADD COLUMN aux_source_confidence TEXT').run();
+  const uvCols3 = db.prepare('PRAGMA table_info(user_vehicles)').all().map(c => c.name);
+  if (!uvCols3.includes('aux_fuse_overrides')) {
+    db.prepare("ALTER TABLE user_vehicles ADD COLUMN aux_fuse_overrides TEXT NOT NULL DEFAULT '{}'").run();
   }
+  // Reference layouts are owned by the code, not the owner: re-sync them on
+  // every start so corrections ship with a release. Owners' overrides live on
+  // user_vehicles and are untouched.
+  require('../reference/auxLayouts').syncReferenceAux(db);
 
   carryOverTypedMileage(db);
 }

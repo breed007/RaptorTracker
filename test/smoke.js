@@ -88,6 +88,38 @@ try {
     if (!row || row.odometer !== 12345) throw new Error('readback mismatch');
   });
 
+  // AUX fuse ratings, checked against Ford's published tables (see
+  // server/reference/auxLayouts.js for the source of each). Written out here
+  // independently so an edit that drifts from the documents fails the build.
+  check('AUX reference ratings match the sources', () => {
+    const expected = {
+      'F-150 Raptor|Gen 1': [30, 30, 15, 10],
+      'F-150 Raptor|Gen 2': [15, 15, 10, 10, 5, 5],
+      'F-150 Raptor|Gen 3': [10, 15, 15, 10, 5, 5],
+      'F-150 Raptor|Gen 3.5': [10, 15, 15, 10, 5, 5],
+      'Bronco Raptor|Gen 1': [10, 15, 30, 10, 10, 10],
+      'Ranger Raptor|Gen 1 (NA)': [5, 15, 15, 15, 25, 25],
+    };
+    for (const [key, amps] of Object.entries(expected)) {
+      const [model, generation] = key.split('|');
+      const v = db.prepare('SELECT aux_switch_layout, aux_switch_count, aux_source FROM vehicles WHERE model = ? AND generation = ?').get(model, generation);
+      if (!v) throw new Error(`${key}: reference vehicle missing`);
+      const got = JSON.parse(v.aux_switch_layout).map(s => s.fuse_amps);
+      if (JSON.stringify(got) !== JSON.stringify(amps)) throw new Error(`${key}: expected ${amps.join('/')}, got ${got.join('/')}`);
+      if (v.aux_switch_count !== amps.length) throw new Error(`${key}: aux_switch_count ${v.aux_switch_count}`);
+      if (!v.aux_source) throw new Error(`${key}: no source recorded`);
+    }
+  });
+
+  check('a 2010 Raptor starts from its own manual (AUX 3/4 swapped), and owner ratings win', () => {
+    const { effectiveLayout } = require('../server/services/auxLayout');
+    const v = db.prepare("SELECT aux_switch_layout FROM vehicles WHERE model = 'F-150 Raptor' AND generation = 'Gen 1'").get();
+    const amps = (row) => effectiveLayout({ aux_switch_layout: v.aux_switch_layout, ...row }).map(s => s.fuse_amps).join('/');
+    if (amps({ model_year: 2012 }) !== '30/30/15/10') throw new Error(`2012: ${amps({ model_year: 2012 })}`);
+    if (amps({ model_year: 2010 }) !== '30/30/10/15') throw new Error(`2010: ${amps({ model_year: 2010 })}`);
+    if (amps({ model_year: 2012, aux_fuse_overrides: '{"4":20}' }) !== '30/30/15/20') throw new Error('override not applied');
+  });
+
   closeDb();
 
   // 7) Every route/service module loads without throwing
@@ -97,7 +129,7 @@ try {
     'routes/vehicleTransfer', 'routes/intervals', 'routes/wishlist', 'routes/fuel',
     'routes/warranty', 'routes/tco', 'routes/notifications', 'routes/tires', 'routes/recalls',
     'routes/backup', 'routes/logbook', 'routes/mileage', 'routes/analytics', 'routes/search', 'routes/import', 'routes/auxCapacity', 'routes/forecast', 'routes/budget', 'routes/documents', 'routes/specs', 'routes/overview', 'routes/outings', 'routes/share', 'config',
-    'services/settings', 'services/mailer', 'services/reminders', 'services/backupArchive', 'services/csvImport', 'services/mileageStats', 'services/auxCapacity', 'services/buildSheet', 'scheduler',
+    'services/settings', 'services/mailer', 'services/reminders', 'services/backupArchive', 'services/csvImport', 'services/mileageStats', 'services/auxCapacity', 'services/buildSheet', 'services/auxLayout', 'scheduler',
   ];
   for (const m of modules) check(`require ${m}`, () => { require(`../server/${m}`); });
 
