@@ -14,7 +14,8 @@ module.exports = defineConfig({
   // The tests share one install and build on each other, like an owner would.
   fullyParallel: false,
   workers: 1,
-  retries: process.env.CI ? 1 : 0,
+  // No retries: a retry reruns the group against the state the failed run left.
+  retries: 0,
   timeout: 30_000,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {

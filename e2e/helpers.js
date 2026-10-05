@@ -5,7 +5,10 @@ const OWNER = { username: 'owner', password: 'e2e-password-long-enough' };
 
 async function signIn(page) {
   await page.goto('/');
-  if (await page.getByLabel('Username').isVisible().catch(() => false)) {
+  // isVisible() doesn't wait. Sign-in, first run, and the app all render a
+  // <main> once the session check is done, so wait for that first.
+  await page.locator('main').first().waitFor();
+  if (await page.getByLabel('Username').isVisible()) {
     await page.getByLabel('Username').fill(OWNER.username);
     await page.getByLabel('Password').fill(OWNER.password);
     await page.getByRole('button', { name: 'Sign In' }).click();

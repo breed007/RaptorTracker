@@ -58,6 +58,8 @@ test('a deleted record can be brought back with Undo', async ({ page }) => {
   await signIn(page);
   await page.goto('/fuel');
   const rows = page.getByRole('button', { name: 'Delete fill-up' });
+  // count() doesn't wait; let the list load before taking it.
+  await expect(rows.first()).toBeVisible();
   const before = await rows.count();
   await rows.first().click();
   const dialog = page.getByRole('dialog');
