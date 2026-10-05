@@ -865,18 +865,64 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
 
     // Mod export/import keeps what the old importer dropped.
     {
-      const mz = await fetch(`${base}/api/mods/export/zip?vehicle_id=${vid}`, { headers: { Cookie: cookie } });
-      const mfd = new FormData();
-      mfd.append('file', new Blob([Buffer.from(await mz.arrayBuffer())], { type: 'application/zip' }), 'mods.zip');
-      const mi = await fetch(`${base}/api/mods/import?vehicle_id=${vid}`, { method: 'POST', body: mfd, headers: { Cookie: cookie } });
-      check('mods re-import', () => eq(mi.status, 200, 'status'));
-      const copies = (await req('GET', `/api/mods?vehicle_id=${vid}`)).body.filter(m => m.part_name === 'Transfer Mod');
-      check('a re-imported mod keeps amp draw, AUX switches, and its own copy of the photo', () => {
-        eq(copies.length, 2, 'original + copy');
-        const copy = copies.find(m => m.photos[0] !== '/uploads/transfer-photo.jpg');
-        truthy(copy, 'copy has its own photo file');
+      const zipBytes = Buffer.from(await (await fetch(`${base}/api/mods/export/zip?vehicle_id=${vid}`, { headers: { Cookie: cookie } })).arrayBuffer());
+      const importMods = async (target, bytes, name = 'mods.zip', type = 'application/zip') => {
+        const mfd = new FormData();
+        mfd.append('file', new Blob([bytes], { type }), name);
+        const res = await fetch(`${base}/api/mods/import?vehicle_id=${target}`, { method: 'POST', body: mfd, headers: { Cookie: cookie } });
+        return { status: res.status, body: await res.json() };
+      };
+      const second = (await req('POST', '/api/user-vehicles', { vehicle_id: refId, nickname: 'Mod Copy Target', model_year: 2023 })).body.id;
+      let mi = await importMods(second, zipBytes);
+      check('mods import into another truck', () => eq(mi.status, 200, 'status'));
+      const copy = (await req('GET', `/api/mods?vehicle_id=${second}`)).body.find(m => m.part_name === 'Transfer Mod');
+      check('an imported mod keeps amp draw, AUX switches, and its own copy of the photo', () => {
+        truthy(copy, 'imported');
+        truthy(copy.photos[0] && copy.photos[0] !== '/uploads/transfer-photo.jpg', 'copy has its own photo file');
         eq(copy.amp_draw, 4.5, 'amp_draw');
         eq(copy.aux_switches[0].switch_number, 5, 'aux switch');
+      });
+      mi = await importMods(second, zipBytes);
+      check('importing the same mods again adds nothing', () => { eq(mi.body.imported, 0, 'imported'); truthy(mi.body.duplicates >= 1, 'duplicates'); });
+
+      // An export from a metric install arrives in this install's miles.
+      const metricExport = { version: 1, units: { distance: 'km', volume: 'l', economy: 'l100km', pressure: 'kpa', currency: 'EUR' },
+        mods: [{ part_name: 'Metric Skid Plate', category: 'Armor', status: 'Installed', install_date: '2024-02-02', mileage_at_install: 16093.4 }] };
+      mi = await importMods(second, Buffer.from(JSON.stringify(metricExport)), 'mods.json', 'application/json');
+      const skid = (await req('GET', `/api/mods?vehicle_id=${second}`)).body.find(m => m.part_name === 'Metric Skid Plate');
+      check('a mod from a metric install is converted to miles', () => eq(skid.mileage_at_install, 10000, 'mileage_at_install'));
+    }
+
+    // A whole-vehicle export from a metric install arrives in this install's units.
+    {
+      const archiver = require('archiver');
+      const { PassThrough } = require('stream');
+      const manifest = {
+        format: 'raptortracker-vehicle', version: 3, units: { distance: 'km', volume: 'l', economy: 'l100km', pressure: 'kpa', currency: 'EUR' },
+        vehicle_ref: { make: 'Ford', model: 'F-150 Raptor', generation: 'Gen 3' },
+        vehicle: { nickname: 'Metric Truck', model_year: 2022, mileage_at_purchase: 16.1 }, current_mileage: 32186.9,
+        tables: {
+          fuel_log: [{ id: 7, date: '2024-01-01', odometer: 32186.9, gallons: 75.708, price_per_gallon: 1.5, total_cost: 113.56, full_tank: 1 }],
+          outings: [{ id: 3, name: 'Metric Trip', date: '2024-01-05', tire_psi_front: 124.1, tire_psi_rear: 137.9 }],
+        },
+        files: [],
+      };
+      const chunks = []; const sink = new PassThrough(); sink.on('data', c => chunks.push(c));
+      const done = new Promise(resolve => sink.on('end', resolve));
+      const zip = archiver('zip'); zip.pipe(sink); zip.append(JSON.stringify(manifest), { name: 'vehicle.json' });
+      await zip.finalize(); await done;
+      const fd = new FormData(); fd.append('file', new Blob([Buffer.concat(chunks)], { type: 'application/zip' }), 'metric.zip');
+      const res = await fetch(`${base}/api/user-vehicles/import`, { method: 'POST', body: fd, headers: { Cookie: cookie } });
+      const body = await res.json();
+      const Database = require('better-sqlite3');
+      const db = new Database(path.join(tmp, 'raptortracker.db'), { readonly: true });
+      const f = db.prepare('SELECT odometer, gallons, price_per_gallon FROM fuel_log WHERE user_vehicle_id = ?').get(body.vehicleId);
+      const o = db.prepare('SELECT tire_psi_front FROM outings WHERE user_vehicle_id = ?').get(body.vehicleId);
+      db.close();
+      check('a metric vehicle export is converted on import', () => {
+        eq(res.status, 201, `status ${JSON.stringify(body).slice(0, 200)}`);
+        eq(f.odometer, 20000, 'odometer in miles'); eq(f.gallons, 20, 'gallons'); eq(f.price_per_gallon, 5.6781, 'price per gallon');
+        eq(o.tire_psi_front, 18, 'psi');
       });
     }
 

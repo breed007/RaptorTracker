@@ -258,7 +258,7 @@ export default function ModList() {
           <span>
             {importResult.error
               ? `Import failed: ${importResult.error}`
-              : `Imported ${importResult.imported} mod${importResult.imported !== 1 ? 's' : ''} successfully${importResult.skipped > 0 ? ` (${importResult.skipped} skipped — missing part name)` : ''}.`
+              : `Imported ${importResult.imported} mod${importResult.imported !== 1 ? 's' : ''}${importResult.duplicates > 0 ? `; ${importResult.duplicates} already here, skipped` : ''}${importResult.skipped > 0 ? `; ${importResult.skipped} skipped (missing part name)` : ''}.`
             }
           </span>
           <button onClick={() => setImportResult(null)} className="flex-shrink-0 opacity-60 hover:opacity-100">

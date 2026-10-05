@@ -143,6 +143,32 @@ function storedValueCount(db) {
 /** True once the owner has picked units (or switched them) at least once. */
 const unitsChosen = () => getSetting('unit_distance') != null;
 
+/**
+ * Convert one row of `table` from one set of units to another, for data
+ * arriving from another install. Returns a new object; rows from tables
+ * without unit-bearing columns come back unchanged.
+ */
+function convertRow(table, row, from, to) {
+  const out = { ...row };
+  const vf = factor('volume', from.volume, to.volume);
+  const rules = [
+    [COLUMNS.distance, factor('distance', from.distance, to.distance), DECIMALS.distance],
+    [COLUMNS.volume, vf, DECIMALS.volume],
+    [COLUMNS.perVolume, vf === 1 ? 1 : 1 / vf, DECIMALS.perVolume],
+    [COLUMNS.pressure, factor('pressure', from.pressure, to.pressure), DECIMALS.pressure[to.pressure]],
+  ];
+  for (const [pairs, f, d] of rules) {
+    if (f === 1) continue;
+    for (const [t, col] of pairs) {
+      if (t === table && typeof out[col] === 'number') out[col] = Math.round(out[col] * f * 10 ** d) / 10 ** d;
+    }
+  }
+  return out;
+}
+
+/** Units recorded in an export; exports from before unit settings were always US units. */
+const unitsOf = (recorded) => ({ ...DEFAULTS, ...(recorded || {}) });
+
 function saveUnits(units) {
   for (const k of ['distance', 'volume', 'economy', 'pressure']) setSetting(`unit_${k}`, units[k]);
   setSetting('currency', units.currency);
@@ -205,6 +231,6 @@ function unitsForLocale(locale = 'en-US') {
 
 module.exports = {
   OPTIONS, DEFAULTS, COLUMNS, LABELS,
-  getUnits, saveUnits, factor, convertStored, storedValueCount, unitsChosen, dueSoonFloor,
+  getUnits, saveUnits, factor, convertStored, convertRow, unitsOf, storedValueCount, unitsChosen, dueSoonFloor,
   formatDistance, formatMoney, economyFrom, economyFromMpg, unitsForLocale,
 };

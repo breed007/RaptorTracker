@@ -9,6 +9,8 @@ const multer = require('multer');
 const { randomUUID: uuidv4 } = require('crypto');
 const { getDb } = require('../db');
 const { jsonList } = require('../lib/json');
+const units = require('../services/units');
+const { refreshCurrentMileage } = require('../services/odometer');
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
 const router = express.Router();
@@ -36,6 +38,7 @@ function buildPayload(vehicle, mods, photoPathFn) {
   return {
     version: 1,
     exported_at: new Date().toISOString(),
+    units: units.getUnits(),
     vehicle: {
       nickname: vehicle.nickname,
       model_year: vehicle.model_year,
@@ -214,10 +217,21 @@ router.post('/import', importUpload.single('file'), async (req, res) => {
 
   let imported = 0;
   let skipped = 0;
+  let duplicates = 0;
+  // Mileage at install is in the sending install's units.
+  const fromUnits = units.unitsOf(payload.units);
+  const toUnits = units.getUnits();
+  // Importing the same file twice shouldn't double the build.
+  const seen = new Set(db.prepare('SELECT lower(part_name) AS n, install_date AS d FROM mods WHERE user_vehicle_id = ?')
+    .all(vehicle_id).map(m => `${m.n}|${m.d || ''}`));
 
   const doImport = db.transaction(() => {
-    for (const mod of payload.mods) {
-      if (!mod.part_name) { skipped++; continue; }
+    for (const raw of payload.mods) {
+      if (!raw.part_name) { skipped++; continue; }
+      const key = `${String(raw.part_name).toLowerCase()}|${raw.install_date || ''}`;
+      if (seen.has(key)) { duplicates++; continue; }
+      seen.add(key);
+      const mod = units.convertRow('mods', raw, fromUnits, toUnits);
       const data = {};
       for (const [k, v] of Object.entries(mod)) {
         if (modCols.has(k) && !NEVER.has(k)) data[k] = (v !== null && typeof v === 'object') ? JSON.stringify(v) : v;
@@ -246,7 +260,8 @@ router.post('/import', importUpload.single('file'), async (req, res) => {
     return res.status(500).json({ error: `Import failed: ${err.message}` });
   }
 
-  res.json({ imported, skipped, total: payload.mods.length });
+  try { refreshCurrentMileage(db, Number(vehicle_id)); } catch (_) { /* non-fatal */ }
+  res.json({ imported, skipped, duplicates, total: payload.mods.length });
 });
 
 router.use((err, req, res, next) => {

@@ -17,6 +17,7 @@ const path = require('path');
 const { jsonList } = require('../lib/json');
 const { REFS } = require('./uploadRefs');
 const { refreshCurrentMileage } = require('./odometer');
+const units = require('./units');
 
 const FORMAT = 'raptortracker-vehicle';
 const VERSION = 3;
@@ -88,6 +89,8 @@ function exportVehicle(db, vehicleId, { appVersion } = {}) {
       version: VERSION,
       app_version: appVersion || null,
       exported_at: new Date().toISOString(),
+      // Values are stored in the sending install's units; the receiver converts.
+      units: units.getUnits(),
       vehicle_ref: ref,
       vehicle,
       current_mileage,
@@ -135,12 +138,15 @@ function importVehicle(db, manifest, fileMap = {}) {
   };
 
   const summary = { counts: {}, skippedTables: [], files: Object.keys(fileMap).length };
+  const fromUnits = units.unitsOf(manifest.units);
+  const toUnits = units.getUnits();
+  const inUnits = (table, row) => units.convertRow(table, row, fromUnits, toUnits);
 
   const run = db.transaction(() => {
     // The vehicle itself
     const uvCols = new Set(columnsOf(db, 'user_vehicles'));
     const vehicle = {};
-    for (const [k, v] of Object.entries(manifest.vehicle || {})) {
+    for (const [k, v] of Object.entries(inUnits('user_vehicles', manifest.vehicle || {}))) {
       if (uvCols.has(k) && !USER_VEHICLE_SKIP.has(k)) vehicle[k] = v;
     }
     vehicle.vehicle_id = refVehicle.id;
@@ -161,7 +167,7 @@ function importVehicle(db, manifest, fileMap = {}) {
       let n = 0;
       for (const row of manifest.tables[table]) {
         const data = {};
-        for (const [k, v] of Object.entries(row)) if (cols.has(k) && k !== 'id') data[k] = v;
+        for (const [k, v] of Object.entries(inUnits(table, row))) if (cols.has(k) && k !== 'id') data[k] = v;
         data.user_vehicle_id = newVehicleId;
         for (const fk of fks) {
           if (data[fk.from] == null) continue;
@@ -177,9 +183,10 @@ function importVehicle(db, manifest, fileMap = {}) {
     refreshCurrentMileage(db, newVehicleId);
     // A typed current mileage above every record travels as a reading.
     const now = db.prepare('SELECT current_mileage FROM user_vehicles WHERE id = ?').get(newVehicleId).current_mileage;
-    if (manifest.current_mileage > (now || 0)) {
+    const carried = inUnits('user_vehicles', { current_mileage: manifest.current_mileage }).current_mileage;
+    if (carried > (now || 0)) {
       db.prepare("INSERT INTO mileage_log (user_vehicle_id, date, odometer, note) VALUES (?, date('now'), ?, 'Carried over in vehicle import')")
-        .run(newVehicleId, manifest.current_mileage);
+        .run(newVehicleId, carried);
       refreshCurrentMileage(db, newVehicleId);
     }
     summary.vehicleId = newVehicleId;
