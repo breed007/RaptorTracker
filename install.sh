@@ -98,6 +98,42 @@ check_root() {
 }
 
 ###############################################################################
+# Architecture: 64-bit x86 or ARM only
+###############################################################################
+# The SQLite and bcrypt modules ship prebuilt binaries for x86_64 and arm64,
+# and Node.js 24 has no 32-bit ARM build at all. What matters is the
+# userland, not the kernel: 32-bit Raspberry Pi OS on a Pi 4 often runs a
+# 64-bit kernel, so `uname -m` says aarch64 while every program is 32-bit.
+check_arch() {
+  section "Checking Architecture"
+  local machine userland
+  machine="$(uname -m)"
+  if command -v dpkg &>/dev/null; then
+    userland="$(dpkg --print-architecture)"
+  else
+    case "$(getconf LONG_BIT 2>/dev/null)" in
+      64) userland="$machine" ;;
+      *)  userland="32-bit" ;;
+    esac
+  fi
+
+  case "$userland" in
+    amd64|x86_64|arm64|aarch64)
+      log "Architecture: ${userland} (kernel ${machine})"
+      ;;
+    armhf|armel|armv7l|armv6l|32-bit|i386|i686)
+      die "This system runs a 32-bit OS (${userland}, kernel ${machine}). RaptorTracker needs a 64-bit one.
+    On a Raspberry Pi 3, 4, 5, or Zero 2 W, install Raspberry Pi OS (64-bit) with Raspberry Pi
+    Imager and run this script again. The Pi 1, Pi 2, and original Pi Zero can't run a 64-bit OS
+    and aren't supported."
+      ;;
+    *)
+      die "Unsupported architecture: ${userland} (kernel ${machine}). RaptorTracker runs on 64-bit x86 and ARM."
+      ;;
+  esac
+}
+
+###############################################################################
 # OS detection
 ###############################################################################
 detect_os() {
@@ -110,7 +146,20 @@ detect_os() {
   local os_id="${ID:-unknown}"
   OS_PRETTY="${PRETTY_NAME:-unknown}"
 
+  # Derivatives (Raspberry Pi OS 64-bit reports debian; Mint and Pop!_OS
+  # report their own ID) are handled as the distro they're built on.
+  local family="$os_id"
   case "$os_id" in
+    ubuntu|debian|centos|rhel|almalinux|rocky) ;;
+    *)
+      case " ${ID_LIKE:-} " in
+        *" ubuntu "*|*" debian "*) family="debian" ;;
+        *" rhel "*|*" centos "*|*" fedora "*) family="rhel" ;;
+      esac
+      ;;
+  esac
+
+  case "$family" in
     ubuntu|debian)
       PKG_MGR="apt"
       WEBSERVER_SVC_NGINX="nginx"
@@ -190,32 +239,6 @@ install_system_tools() {
   fi
 
   log "curl $(curl --version | head -1 | awk '{print $2}')  rsync $(rsync --version | head -1 | awk '{print $3}')  git $(git --version | awk '{print $3}')"
-}
-
-###############################################################################
-# Install build tools — required for better-sqlite3 native module
-###############################################################################
-install_build_tools() {
-  section "Build Tools  (native SQLite module)"
-
-  case "$PKG_MGR" in
-    apt)
-      if ! pkg_installed build-essential python3-minimal; then
-        pkg_install build-essential python3-minimal
-      else
-        log "build-essential already present."
-      fi
-      ;;
-    dnf|yum)
-      if ! pkg_installed gcc gcc-c++ make python3; then
-        pkg_install gcc gcc-c++ make python3
-      else
-        log "gcc/make already present."
-      fi
-      ;;
-  esac
-
-  log "Build tools ready."
 }
 
 ###############################################################################
@@ -474,8 +497,31 @@ install_dependencies() {
     run_visible npm install --prefix client
   fi
 
+  # Building the web app needs about 450 MB. On a 512 MB board (Pi Zero 2 W,
+  # Pi 3 A+) that isn't free, so add a temporary swap file for the build and
+  # remove it afterwards. The running app needs far less.
+  local mem_kb swap_kb temp_swap=""
+  mem_kb="$(awk '/MemAvailable/ {print $2}' /proc/meminfo)"
+  swap_kb="$(awk '/SwapFree/ {print $2}' /proc/meminfo)"
+  if (( mem_kb + swap_kb < 700000 )); then
+    temp_swap="${INSTALL_DIR}/.build-swap"
+    warn "Only $(( (mem_kb + swap_kb) / 1024 )) MB of memory free — adding 1 GB of temporary swap for the build."
+    if fallocate -l 1G "$temp_swap" 2>>"$LOG_FILE" || dd if=/dev/zero of="$temp_swap" bs=1M count=1024 status=none 2>>"$LOG_FILE"; then
+      chmod 600 "$temp_swap" && mkswap "$temp_swap" >>"$LOG_FILE" 2>&1 && swapon "$temp_swap" >>"$LOG_FILE" 2>&1 || {
+        warn "Could not enable temporary swap; the build may run out of memory."; rm -f "$temp_swap"; temp_swap=""; }
+    else
+      warn "Not enough disk space for temporary swap; the build may run out of memory."; temp_swap=""
+    fi
+  fi
+
   info "Building React frontend (Vite)…"
   run_visible npm run build
+
+  if [[ -n "$temp_swap" ]]; then
+    swapoff "$temp_swap" >>"$LOG_FILE" 2>&1 || true
+    rm -f "$temp_swap"
+    log "Temporary swap removed."
+  fi
 
   log "All dependencies installed; frontend built."
 }
@@ -758,50 +804,19 @@ configure_firewall() {
 }
 
 ###############################################################################
-# Verify required npm packages (archiver, adm-zip) are installed
-# These may be absent if package-lock.json predates their addition to
-# package.json, or if npm ci was run without them.
+# Check that the native modules load on this platform
 ###############################################################################
 verify_npm_packages() {
-  section "Verifying Required npm Packages"
+  section "Checking Native Modules"
 
   cd "$INSTALL_DIR"
-
-  local required_pkgs=("archiver" "adm-zip" "nodemailer" "node-cron")
-  local missing=()
-
-  for pkg in "${required_pkgs[@]}"; do
-    if node -e "require('${pkg}')" >> "$LOG_FILE" 2>&1; then
-      log "  ${pkg}: present"
-    else
-      warn "  ${pkg}: NOT FOUND"
-      missing+=("$pkg")
-    fi
-  done
-
-  if [[ ${#missing[@]} -eq 0 ]]; then
-    log "All required npm packages are present."
-    return
+  # SQLite and bcrypt load prebuilt binaries for this platform. If either
+  # can't load, nothing else will work, so stop here with the reason.
+  if node -e "new (require('better-sqlite3'))(':memory:').prepare('select 1').get(); require('bcrypt')" >> "$LOG_FILE" 2>&1; then
+    log "SQLite and bcrypt load on $(node -p 'process.platform + "-" + process.arch')."
+  else
+    die "The SQLite or bcrypt module could not load on this system. See $LOG_FILE for the error."
   fi
-
-  info "Installing missing packages: ${missing[*]}"
-  run_visible npm install "${missing[@]}"
-
-  # Verify each missing package now resolves
-  local still_missing=()
-  for pkg in "${missing[@]}"; do
-    if node -e "require('${pkg}')" >> "$LOG_FILE" 2>&1; then
-      log "  ${pkg}: installed successfully"
-    else
-      still_missing+=("$pkg")
-    fi
-  done
-
-  if [[ ${#still_missing[@]} -gt 0 ]]; then
-    die "Failed to install npm package(s): ${still_missing[*]}. Check $LOG_FILE for details."
-  fi
-
-  log "All required npm packages are present."
 }
 
 ###############################################################################
@@ -1020,20 +1035,20 @@ BANNER
   echo ""
 
   check_root
+  check_arch
   detect_os
   prompt_config
 
   pkg_update
   install_system_tools    # curl, rsync, git
-  install_build_tools     # gcc / build-essential
-  install_nodejs          # Node.js 20+
+  install_nodejs          # Node.js 22.12+ (installs 24)
   install_webserver       # nginx or apache (if installing new)
   install_pm2
   create_service_user
   deploy_app
   write_env
   install_dependencies    # npm ci + vite build
-  verify_npm_packages     # ensure archiver + adm-zip are present
+  verify_npm_packages     # SQLite and bcrypt load on this platform
   init_database
   set_permissions
   configure_webserver     # write proxy config + reload

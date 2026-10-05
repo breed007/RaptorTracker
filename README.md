@@ -224,18 +224,18 @@ fonts from Google Fonts when it opens the app.
 | **Node.js** | 22.12+ | 24 LTS recommended. Node 20 reached end-of-life in April 2026 and is no longer supported. |
 | **npm** | 10+ | Bundled with Node 22. |
 | **git** | any recent | For cloning and pulling updates. |
-| **Build tools** | — | Only if your platform has no prebuilt `better-sqlite3` binary. On Debian/Ubuntu: `apt install build-essential python3`. |
+| **OS** | 64-bit Linux, macOS, or Windows | On x86_64 or ARM64. 32-bit systems aren't supported (see [Raspberry Pi](#running-on-a-raspberry-pi)). |
 
 Everything else is a project dependency installed by `npm install`. Key ones:
 
 | Layer | Package | Version |
 |---|---|---|
 | Backend | Express | 4.x |
-| Database | better-sqlite3 (SQLite) | 9.x |
+| Database | better-sqlite3 (SQLite) | 13.x |
 | Auth | express-session + bcrypt | — |
 | File uploads | Multer | 2.x |
 | PDF generation | PDFKit | 0.15.x |
-| Import/Export | archiver + adm-zip | — |
+| Import/Export | archiver + yauzl | — |
 | Frontend | React | 18.x |
 | Build tool | Vite | 5.x |
 | Routing | react-router-dom | 6.x |
@@ -295,6 +295,59 @@ SMTP_USER=
 SMTP_PASS=
 SMTP_FROM=
 ```
+
+---
+
+## Running on a Raspberry Pi
+
+RaptorTracker runs on a Raspberry Pi 3, 4, 5, or Zero 2 W with Raspberry Pi OS (64-bit).
+The Pi 1, Pi 2, and original Pi Zero can't run a 64-bit OS and aren't supported, and neither is
+the 32-bit edition of Raspberry Pi OS on any model. The installer checks for this and stops with
+an explanation.
+
+### What it needs
+
+These figures come from the arm64 Docker image with memory capped and the app limited to one CPU
+core, on a truck with 400 fill-ups, 200 service records, and 40 photos:
+
+| | Memory |
+|---|---|
+| Idle | about 40 MB |
+| Busiest moment (backup, restore, PDF with photos, 3,000-row CSV import) | about 130 MB |
+| Building the web app from source (`install.sh` or a git update) | about 450 MB |
+
+The running app fits in 300 MB with room to spare, so a 512 MB Zero 2 W or Pi 3 A+ can run it.
+Building it from source can't fit in what a 512 MB board has free, so on those boards either use
+the Docker image, which is already built, or let `install.sh` add a temporary 1 GB swap file for the
+build (it does this on its own when memory is short and removes the file afterwards).
+
+Speed was measured on a much faster core than a Pi's. On a Pi 4, expect most pages to load in well
+under a second, and a backup of a few gigabytes of photos to take a few minutes.
+
+### Recommendations
+
+- A Pi 4 with 2 GB or more, or any Pi 5, is comfortable. A Pi 3 or Zero 2 W works for one or two
+  trucks.
+- SD cards wear out, and a dying card takes the database with it. Boot from a USB SSD if you can
+  (the Pi 4 and 5 support it), or use a high-endurance card, and set up off-box copies under
+  Settings → Backups so the backups don't live on the same card.
+- Use the official power supply. Undervoltage is a common cause of SD card corruption.
+- Photos are resized in the browser before they upload, so a phone photo takes under 1 MB instead
+  of several. Photos uploaded before 1.0 can be shrunk under Settings → Backups → Storage.
+
+### Installing
+
+1. Write Raspberry Pi OS Lite (64-bit) to the card or SSD with
+   [Raspberry Pi Imager](https://www.raspberrypi.com/software/), turning on SSH in its settings.
+2. Then either:
+   - Docker: install Docker with [Docker's instructions for Debian](https://docs.docker.com/engine/install/debian/),
+     then follow [Docker Deployment](docs/deployment-docker.md). The published image is multi-arch,
+     so the same `docker compose up -d` pulls the ARM64 build.
+   - `install.sh`: follow [Installation (Linux Server)](#installation-linux-server) below.
+     Raspberry Pi OS is based on Debian, which the installer supports.
+
+Set `TZ` (Docker) or the Pi's timezone (`sudo raspi-config`) so reminders and nightly backups run
+at the hour you expect.
 
 ---
 

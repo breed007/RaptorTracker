@@ -2,6 +2,9 @@
 
 Containerized deployment using Docker Compose.
 
+The published image is built for amd64 and arm64, so it runs on a Raspberry Pi 3, 4, 5, or Zero 2 W
+with 64-bit Raspberry Pi OS. See [Running on a Raspberry Pi](../README.md#running-on-a-raspberry-pi).
+
 ---
 
 ## Prerequisites
