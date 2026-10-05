@@ -33,6 +33,7 @@ const EMPTY_FORM = {
   station: '',
   trip_type: 'mixed',
   full_tank: true,
+  missed_previous: false,
   notes: '',
 }
 
@@ -166,6 +167,7 @@ export default function FuelLog() {
       station: entry.station || '',
       trip_type: entry.trip_type || 'mixed',
       full_tank: Boolean(entry.full_tank),
+      missed_previous: Boolean(entry.missed_previous),
       notes: entry.notes || '',
     })
     setFormError('')
@@ -236,6 +238,7 @@ export default function FuelLog() {
       station: form.station || null,
       notes: form.notes || null,
       full_tank: form.full_tank,
+      missed_previous: form.missed_previous,
       trip_type: form.trip_type,
     }
 
@@ -582,6 +585,22 @@ export default function FuelLog() {
               </label>
             </div>
 
+            <div className="flex items-center gap-3 pt-5">
+              <input
+                id="missed_previous"
+                type="checkbox"
+                checked={form.missed_previous}
+                onChange={e => setField('missed_previous', e.target.checked)}
+                className="w-4 h-4 rounded accent-raptor-accent cursor-pointer"
+              />
+              <label htmlFor="missed_previous" className="label mb-0 cursor-pointer select-none">
+                Missed logging the last fill-up
+                <span className="block font-normal text-raptor-muted" style={{ fontSize: '0.7rem' }}>
+                  Skips {u.econName} for this tank instead of counting fuel that wasn&apos;t recorded
+                </span>
+              </label>
+            </div>
+
             {/* Notes */}
             <div className="sm:col-span-2">
               <label className="label">Notes</label>
@@ -678,6 +697,11 @@ function FuelEntryRow({ entry, factoryCombinedMpg, onEdit, onDelete }) {
             {!entry.full_tank && (
               <span className="text-xs text-raptor-muted px-1.5 py-0.5 rounded bg-raptor-elevated border border-raptor-border">
                 partial
+              </span>
+            )}
+            {Boolean(entry.missed_previous) && (
+              <span className="text-xs text-raptor-muted px-1.5 py-0.5 rounded bg-raptor-elevated border border-raptor-border" title="The fill-up before this one wasn't logged">
+                after a missed fill-up
               </span>
             )}
           </div>

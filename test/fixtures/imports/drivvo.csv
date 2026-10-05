@@ -1,0 +1,14 @@
+##Vehicle
+Name,Make,Model,Year,Plate
+Raptor,Ford,F-150 Raptor,2022,
+##Refuelling
+Odometer,Date,Fuel,Price,Total cost,Volume,Full tank?,Previous refuelling missing?,Station,Reason,Payment,Driver,Discount,Distance,Average,Price per km,Day average,Days,Notes
+18210,25/03/2024 08:12,Gasoline,3.459,86.48,25,Yes,No,Shell,,Card,,,,,,,,
+18530,05/04/2024 18:40,Gasoline,3.559,40.94,11.5,No,No,Costco,,Card,,,,,,,,partial
+18800,13/04/2024 07:05,Gasoline,3.499,73.48,21,Yes,No,Shell,,Card,,,,,,,,
+##Service
+Odometer,Date,Total cost,Service,Place,Notes
+18500,02/04/2024,104.50,Oil change,Quick Lube,full synthetic
+##Expense
+Odometer,Date,Total cost,Expense,Place,Reason,Notes
+18600,06/04/2024,12.00,Parking,,,

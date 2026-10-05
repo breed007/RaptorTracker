@@ -284,7 +284,7 @@ const CSV_TYPES = {
   },
   fuel: {
     table: 'fuel_log',
-    cols: ['date', 'odometer', 'gallons', 'price_per_gallon', 'total_cost', 'full_tank', 'trip_type', 'station', 'notes'],
+    cols: ['date', 'odometer', 'gallons', 'price_per_gallon', 'total_cost', 'full_tank', 'missed_previous', 'trip_type', 'station', 'notes'],
     order: 'odometer DESC',
   },
   wishlist: {

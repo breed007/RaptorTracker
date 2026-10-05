@@ -423,6 +423,88 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
       });
     }
 
+    // --- Importing from Fuelly, Drivvo, and Simply Auto ----------------------
+    {
+      const Database = require('better-sqlite3');
+      const fx = (n) => fs.readFileSync(path.join(__dirname, 'fixtures', 'imports', n));
+      const upload = async (vehicleId, name, extra = {}) => {
+        const fd = new FormData();
+        fd.append('file', new Blob([fx(name)], { type: 'text/csv' }), name);
+        fd.append('type', 'fuel'); fd.append('vehicle_id', String(vehicleId));
+        for (const [k, v] of Object.entries(extra)) fd.append(k, String(v));
+        const res = await fetch(`${base}/api/import/csv`, { method: 'POST', body: fd, headers: { Cookie: cookie } });
+        return { status: res.status, body: await res.json() };
+      };
+      const fresh = async (nickname) => (await req('POST', '/api/user-vehicles', { vehicle_id: refId, nickname, model_year: 2022 })).body.id;
+      const rowsOf = (vehicleId, table, order) => {
+        const db = new Database(path.join(tmp, 'raptortracker.db'), { readonly: true });
+        const rows = db.prepare(`SELECT * FROM ${table} WHERE user_vehicle_id = ? ORDER BY ${order}`).all(vehicleId);
+        db.close(); return rows;
+      };
+
+      const fuellyVid = await fresh('Fuelly Import');
+      r = await upload(fuellyVid, 'fuelly-us.csv');
+      check('a Fuelly export is recognized even when "Fuel log" was picked', () => {
+        eq(r.status, 200, `status ${JSON.stringify(r.body).slice(0, 200)}`);
+        eq(r.body.source, 'fuelly', 'source'); eq(r.body.vehicle, 'Trail Truck', 'busiest vehicle chosen');
+        eq(r.body.vehicles.length, 2, 'both vehicles listed'); eq(r.body.units.detected, true, 'units from headers');
+        eq(r.body.fuelCount, 5, 'fill-ups for the chosen vehicle'); eq(r.body.committed, false, 'dry run first');
+      });
+      r = await upload(fuellyVid, 'fuelly-us.csv', { commit: 'true' });
+      const fl = rowsOf(fuellyVid, 'fuel_log', 'odometer');
+      check('Fuelly fill-ups import with partial and missed flags', () => {
+        eq(r.body.inserted, 5, 'inserted');
+        eq(fl[0].date, '2024-01-10', 'M/D/YY read month-first');
+        const partial = fl.find(f => f.odometer === 12395); eq(partial.full_tank, 0, 'partial fill'); eq(partial.notes, 'top-up before trip', 'notes');
+        const missed = fl.find(f => f.odometer === 11895); eq(missed.missed_previous, 1, 'missed fill-up');
+        const top = fl.find(f => f.odometer === 12750); eq(top.price_per_gallon, 3.599, 'per-gallon price'); eq(top.total_cost, 89.98, 'total = price x gallons');
+      });
+      r = await req('GET', `/api/fuel?vehicle_id=${fuellyVid}`);
+      check('economy spans partial fills and skips a missed fill-up', () => {
+        const byOdo = Object.fromEntries(r.body.entries.map(e => [e.odometer, e.mpg]));
+        eq(byOdo[11895], null, 'missed-previous segment has no figure');
+        eq(byOdo[12750], Math.round((12750 - 12215) / (12.5 + 25) * 10) / 10, 'distance over all fuel since the last full tank');
+        eq(byOdo[12215], Math.round((12215 - 11895) / 23 * 10) / 10, 'plain full-to-full');
+      });
+      r = await upload(fuellyVid, 'fuelly-us.csv');
+      check('importing the same export again finds nothing new', () => { eq(r.body.validCount, 0, 'new rows'); eq(r.body.duplicates.fuel, 5, 'duplicates'); });
+      r = await upload(fuellyVid, 'fuelly-us.csv', { source_vehicle: "Wife's Bronco" });
+      check('another vehicle in the file can be chosen', () => eq(r.body.fuelCount, 1, 'Bronco fill-ups'));
+
+      const metricVid = await fresh('Fuelly Metric');
+      r = await upload(metricVid, 'fuelly-metric.csv', { commit: 'true' });
+      const fm = rowsOf(metricVid, 'fuel_log', 'odometer');
+      check('a metric Fuelly export is converted to this install\'s miles and gallons', () => {
+        eq(r.body.units.from.distance, 'km', 'detected km');
+        eq(fm[1].odometer, Math.round(20500 / 1.609344 * 10) / 10, 'odometer in miles');
+        eq(fm[1].gallons, Math.round(80 / 3.785411784 * 1000) / 1000, 'volume in gallons');
+        eq(fm[1].price_per_gallon, Math.round(1.899 * 3.785411784 * 1000) / 1000, 'price per gallon');
+      });
+
+      const drivvoVid = await fresh('Drivvo Import');
+      r = await upload(drivvoVid, 'drivvo.csv', { commit: 'true' });
+      const df = rowsOf(drivvoVid, 'fuel_log', 'odometer');
+      const ds = rowsOf(drivvoVid, 'maintenance_log', 'id');
+      check('a Drivvo export imports fill-ups and services, day-first, and skips expenses', () => {
+        eq(r.body.source, 'drivvo', 'source'); eq(r.body.dayFirst, true, 'day-first');
+        eq(df.length, 3, 'fill-ups'); eq(df[0].date, '2024-03-25', 'date'); eq(df[1].full_tank, 0, '"No" means partial');
+        eq(ds.length, 1, 'services'); eq(ds[0].service_type, 'Oil change', 'service'); eq(ds[0].cost, 104.5, 'cost');
+        eq(r.body.skipped.expenses, 1, 'expenses skipped');
+      });
+
+      const saVid = await fresh('Simply Auto Import');
+      r = await upload(saVid, 'simplyauto.csv', { commit: 'true' });
+      const sf = rowsOf(saVid, 'fuel_log', 'odometer');
+      const ss = rowsOf(saVid, 'maintenance_log', 'id');
+      check('a Simply Auto log splits fuel from service by record type', () => {
+        eq(r.body.source, 'simplyauto', 'source'); eq(r.body.vehicle, 'Vehicle 1', 'vehicle');
+        eq(sf.length, 2, 'fill-ups'); eq(sf[0].date, '2024-06-03', 'date from Day/Month/Year');
+        eq(sf[0].price_per_gallon, 3.5, 'price per unit from total / qty');
+        eq(ss.length, 1, 'services'); eq(ss[0].service_type, 'Oil Change, Tire Rotation', 'tasks');
+        eq(r.body.skipped.expenses, 1, 'expense skipped');
+      });
+    }
+
     // --- Sample truck ---------------------------------------------------------
     r = await req('POST', '/api/sample');
     const sampleId = r.body.id;

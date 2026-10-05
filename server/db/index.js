@@ -243,6 +243,15 @@ function runMigrations(db) {
     if (!wlCols.includes(col)) db.prepare(sql).run();
   }
 
+  // fuel_log: "I didn't log the fill-up before this one" — the distance since
+  // the last logged tank then covers fuel that was never recorded, so no
+  // economy figure is computed across it. Fuelly, Drivvo, and Simply Auto
+  // exports all carry this flag.
+  const flCols = db.prepare('PRAGMA table_info(fuel_log)').all().map(c => c.name);
+  if (!flCols.includes('missed_previous')) {
+    db.prepare('ALTER TABLE fuel_log ADD COLUMN missed_previous INTEGER NOT NULL DEFAULT 0').run();
+  }
+
   // maintenance_log columns
   const mlCols = db.prepare('PRAGMA table_info(maintenance_log)').all().map(c => c.name);
   if (!mlCols.includes('attachments')) {

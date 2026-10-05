@@ -19,17 +19,29 @@ router.get('/', (req, res) => {
     'SELECT * FROM fuel_log WHERE user_vehicle_id = ? ORDER BY odometer ASC'
   ).all(vehicle_id);
 
-  // Calculate MPG: miles since last FULL tank fill-up / gallons this fill-up
+  // Economy is measured full tank to full tank: the distance since the last
+  // full fill-up, over all the fuel bought since then (any partial fills in
+  // between plus this one). Earlier versions divided by this fill-up alone,
+  // which overstated economy whenever a partial fill was logged. A gap the
+  // owner flagged as a missed fill-up has unrecorded fuel in it, so it gets
+  // no figure at all.
+  const segments = [];
   const withMpg = entries.map((e, i) => {
     let mpg = null;
     if (e.full_tank && e.gallons > 0) {
-      // Walk back to find the last full-tank entry
+      let fuel = e.gallons;
+      let missed = Boolean(e.missed_previous);
       for (let j = i - 1; j >= 0; j--) {
         if (entries[j].full_tank) {
           const miles = e.odometer - entries[j].odometer;
-          if (miles > 0) mpg = Math.round((miles / e.gallons) * 10) / 10;
+          if (miles > 0 && !missed) {
+            mpg = Math.round((miles / fuel) * 10) / 10;
+            segments.push({ miles, fuel });
+          }
           break;
         }
+        fuel += entries[j].gallons || 0;
+        if (entries[j].missed_previous) missed = true;
       }
     }
     return { ...e, mpg };
@@ -51,7 +63,10 @@ router.get('/', (req, res) => {
   }
 
   const stats = {
-    avgMpg:      validMpg.length > 0 ? Math.round(validMpg.reduce((s, m) => s + m, 0) / validMpg.length * 10) / 10 : null,
+    // Total distance over total fuel across measured tanks, so a short top-up
+    // tank doesn't count as much as a long highway one.
+    avgMpg:      segments.length > 0
+      ? Math.round(segments.reduce((s, x) => s + x.miles, 0) / segments.reduce((s, x) => s + x.fuel, 0) * 10) / 10 : null,
     bestMpg:     validMpg.length > 0 ? Math.max(...validMpg) : null,
     worstMpg:    validMpg.length > 0 ? Math.min(...validMpg) : null,
     totalCost:   Math.round(totalCost * 100) / 100,
@@ -71,7 +86,7 @@ router.get('/', (req, res) => {
 // POST /api/fuel
 router.post('/', (req, res) => {
   const { user_vehicle_id, date, odometer, gallons, price_per_gallon,
-          total_cost, station, notes, full_tank, trip_type } = req.body;
+          total_cost, station, notes, full_tank, trip_type, missed_previous } = req.body;
   if (!user_vehicle_id || !date || odometer == null || !gallons)
     return res.status(400).json({ error: 'user_vehicle_id, date, odometer, and gallons are required' });
 
@@ -82,13 +97,13 @@ router.post('/', (req, res) => {
   const r = db.prepare(`
     INSERT INTO fuel_log
       (user_vehicle_id, date, odometer, gallons, price_per_gallon, total_cost,
-       station, notes, full_tank, trip_type)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       station, notes, full_tank, trip_type, missed_previous)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(user_vehicle_id, date, parseInt(odometer), parseFloat(gallons),
          price_per_gallon || null, computedTotal,
          station || null, notes || null,
          isFull(full_tank) ? 1 : 0,
-         trip_type || 'mixed');
+         trip_type || 'mixed', missed_previous ? 1 : 0);
 
   const { warning } = afterWrite(db, user_vehicle_id,
     { date, odometer, self: { source: 'fuel_log', id: r.lastInsertRowid } });
@@ -98,7 +113,7 @@ router.post('/', (req, res) => {
 // PUT /api/fuel/:id
 router.put('/:id', (req, res) => {
   const { date, odometer, gallons, price_per_gallon, total_cost,
-          station, notes, full_tank, trip_type } = req.body;
+          station, notes, full_tank, trip_type, missed_previous } = req.body;
   const db = getDb();
   const existing = db.prepare('SELECT user_vehicle_id FROM fuel_log WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
@@ -106,13 +121,13 @@ router.put('/:id', (req, res) => {
     : (price_per_gallon ? Math.round(price_per_gallon * gallons * 100) / 100 : null);
   db.prepare(`
     UPDATE fuel_log SET date=?, odometer=?, gallons=?, price_per_gallon=?, total_cost=?,
-      station=?, notes=?, full_tank=?, trip_type=?
+      station=?, notes=?, full_tank=?, trip_type=?, missed_previous=?
     WHERE id=?
   `).run(date, parseInt(odometer), parseFloat(gallons),
          price_per_gallon || null, computedTotal,
          station || null, notes || null,
          isFull(full_tank) ? 1 : 0,
-         trip_type || 'mixed', req.params.id);
+         trip_type || 'mixed', missed_previous ? 1 : 0, req.params.id);
   const { warning } = afterWrite(db, existing.user_vehicle_id,
     { date, odometer, self: { source: 'fuel_log', id: req.params.id } });
   res.json({ ...db.prepare('SELECT * FROM fuel_log WHERE id = ?').get(req.params.id), odometerWarning: warning });

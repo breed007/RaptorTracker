@@ -1,0 +1,6 @@
+Row ID,Vehicle ID,Odometer,Qty,Partial Tank,Missed Fill Up,Total Cost,Distance Traveled,Eff,Octane,Fuel Brand,Filling Station,Notes,Day,Month,Year,Receipt Path,Record Type,Record Desc
+1,1,30100,24.0,0,0,84.00,0,0,91,Shell,Main St,,3,6,2024,,0,Fuel Record
+2,1,30420,23.5,0,0,82.25,0,0,91,Shell,Main St,,17,6,2024,,0,Fuel Record
+3,1,30500,0,0,0,129.99,0,0,,,,Dealer visit,20,6,2024,,1,"Oil Change,Tire Rotation"
+4,1,30560,0,0,0,25.00,0,0,,,,,21,6,2024,,2,Car Wash
+5,2,9000,15.0,0,0,52.00,0,0,87,,,,1,6,2024,,0,Fuel Record

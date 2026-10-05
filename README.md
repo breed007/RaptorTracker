@@ -58,8 +58,11 @@
 
 ### Fuel Log & MPG
 - Log each fill-up: date, odometer, gallons, price per gallon, and station
-- Calculates MPG per fill-up and plots the trend over time
-- Compares your average against the factory EPA rating for your generation
+- Measures economy full tank to full tank, counting partial fills in between, and skips a tank
+  that follows a fill-up you forgot to log
+- Plots the trend over time and compares your average against the factory EPA rating
+- Imports your history from Fuelly, Drivvo, or Simply Auto exports (fill-ups and services),
+  converting units and skipping anything already logged
 
 ### Trail Log
 - Everything else here tracks what's been done *to* the truck; this records using it

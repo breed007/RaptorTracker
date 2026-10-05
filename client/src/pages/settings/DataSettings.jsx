@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { localDate } from '../../lib/dates'
 import { currentUnits } from '../../lib/units'
+import AppImportPreview from '../../components/AppImportPreview'
 
 export default function DataSettings() {
   const { selectedVehicleId, selectedVehicle } = useApp()
@@ -14,8 +15,11 @@ export default function DataSettings() {
   const [impPreview, setImpPreview] = useState(null)
   const [impBusy, setImpBusy] = useState(false)
   const [impMsg, setImpMsg] = useState(null)
+  // Choices for an export from another app: which of its vehicles, its units, its date order.
+  const [appOpts, setAppOpts] = useState({})
 
   const IMPORT_TYPES = [
+    { id: 'app', label: 'Fuelly, Drivvo, or Simply Auto export' },
     { id: 'fuel', label: 'Fuel Log' },
     { id: 'maintenance', label: 'Maintenance' },
     { id: 'mods', label: 'Modifications' },
@@ -23,7 +27,7 @@ export default function DataSettings() {
     { id: 'specs', label: 'Spec Sheet' },
   ]
 
-  const runImport = async (file, commit) => {
+  const runImport = async (file, commit, opts = appOpts) => {
     if (!file || !selectedVehicleId) return
     setImpBusy(true); setImpMsg(null)
     try {
@@ -32,6 +36,7 @@ export default function DataSettings() {
       fd.append('type', impType)
       fd.append('vehicle_id', selectedVehicleId)
       fd.append('commit', commit ? 'true' : 'false')
+      for (const [k, v] of Object.entries(opts)) if (v) fd.append(k, v)
       const res = await fetch('/api/import/csv', { method: 'POST', body: fd })
       const data = await res.json()
       if (!res.ok) { setImpMsg({ type: 'err', text: data.error || 'Import failed.' }); setImpPreview(data.total != null ? data : null); return }
@@ -49,8 +54,8 @@ export default function DataSettings() {
   const onImportPick = (e) => {
     const f = e.target.files?.[0]
     if (!f) return
-    setImpFile(f); setImpPreview(null); setImpMsg(null)
-    runImport(f, false) // always dry-run first
+    setImpFile(f); setImpPreview(null); setImpMsg(null); setAppOpts({})
+    runImport(f, false, {}) // always dry-run first
   }
 
   const csvTypes = [
@@ -113,10 +118,13 @@ export default function DataSettings() {
       <div className="card p-5 space-y-3">
         <div className="section-title">Import from CSV</div>
         <p className="text-sm text-raptor-secondary">
-          Bringing history from a spreadsheet or another app? Pick what you're importing and choose a
-          file — nothing is written until you review the preview. Column names are matched loosely
-          (<code>Odo</code>, <code>Miles</code>, and <code>Odometer</code> all work), and dates like
-          <code> 12/4/25</code> are read as month-first. Distances and volumes are read as{' '}
+          Moving from Fuelly, Drivvo, or Simply Auto? Export from the app and choose the file here;
+          it&apos;s recognized automatically, fill-ups and services both. For your own spreadsheet, pick
+          what it holds. Nothing is written until you review the preview.
+        </p>
+        <p className="text-xs text-raptor-muted">
+          Spreadsheet columns are matched loosely (<code>Odo</code>, <code>Miles</code>, and <code>Odometer</code> all
+          work), dates like <code>12/4/25</code> are read as month-first, and distances and volumes are read as{' '}
           {currentUnits().distLong} and {currentUnits().volLong}, the units this install uses.
         </p>
 
@@ -146,7 +154,15 @@ export default function DataSettings() {
           </div>
         )}
 
-        {impPreview && impPreview.total != null && (
+        {impPreview?.mode === 'app' && (
+          <AppImportPreview
+            preview={impPreview} busy={impBusy} opts={appOpts}
+            onChange={(next) => { setAppOpts(next); runImport(impFile, false, next) }}
+            onImport={() => runImport(impFile, true)}
+          />
+        )}
+
+        {impPreview && impPreview.mode !== 'app' && impPreview.total != null && (
           <div className="rounded-lg border border-raptor-border bg-raptor-elevated p-4 space-y-3">
             <div className="flex flex-wrap gap-4 text-sm">
               <span className="text-raptor-secondary">Rows found: <span className="text-raptor-primary font-semibold">{impPreview.total}</span></span>

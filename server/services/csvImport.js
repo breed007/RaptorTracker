@@ -10,13 +10,16 @@ const { localDate } = require('../lib/dates');
 // ── Parsing ───────────────────────────────────────────────────────────────────
 
 // RFC4180-ish parser: handles quoted fields containing commas, newlines, and
-// escaped ("") quotes, plus CRLF and a leading BOM.
-function parseCsv(text) {
+// escaped ("") quotes, plus CRLF, bare-CR line endings (Fuelly's export uses
+// them), a leading BOM, and a semicolon delimiter when that's what the file uses.
+function parseCsv(text, delimiter = null) {
   const rows = [];
   let row = [];
   let field = '';
   let inQuotes = false;
   const src = String(text).replace(/^﻿/, '');
+  const firstLine = src.split(/\r\n|\r|\n/, 1)[0] || '';
+  const delim = delimiter || ((firstLine.match(/;/g) || []).length > (firstLine.match(/,/g) || []).length ? ';' : ',');
 
   for (let i = 0; i < src.length; i++) {
     const c = src[i];
@@ -26,9 +29,11 @@ function parseCsv(text) {
         else inQuotes = false;
       } else field += c;
     } else if (c === '"') inQuotes = true;
-    else if (c === ',') { row.push(field); field = ''; }
-    else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
-    else if (c !== '\r') field += c;
+    else if (c === delim) { row.push(field); field = ''; }
+    else if (c === '\n' || c === '\r') {
+      if (c === '\r' && src[i + 1] === '\n') i++;
+      row.push(field); rows.push(row); row = []; field = '';
+    } else field += c;
   }
   if (field !== '' || row.length) { row.push(field); rows.push(row); }
 
@@ -87,6 +92,9 @@ const toText = (v) => {
   return s === '' ? null : s;
 };
 
+// A yes/no column whose blank means "no".
+const toFlag = (v) => ['1', 'true', 'yes', 'y', 'si', 'sim', 'ja', 'oui', 'x'].includes(unguard(v).trim().toLowerCase());
+
 const toBool = (v) => {
   const s = unguard(v).trim().toLowerCase();
   if (s === '') return true; // default: a full tank
@@ -108,7 +116,10 @@ const TYPES = {
       total_cost:       { aliases: ['total_cost', 'total', 'cost', 'amount', 'spend'], parse: toNumber },
       station:          { aliases: ['station', 'vendor', 'location', 'where'], parse: toText },
       trip_type:        { aliases: ['trip_type', 'trip', 'driving'], parse: toText },
-      full_tank:        { aliases: ['full_tank', 'full', 'partial'], parse: toBool },
+      full_tank:        { aliases: ['full_tank', 'full', 'filled_up', 'isfilltofull'], parse: toBool },
+      // A "partial" column says the opposite of full_tank: 1 means NOT full.
+      partial:          { aliases: ['partial', 'partial_fill', 'partial_fuelup', 'partial_tank'], parse: toFlag },
+      missed_previous:  { aliases: ['missed_previous', 'missed', 'missed_fuelup', 'missed_fill_up', 'missed_fill'], parse: toFlag },
       notes:            { aliases: ['notes', 'note', 'comment', 'comments'], parse: toText },
     },
   },
@@ -255,6 +266,11 @@ function analyze(type, text) {
     if (bad) { errors.push({ line: r + 1, message: bad }); continue; }
 
     // Type-specific tidy-up
+    if (type === 'fuel') {
+      if (mapping.partial !== undefined) out.full_tank = !out.partial;
+      delete out.partial;
+      out.missed_previous = out.missed_previous ? 1 : 0;
+    }
     if (type === 'mods') {
       out.category = snap(out.category, MOD_CATEGORIES, 'Other');
       out.status = snap(out.status, MOD_STATUSES, 'Installed');
@@ -280,4 +296,4 @@ function analyze(type, text) {
   return { type, headers: headerRow, matched, unmatched, rows, errors, total: table.length - 1 };
 }
 
-module.exports = { parseCsv, analyze, TYPES, toDate, toNumber, toInt };
+module.exports = { parseCsv, analyze, TYPES, toDate, toNumber, toInt, toFlag, toText, unguard };
