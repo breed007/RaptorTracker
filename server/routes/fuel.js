@@ -3,6 +3,7 @@ const router = express.Router();
 const { getDb } = require('../db');
 const { afterWrite } = require('../services/odometer');
 const trash = require('../services/trash');
+const { economy } = require('../services/fuelEconomy');
 
 // Forms send booleans, numbers, or strings. Only an explicit 'no' is a partial
 // fill; anything else (including the field being absent) is a full tank.
@@ -19,33 +20,7 @@ router.get('/', (req, res) => {
     'SELECT * FROM fuel_log WHERE user_vehicle_id = ? ORDER BY odometer ASC'
   ).all(vehicle_id);
 
-  // Economy is measured full tank to full tank: the distance since the last
-  // full fill-up, over all the fuel bought since then (any partial fills in
-  // between plus this one). Earlier versions divided by this fill-up alone,
-  // which overstated economy whenever a partial fill was logged. A gap the
-  // owner flagged as a missed fill-up has unrecorded fuel in it, so it gets
-  // no figure at all.
-  const segments = [];
-  const withMpg = entries.map((e, i) => {
-    let mpg = null;
-    if (e.full_tank && e.gallons > 0) {
-      let fuel = e.gallons;
-      let missed = Boolean(e.missed_previous);
-      for (let j = i - 1; j >= 0; j--) {
-        if (entries[j].full_tank) {
-          const miles = e.odometer - entries[j].odometer;
-          if (miles > 0 && !missed) {
-            mpg = Math.round((miles / fuel) * 10) / 10;
-            segments.push({ miles, fuel });
-          }
-          break;
-        }
-        fuel += entries[j].gallons || 0;
-        if (entries[j].missed_previous) missed = true;
-      }
-    }
-    return { ...e, mpg };
-  });
+  const { withMpg, average } = economy(entries);
 
   // Reverse for display (newest first)
   const display = [...withMpg].reverse();
@@ -63,10 +38,7 @@ router.get('/', (req, res) => {
   }
 
   const stats = {
-    // Total distance over total fuel across measured tanks, so a short top-up
-    // tank doesn't count as much as a long highway one.
-    avgMpg:      segments.length > 0
-      ? Math.round(segments.reduce((s, x) => s + x.miles, 0) / segments.reduce((s, x) => s + x.fuel, 0) * 10) / 10 : null,
+    avgMpg:      average,
     bestMpg:     validMpg.length > 0 ? Math.max(...validMpg) : null,
     worstMpg:    validMpg.length > 0 ? Math.min(...validMpg) : null,
     totalCost:   Math.round(totalCost * 100) / 100,

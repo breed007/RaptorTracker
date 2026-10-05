@@ -146,8 +146,12 @@ Read-only factory specs for the full Ford Raptor lineup:
 
 Engine, transmission, suspension, towing, payload, and AUX panel specs per generation.
 
-### Exports
-- PDF build sheet with vehicle info, installed mods, maintenance history, and spend breakdown (optionally with the window sticker)
+### Reports & Exports
+- **Vehicle history for a sale**: a PDF for buyers with every service and its odometer reading, the
+  maintenance schedule and what's due, repaired recalls, warranties, tires, and a check that the
+  odometer readings line up. Costs, the VIN, trail days, and receipt photos are each your choice.
+- PDF build sheet with installed mods and photos, the AUX switch map, and the service history
+  (optionally with the window sticker)
 - CSV export of any record type — mods, maintenance, fuel, warranties, tire sets, wishlist
 - **CSV import** for fuel, maintenance, mods, specs, and wishlist history. Rows whose column count doesn't match the header are rejected with an explanation rather than imported shifted.
 

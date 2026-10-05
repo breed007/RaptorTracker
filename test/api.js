@@ -505,6 +505,17 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
       });
     }
 
+    // --- PDFs -------------------------------------------------------------------
+    {
+      const pdfOf = async (url) => { const res = await fetch(base + url, { headers: { Cookie: cookie } }); return { status: res.status, type: res.headers.get('content-type'), bytes: Buffer.from(await res.arrayBuffer()) }; };
+      let p = await pdfOf(`/api/export/pdf/${vid}`);
+      check('the build sheet is a PDF', () => { eq(p.status, 200, 'status'); eq(p.bytes.subarray(0, 5).toString(), '%PDF-', 'magic'); });
+      p = await pdfOf(`/api/export/history/${vid}?costs=true&trail=true&receipts=true`);
+      check('the vehicle history is a PDF', () => { eq(p.status, 200, 'status'); eq(p.bytes.subarray(0, 5).toString(), '%PDF-', 'magic'); truthy(p.bytes.length > 2000, 'has content'); });
+      p = await pdfOf('/api/export/history/999999');
+      check('a history for a vehicle that does not exist is a 404', () => eq(p.status, 404, 'status'));
+    }
+
     // --- Sample truck ---------------------------------------------------------
     r = await req('POST', '/api/sample');
     const sampleId = r.body.id;

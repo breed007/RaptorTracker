@@ -319,6 +319,7 @@ function runMigrations(db) {
   // Reference layouts are owned by the code, not the owner: re-sync them on
   // every start so corrections ship with a release. Owners' overrides live on
   // user_vehicles and are untouched.
+  require('../reference/vehicles').syncReferenceVehicles(db);
   require('../reference/auxLayouts').syncReferenceAux(db);
 
   require('../services/trash').ensureTable(db);

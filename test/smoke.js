@@ -170,6 +170,15 @@ try {
     if (u.unitsForLocale('en-AU').distance !== 'km' || u.unitsForLocale('en-GB').economy !== 'mpg_imp') throw new Error('locale defaults');
   });
 
+  check('reference corrections reach an existing install', () => {
+    const db = getDb();
+    db.prepare("UPDATE vehicles SET horsepower = 700, torque = 645 WHERE model = 'F-150 Raptor' AND generation = 'Gen 3'").run();
+    require('../server/reference/vehicles').syncReferenceVehicles(db);
+    const v = db.prepare("SELECT horsepower, torque, engine_options FROM vehicles WHERE model = 'F-150 Raptor' AND generation = 'Gen 3'").get();
+    if (v.horsepower !== 450 || v.torque !== 510) throw new Error(`Gen 3 is ${v.horsepower} hp / ${v.torque} lb-ft`);
+    if (!JSON.parse(v.engine_options).some(e => e.hp === 700 && e.torque === 640)) throw new Error('Raptor R engine missing');
+  });
+
   check("off-box S3 signing matches AWS's published example", () => {
     const { signV4 } = require('../server/services/offsite');
     const h = signV4({ method: 'GET', pathname: '/test.txt', headers: { host: 'examplebucket.s3.amazonaws.com', range: 'bytes=0-9' },

@@ -1,51 +1,49 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { localDate } from '../lib/dates'
-import { currentUnits } from '../lib/units'
+import { toast } from '../lib/toast'
 
-const CheckIcon = () => (
-  <svg className="w-4 h-4 text-raptor-accent flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+const DownloadIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
   </svg>
 )
 
+function Option({ id, checked, onChange, label, hint }) {
+  return (
+    <label htmlFor={id} className="flex items-start gap-3 cursor-pointer select-none">
+      <input id={id} type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="w-4 h-4 mt-0.5 accent-raptor-accent" />
+      <span>
+        <span className="text-sm text-raptor-primary">{label}</span>
+        {hint && <span className="block text-xs text-raptor-muted">{hint}</span>}
+      </span>
+    </label>
+  )
+}
+
+async function download(url, filename, setBusy) {
+  setBusy(true)
+  try {
+    const res = await fetch(url)
+    if (!res.ok) throw new Error()
+    const blob = await res.blob()
+    const href = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = href; a.download = filename; a.click()
+    URL.revokeObjectURL(href)
+  } catch {
+    toast('The PDF could not be made. The server log has the details.', { tone: 'error' })
+  } finally { setBusy(false) }
+}
+
 export default function Reports() {
   const { selectedVehicleId, selectedVehicle } = useApp()
-  const [summary, setSummary] = useState(null)
-  const [generating, setGenerating] = useState(false)
-  const [includeSticker, setIncludeSticker] = useState(false)
+  const [sticker, setSticker] = useState(false)
+  const [buildBusy, setBuildBusy] = useState(false)
+  const [hist, setHist] = useState({ costs: false, mods: true, trail: false, receipts: false, vin: true })
+  const [histBusy, setHistBusy] = useState(false)
 
-
-  useEffect(() => {
-    if (!selectedVehicleId) return
-    fetch(`/api/summary?vehicle_id=${selectedVehicleId}`)
-      .then(r => r.json())
-      .then(setSummary)
-  }, [selectedVehicleId])
-
-  const handleExport = async () => {
-    if (!selectedVehicleId) return
-    setGenerating(true)
-    try {
-      const params = includeSticker ? '?include_sticker=true' : ''
-      const res = await fetch(`/api/export/pdf/${selectedVehicleId}${params}`)
-      if (!res.ok) throw new Error('Export failed')
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      const nickname = selectedVehicle?.nickname?.replace(/[^a-z0-9]/gi, '-') || 'Raptor'
-      const date = localDate()
-      a.href = url
-      a.download = `RaptorTracker-${nickname}-${date}.pdf`
-      a.click()
-      URL.revokeObjectURL(url)
-    } catch {
-      alert('PDF export failed — check server logs')
-    } finally {
-      setGenerating(false)
-    }
-  }
   if (!selectedVehicleId) {
     return (
       <div className="flex flex-col items-center justify-center min-h-64 gap-4">
@@ -55,94 +53,63 @@ export default function Reports() {
     )
   }
 
-  const stats = summary?.stats || {}
-  const installed = stats.installed || 0
-  const totalSpend = stats.total_spend || 0
+  const slug = (selectedVehicle?.nickname || 'Raptor').replace(/[^a-z0-9]/gi, '-')
+  const setH = (k) => (v) => setHist(h => ({ ...h, [k]: v }))
+  const histQuery = new URLSearchParams(Object.fromEntries(Object.entries(hist).map(([k, v]) => [k, String(v)]))).toString()
 
   return (
-    <div className="max-w-xl mx-auto space-y-6">
+    <div className="max-w-2xl space-y-5">
       <div>
-        <h1 className="page-title">Export Build Sheet</h1>
-        <p className="text-raptor-secondary text-sm mt-1">
-          Generate a PDF build documentation for {selectedVehicle?.nickname || 'your vehicle'}.
-        </p>
+        <h1 className="page-title">Reports</h1>
+        <p className="text-raptor-secondary text-sm mt-0.5">Printable PDFs for {selectedVehicle?.nickname || 'your vehicle'}.</p>
       </div>
 
       <div className="card p-5 space-y-4">
-        <div className="section-title">PDF Contents</div>
-        <ul className="space-y-2 text-sm text-raptor-secondary">
-          {[
-            'Vehicle info header (year, model, generation, color, VIN, options)',
-            'Installed mods grouped by category with costs and dates',
-            'Photo thumbnails (max 3 per row, 6 per mod)',
-            'AUX switch map with assigned labels and factory notes',
-            'Complete maintenance history',
-            'Total investment summary',
-          ].map(item => (
-            <li key={item} className="flex items-center gap-2">
-              <CheckIcon />
-              {item}
-            </li>
-          ))}
-          {includeSticker && selectedVehicle?.window_sticker && (
-            <li className="flex items-center gap-2">
-              <CheckIcon />
-              Window sticker (final page)
-            </li>
-          )}
-        </ul>
+        <div>
+          <div className="section-title">Vehicle History for a Sale</div>
+          <p className="text-sm text-raptor-secondary mt-1">
+            What a buyer wants to see: every service with dates and odometer readings, the maintenance schedule and
+            what&apos;s due, repaired recalls, warranties, tires, and whether the odometer readings line up. It says
+            plainly that the records are yours, not a dealer&apos;s.
+          </p>
+        </div>
+        <div className="space-y-2.5">
+          <Option id="hist-vin" checked={hist.vin} onChange={setH('vin')} label="Show the VIN" hint="Buyers need it for a history check. Leave it off for a public listing." />
+          <Option id="hist-costs" checked={hist.costs} onChange={setH('costs')} label="Show what was paid" hint="Service and parts costs. Off by default." />
+          <Option id="hist-mods" checked={hist.mods} onChange={setH('mods')} label="List modifications" />
+          <Option id="hist-trail" checked={hist.trail} onChange={setH('trail')} label="Include trail days" hint="Off-road trips and any damage you noted. Some buyers will ask." />
+          <Option id="hist-receipts" checked={hist.receipts} onChange={setH('receipts')} label="Attach receipt photos" hint="Images attached to service records, on pages at the end." />
+        </div>
+        <button
+          type="button" disabled={histBusy}
+          onClick={() => download(`/api/export/history/${selectedVehicleId}?${histQuery}`, `RaptorTracker-${slug}-history-${localDate()}.pdf`, setHistBusy)}
+          className="btn-primary text-sm flex items-center gap-2 disabled:opacity-50"
+        >
+          <DownloadIcon /> {histBusy ? 'Making the PDF…' : 'Download vehicle history'}
+        </button>
+      </div>
 
+      <div className="card p-5 space-y-4">
+        <div>
+          <div className="section-title">Build Sheet</div>
+          <p className="text-sm text-raptor-secondary mt-1">
+            The build itself: installed mods by category with photos and costs, the AUX switch map, and the service history.
+          </p>
+        </div>
         {selectedVehicle?.window_sticker && (
-          <label className="flex items-center gap-3 pt-2 border-t border-raptor-border cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={includeSticker}
-              onChange={e => setIncludeSticker(e.target.checked)}
-              className="w-4 h-4 accent-raptor-accent"
-            />
-            <span className="text-sm text-raptor-secondary">Include window sticker as final page</span>
-          </label>
+          <Option id="build-sticker" checked={sticker} onChange={setSticker} label="Add the window sticker as the last page" />
         )}
+        <button
+          type="button" disabled={buildBusy}
+          onClick={() => download(`/api/export/pdf/${selectedVehicleId}${sticker ? '?include_sticker=true' : ''}`, `RaptorTracker-${slug}-build-sheet-${localDate()}.pdf`, setBuildBusy)}
+          className="btn-secondary text-sm flex items-center gap-2 disabled:opacity-50"
+        >
+          <DownloadIcon /> {buildBusy ? 'Making the PDF…' : 'Download build sheet'}
+        </button>
       </div>
 
-      <div className="card p-5 grid grid-cols-2 gap-4">
-        <div>
-          <div className="text-xs text-raptor-muted uppercase tracking-wide">Installed Mods</div>
-          <div className="text-2xl font-display font-bold text-raptor-accent mt-0.5">{installed}</div>
-        </div>
-        <div>
-          <div className="text-xs text-raptor-muted uppercase tracking-wide">Total Spend</div>
-          <div className="text-2xl font-display font-bold text-raptor-primary mt-0.5">
-            {currentUnits().money0(totalSpend)}
-          </div>
-        </div>
-      </div>
-
-      <button
-        onClick={handleExport}
-        disabled={generating}
-        className="btn-primary w-full flex items-center justify-center gap-3 py-3 text-base disabled:opacity-50"
-      >
-        {generating ? (
-          <>
-            <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-            Generating PDF…
-          </>
-        ) : (
-          <>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            Download Build Sheet PDF
-          </>
-        )}
-      </button>
-
-      <p className="text-xs text-raptor-muted text-center">
-        File: RaptorTracker-{(selectedVehicle?.nickname || 'Raptor').replace(/[^a-z0-9]/gi, '-')}-{localDate()}.pdf
+      <p className="text-xs text-raptor-muted">
+        Spreadsheet exports of every record are under <Link to="/settings/data" className="text-raptor-accent hover:underline">Settings → Import &amp; Export</Link>.
       </p>
     </div>
   )
