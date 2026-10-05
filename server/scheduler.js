@@ -8,6 +8,7 @@ const { sendDigest, pruneSentReminders } = require('./services/reminders');
 const { runScheduledBackup } = require('./services/backupArchive');
 const { getDb } = require('./db');
 const { isTrue, getSetting } = require('./services/settings');
+const updates = require('./services/updates');
 
 let cron;
 try {
@@ -61,7 +62,15 @@ function start() {
     }
   }, options);
 
-  console.log('[scheduler] automatic backups will run when enabled in Export & Backup.');
+  console.log('[scheduler] automatic backups will run when enabled in Settings -> Backups.');
+
+  // New-release check: hourly tick, but checkIfDue only asks GitHub once a
+  // day. The first look waits a minute so a restart loop can't hammer GitHub.
+  const updateTick = () => updates.checkIfDue()
+    .then(s => { if (s?.available) console.log(`[scheduler] RaptorTracker ${s.latest} is available (running ${s.current}).`); })
+    .catch(() => {});
+  setTimeout(updateTick, 60 * 1000).unref();
+  cron.schedule('17 * * * *', updateTick, options);
 }
 
 module.exports = { start };

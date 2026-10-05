@@ -13,7 +13,7 @@ function Toggle({ checked, onChange, label, hint }) {
   )
 }
 
-export default function Notifications() {
+export default function NotificationsSettings() {
   const [settings, setSettings] = useState(null)
   const [preview, setPreview] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -79,8 +79,7 @@ export default function Notifications() {
   if (!settings) return <div className="text-raptor-muted animate-pulse">Loading…</div>
 
   return (
-    <div className="space-y-5 max-w-2xl">
-      <h1 className="page-title">Notifications</h1>
+    <div className="space-y-5">
 
       {!settings.smtpConfigured && (
         <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-600 dark:text-yellow-400">

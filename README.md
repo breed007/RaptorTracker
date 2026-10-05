@@ -182,6 +182,22 @@ There is no password reset by email. If you lose the password, delete the
 `secret_admin_password_hash` row from the `app_settings` table and the `.env`
 value takes over again.
 
+### What leaves your server
+
+Your data stays in one SQLite file on your server. RaptorTracker makes these
+outside requests, and none of them carry your records:
+
+| Request | When | What's sent |
+|---|---|---|
+| GitHub releases API | Once a day, to see whether a newer version is out | The RaptorTracker version, in the User-Agent |
+| NHTSA vPIC | When you decode a VIN | The VIN |
+| NHTSA recalls API | When you open Recalls or the dashboard | Make, model, and year |
+| Reminder email or webhook | When reminders are on and something is due | The reminder text, to the server and address you configured |
+
+The release check can be turned off under **Settings → General**, or for the
+whole install with `UPDATE_CHECK=false` in `.env`. Separately, your browser loads
+fonts from Google Fonts when it opens the app.
+
 ---
 
 ## Prerequisites

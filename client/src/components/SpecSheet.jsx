@@ -170,7 +170,7 @@ export default function SpecSheet() {
               <p className="text-sm text-raptor-secondary">
                 No specs recorded yet. Add the numbers you actually look up — oil capacity, lug nut torque,
                 tire pressures — or bulk-import a sheet from{' '}
-                <Link to="/export" className="text-raptor-accent hover:underline">Export &amp; Backup</Link>.
+                <Link to="/settings/data" className="text-raptor-accent hover:underline">Settings → Import &amp; Export</Link>.
               </p>
             ) : (
               <div className="space-y-4">

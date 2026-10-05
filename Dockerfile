@@ -29,7 +29,8 @@ ENV NODE_ENV=production \
     PORT=3000 \
     DATA_DIR=/data \
     UPLOAD_DIR=/data/uploads \
-    TRUST_PROXY=1
+    TRUST_PROXY=1 \
+    RT_INSTALL=docker
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=client /app/dist ./dist

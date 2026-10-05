@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
-import { useApp } from '../context/AppContext'
+import { useApp } from '../../context/AppContext'
 
-export default function Account() {
+export default function AccountSettings() {
   const { user, refreshUser } = useApp()
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
@@ -33,13 +33,10 @@ export default function Account() {
   }
 
   return (
-    <div className="space-y-5 max-w-2xl">
-      <div>
-        <h1 className="page-title">Account</h1>
-        <p className="text-raptor-secondary text-sm mt-0.5">
-          Signed in as <span className="font-medium text-raptor-primary">{user?.username}</span>
-        </p>
-      </div>
+    <div className="space-y-5">
+      <p className="text-raptor-secondary text-sm">
+        Signed in as <span className="font-medium text-raptor-primary">{user?.username}</span>
+      </p>
 
       {onBootstrap && (
         <div className="card p-4 border-l-4 border-l-yellow-500">

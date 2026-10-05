@@ -82,7 +82,17 @@ export function AppProvider({ children }) {
     if (!user) { setVehiclesLoaded(false); return }
     refreshVehicles()
     refreshUnits()
+    refreshUpdate()
   }, [user])
+
+  // The newest release the server has seen on GitHub (Settings -> General).
+  const [updateInfo, setUpdateInfo] = useState(null)
+  const refreshUpdate = async () => {
+    try {
+      const r = await fetch('/api/settings/updates')
+      if (r.ok) setUpdateInfo(await r.json())
+    } catch (_) { /* not worth bothering anyone about */ }
+  }
 
   // Units of measure and currency, loaded once at sign-in and again after the
   // owner changes them. Every page labels and formats through useUnits().
@@ -113,6 +123,7 @@ export function AppProvider({ children }) {
     <AppContext.Provider value={{
       user, setUser, authLoading, refreshUser,
       units, refreshUnits,
+      updateInfo, setUpdateInfo,
       userVehicles, setUserVehicles, vehiclesLoaded, refreshVehicles,
       selectedVehicleId, selectedVehicle,
       selectVehicle, logout,

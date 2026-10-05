@@ -170,6 +170,12 @@ try {
     if (u.unitsForLocale('en-AU').distance !== 'km' || u.unitsForLocale('en-GB').economy !== 'mpg_imp') throw new Error('locale defaults');
   });
 
+  check('release versions compare the way people read them', () => {
+    const { compareVersions: c } = require('../server/services/updates');
+    const cases = [['1.0.0', '0.8.0', 1], ['v1.0.0', '1.0.0', 0], ['1.0.0-beta.1', '1.0.0', -1], ['1.10.0', '1.9.3', 1], ['0.9', '0.9.0', 0], ['1.0.1', '1.0.0-rc.2', 1]];
+    for (const [a, b, want] of cases) if (c(a, b) !== want) throw new Error(`${a} vs ${b}: got ${c(a, b)}, want ${want}`);
+  });
+
   closeDb();
 
   // 7) Every route/service module loads without throwing
@@ -179,7 +185,7 @@ try {
     'routes/vehicleTransfer', 'routes/intervals', 'routes/wishlist', 'routes/fuel',
     'routes/warranty', 'routes/tco', 'routes/notifications', 'routes/tires', 'routes/recalls',
     'routes/backup', 'routes/logbook', 'routes/mileage', 'routes/analytics', 'routes/search', 'routes/import', 'routes/auxCapacity', 'routes/forecast', 'routes/budget', 'routes/documents', 'routes/specs', 'routes/overview', 'routes/outings', 'routes/share', 'config',
-    'services/settings', 'services/mailer', 'services/reminders', 'services/backupArchive', 'services/csvImport', 'services/mileageStats', 'services/auxCapacity', 'services/buildSheet', 'services/auxLayout', 'services/units', 'routes/settings', 'scheduler',
+    'services/settings', 'services/mailer', 'services/reminders', 'services/backupArchive', 'services/csvImport', 'services/mileageStats', 'services/auxCapacity', 'services/buildSheet', 'services/auxLayout', 'services/units', 'services/updates', 'routes/settings', 'scheduler',
   ];
   for (const m of modules) check(`require ${m}`, () => { require(`../server/${m}`); });
 

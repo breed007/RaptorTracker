@@ -4,7 +4,9 @@ const fs = require('fs');
 const router = express.Router();
 const { getDb, DATA_DIR } = require('../db');
 const { localDate } = require('../lib/dates');
+const { setSetting } = require('../services/settings');
 const units = require('../services/units');
+const updates = require('../services/updates');
 
 const BACKUP_DIR = path.join(DATA_DIR, 'backups');
 const KNOWN_CURRENCIES = new Set(Intl.supportedValuesOf('currency'));
@@ -56,6 +58,20 @@ router.put('/units', async (req, res) => {
     units.saveUnits(next);
   })();
   res.json({ ok: true, units: next, converted: changed, snapshot: snapshot && path.basename(snapshot) });
+});
+
+// GET /api/settings/updates — this version, the newest release seen, and
+// whether the daily check is on.
+router.get('/updates', (req, res) => res.json(updates.status()));
+
+// POST /api/settings/updates/check — ask GitHub now.
+router.post('/updates/check', async (req, res) => res.json(await updates.checkForUpdate({ force: true })));
+
+// PUT /api/settings/updates { enabled } — turn the daily check on or off.
+router.put('/updates', (req, res) => {
+  if (typeof req.body.enabled !== 'boolean') return res.status(400).json({ error: 'enabled must be true or false' });
+  setSetting('update_check', req.body.enabled ? 'true' : 'false');
+  res.json(updates.status());
 });
 
 module.exports = router;

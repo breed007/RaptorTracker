@@ -10,20 +10,23 @@ import ModList from './pages/ModList'
 import ModDetail from './pages/ModDetail'
 import AuxPanel from './pages/AuxPanel'
 import Maintenance from './pages/Maintenance'
-import Export from './pages/Export'
+import Reports from './pages/Reports'
 import Wishlist from './pages/Wishlist'
 import FuelLog from './pages/FuelLog'
 import Warranty from './pages/Warranty'
 import TCO from './pages/TCO'
-import Notifications from './pages/Notifications'
 import TireSets from './pages/TireSets'
 import Logbook from './pages/Logbook'
 import Analytics from './pages/Analytics'
 import Welcome from './pages/Welcome'
 import QuickAdd from './pages/QuickAdd'
 import Outings from './pages/Outings'
-import Account from './pages/Account'
-import Settings from './pages/Settings'
+import SettingsLayout from './pages/settings/SettingsLayout'
+import GeneralSettings from './pages/settings/GeneralSettings'
+import BackupSettings from './pages/settings/BackupSettings'
+import DataSettings from './pages/settings/DataSettings'
+import NotificationsSettings from './pages/settings/NotificationsSettings'
+import AccountSettings from './pages/settings/AccountSettings'
 import ShareBuild from './pages/ShareBuild'
 import Recalls from './pages/Recalls'
 
@@ -68,10 +71,18 @@ function AppRoutes() {
         <Route path="/quick" element={<QuickAdd />} />
         <Route path="/logbook" element={<Logbook />} />
         <Route path="/analytics" element={<Analytics />} />
-        <Route path="/notifications" element={<Notifications />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/account" element={<Account />} />
-        <Route path="/export" element={<Export />} />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/settings" element={<SettingsLayout />}>
+          <Route index element={<GeneralSettings />} />
+          <Route path="backups" element={<BackupSettings />} />
+          <Route path="data" element={<DataSettings />} />
+          <Route path="notifications" element={<NotificationsSettings />} />
+          <Route path="account" element={<AccountSettings />} />
+        </Route>
+        {/* Pre-1.0 addresses, kept so bookmarks still land somewhere sensible */}
+        <Route path="/notifications" element={<Navigate to="/settings/notifications" replace />} />
+        <Route path="/account" element={<Navigate to="/settings/account" replace />} />
+        <Route path="/export" element={<Navigate to="/reports" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>

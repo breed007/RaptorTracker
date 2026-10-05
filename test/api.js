@@ -406,6 +406,39 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
       });
     }
 
+    // --- Update check, against a stand-in for GitHub ----------------------
+    {
+      const http = require('http');
+      let reply = { status: 200, body: { tag_name: 'v99.0.0', html_url: 'https://github.com/breed007/RaptorTracker/releases/tag/v99.0.0', published_at: '2030-01-01T00:00:00Z' } };
+      let seenAgent = '';
+      const gh = http.createServer((q, s) => {
+        seenAgent = q.headers['user-agent'] || '';
+        s.writeHead(reply.status, { 'Content-Type': 'application/json' }); s.end(JSON.stringify(reply.body));
+      });
+      await new Promise(res => gh.listen(0, '127.0.0.1', res));
+      process.env.UPDATE_CHECK_URL = `http://127.0.0.1:${gh.address().port}/releases/latest`;
+
+      r = await req('GET', '/api/settings/updates');
+      check('before any check, no newer release is claimed', () => {
+        eq(r.status, 200, 'status'); eq(r.body.available, false, 'available'); eq(r.body.latest, null, 'latest');
+      });
+      r = await req('POST', '/api/settings/updates/check');
+      check('a newer release on GitHub is reported', () => {
+        eq(r.body.latest, '99.0.0', 'latest'); eq(r.body.available, true, 'available');
+        truthy(/^RaptorTracker\/\d/.test(seenAgent), `user agent names only the app: ${seenAgent}`);
+      });
+      reply = { status: 404, body: { message: 'Not Found' } };
+      r = await req('POST', '/api/settings/updates/check');
+      check('a failed check keeps the last answer and says why', () => {
+        eq(r.body.latest, '99.0.0', 'latest kept'); truthy(/no releases/.test(r.body.error || ''), 'error explained');
+      });
+      r = await req('PUT', '/api/settings/updates', { enabled: false });
+      check('the daily check can be turned off', () => eq(r.body.enabled, false, 'enabled'));
+      await req('PUT', '/api/settings/updates', { enabled: true });
+      gh.close();
+      delete process.env.UPDATE_CHECK_URL;
+    }
+
     // --- Cross-cutting reads ----------------------------------------------
     r = await req('GET', `/api/logbook?vehicle_id=${vid}`);
     check('the logbook merges every record type', () => {

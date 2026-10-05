@@ -21,11 +21,13 @@ const PAGES = [
   { title: 'Cost of Ownership', link: '/tco' },
   { title: 'Analytics', link: '/analytics' },
   { title: 'Logbook', link: '/logbook' },
-  { title: 'Notifications', link: '/notifications' },
+  { title: 'Notifications', link: '/settings/notifications' },
   { title: 'Reference', link: '/vehicles' },
-  { title: 'Export & Backup', link: '/export' },
+  { title: 'Reports — build sheet PDF', link: '/reports' },
+  { title: 'Backups & restore', link: '/settings/backups' },
+  { title: 'Import & export CSV', link: '/settings/data' },
   { title: 'Settings — units & currency', link: '/settings' },
-  { title: 'Account', link: '/account' },
+  { title: 'Account & password', link: '/settings/account' },
   { title: 'Quick Add', link: '/quick' },
 ]
 

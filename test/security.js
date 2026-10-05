@@ -43,7 +43,7 @@ function startServer() {
     cwd: ROOT,
     env: {
       ...process.env, NODE_ENV: 'test', PORT: String(port), DATA_DIR: DATA, UPLOAD_DIR: UPLOADS,
-      ADMIN_USERNAME: USER, ADMIN_PASSWORD: PASS, SESSION_SECRET: 'security-suite-secret-'.padEnd(48, 'x'),
+      ADMIN_USERNAME: USER, ADMIN_PASSWORD: PASS, SESSION_SECRET: 'security-suite-secret-'.padEnd(48, 'x'), UPDATE_CHECK: 'false',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
