@@ -106,6 +106,10 @@
 ### Backup & Restore
 - One-click full backup (database + all uploads) to a single ZIP, and restore from a backup file
 - Optional nightly automatic backups with configurable retention
+- Off-box copies: each backup is also sent to a mounted folder (NAS or USB drive), a WebDAV server
+  (Nextcloud, Synology), or S3-compatible storage (AWS, Backblaze B2, Cloudflare R2, MinIO), keeping
+  the newest copies there. A failed disk then doesn't take the backups with it.
+- Deletes go to a trash for 30 days, with an Undo right after you delete something
 
 ### Install on Your Phone
 - Installable progressive web app — add it to your home screen for a standalone app window
@@ -193,6 +197,7 @@ outside requests, and none of them carry your records:
 | NHTSA vPIC | When you decode a VIN | The VIN |
 | NHTSA recalls API | When you open Recalls or the dashboard | Make, model, and year |
 | Reminder email or webhook | When reminders are on and something is due | The reminder text, to the server and address you configured |
+| Off-box backup copy | After each backup, if you set a destination | The backup file, to the folder, WebDAV server, or bucket you chose |
 
 The release check can be turned off under **Settings → General**, or for the
 whole install with `UPDATE_CHECK=false` in `.env`. Separately, your browser loads

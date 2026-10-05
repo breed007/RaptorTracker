@@ -5,7 +5,7 @@
 //   REMINDER_HOUR  — hour of day 0-23 (default 8)
 //   REMINDER_TZ    — IANA timezone, e.g. "America/New_York" (default: server time)
 const { sendDigest, pruneSentReminders } = require('./services/reminders');
-const { runScheduledBackup } = require('./services/backupArchive');
+const { runScheduledBackup, BACKUP_DIR } = require('./services/backupArchive');
 const { getDb } = require('./db');
 const { isTrue, getSetting } = require('./services/settings');
 const updates = require('./services/updates');
@@ -57,6 +57,9 @@ function start() {
       const keep = parseInt(getSetting('backup_keep') || '7', 10);
       const result = await runScheduledBackup(keep);
       console.log(`[scheduler] wrote backup ${result.name}${result.removed ? ` (pruned ${result.removed})` : ''}`);
+      const sent = await require('./services/offsite').pushBackup(require('path').join(BACKUP_DIR, result.name));
+      if (sent.ok) console.log(`[scheduler] copied ${result.name} off-box${sent.pruned ? ` (pruned ${sent.pruned})` : ''}`);
+      else if (!sent.skipped) console.error(`[scheduler] off-box copy failed: ${sent.error}`);
     } catch (err) {
       console.error('[scheduler] backup run failed:', err.message);
     }

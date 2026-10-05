@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import ConfirmModal from '../../components/ConfirmModal'
 import { localDate } from '../../lib/dates'
 import { toast } from '../../lib/toast'
+import OffsiteBackupCard from '../../components/OffsiteBackupCard'
 
 const fmtSize = (b) => b > 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`
 
@@ -36,7 +37,13 @@ export default function BackupSettings() {
     try {
       const res = await fetch('/api/backup/run', { method: 'POST' })
       const data = await res.json()
-      if (res.ok) { setBset(s => ({ ...s, backups: data.backups })); setBackupMsg({ type: 'ok', text: `Saved ${data.name}` }) }
+      if (res.ok) {
+        setBset(s => ({ ...s, backups: data.backups }))
+        const off = data.offsite
+        setBackupMsg(off && !off.skipped && !off.ok
+          ? { type: 'err', text: `Saved ${data.name}, but the off-box copy failed: ${off.error}` }
+          : { type: 'ok', text: `Saved ${data.name}${off?.ok ? ' and sent a copy off-box' : ''}.` })
+      }
       else setBackupMsg({ type: 'err', text: data.error || 'Backup failed.' })
     } finally { setBsaving(false) }
   }
@@ -158,7 +165,7 @@ export default function BackupSettings() {
             />
             <span>
               <span className="text-sm font-medium text-raptor-primary">Enable nightly backups</span>
-              <span className="block text-xs text-raptor-muted">Stored under <code>data/backups/</code> on the server.</span>
+              <span className="block text-xs text-raptor-muted">Stored under <code>data/backups/</code> on the server, and sent off-box if that's set up below.</span>
             </span>
           </label>
 
@@ -205,6 +212,8 @@ export default function BackupSettings() {
           )}
         </div>
       )}
+
+      <OffsiteBackupCard />
 
       {storage && (
         <div className="card p-5 space-y-3">

@@ -8,6 +8,7 @@ const Database = require('better-sqlite3');
 const { getDb, closeDb, DB_PATH, DATA_DIR } = require('../db');
 const { pipeBackupTo, listBackups, runScheduledBackup, BACKUP_DIR } = require('../services/backupArchive');
 const { getAllSettings, setSetting } = require('../services/settings');
+const offsite = require('../services/offsite');
 
 const router = express.Router();
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
@@ -75,10 +76,46 @@ router.post('/run', async (req, res) => {
   try {
     const keep = parseInt(getAllSettings().backup_keep || '7', 10);
     const result = await runScheduledBackup(keep);
-    res.json({ ok: true, ...result, backups: listBackups() });
+    const sent = await offsite.pushBackup(path.join(BACKUP_DIR, result.name));
+    res.json({ ok: true, ...result, offsite: sent, backups: listBackups() });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ── Off-box copies ───────────────────────────────────────────────────────────
+
+// GET /api/backup/offsite — destination settings (secrets withheld) and the last result.
+router.get('/offsite', (req, res) => res.json(offsite.publicConfig()));
+
+// PUT /api/backup/offsite — save the destination. Blank secrets keep the stored one.
+router.put('/offsite', (req, res) => {
+  try {
+    res.json(offsite.saveConfig(req.body || {}));
+  } catch (err) {
+    if (err instanceof offsite.OffsiteError) return res.status(400).json({ error: err.message });
+    throw err;
+  }
+});
+
+// POST /api/backup/offsite/test — write and delete a small file at the destination.
+router.post('/offsite/test', async (req, res) => {
+  try {
+    res.json(await offsite.testConnection());
+  } catch (err) {
+    res.status(400).json({ error: err.name === 'TimeoutError' ? 'The destination did not answer in time.' : err.message });
+  }
+});
+
+// POST /api/backup/offsite/push — send the newest stored backup now (taking one if there are none).
+router.post('/offsite/push', async (req, res) => {
+  let newest = listBackups()[0];
+  if (!newest) {
+    const keep = parseInt(getAllSettings().backup_keep || '7', 10);
+    newest = { name: (await runScheduledBackup(keep)).name };
+  }
+  const result = await offsite.pushBackup(path.join(BACKUP_DIR, newest.name));
+  res.status(result.ok ? 200 : 502).json({ ...result, status: offsite.publicConfig() });
 });
 
 // GET /api/backup/file/:name — download a stored backup

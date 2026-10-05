@@ -486,6 +486,107 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
       delete process.env.UPDATE_CHECK_URL;
     }
 
+    // --- Off-box backups: folder, WebDAV, and S3 stand-ins -------------------
+    {
+      const http = require('http');
+      r = await req('GET', '/api/backup/offsite');
+      check('off-box copies start switched off', () => eq(r.body.target, 'none', 'target'));
+      r = await req('PUT', '/api/backup/offsite', { target: 'folder', folder: 'relative/path' });
+      check('a relative folder path is refused', () => eq(r.status, 400, 'status'));
+
+      const dest = path.join(tmp, 'offsite-folder');
+      r = await req('PUT', '/api/backup/offsite', { target: 'folder', folder: dest, keep: 1 });
+      check('a folder destination saves', () => { eq(r.status, 200, 'status'); eq(r.body.folder, dest, 'folder'); });
+      r = await req('POST', '/api/backup/offsite/test');
+      check('the folder test writes and cleans up', () => {
+        eq(r.status, 200, `status ${JSON.stringify(r.body)}`);
+        eq(fs.readdirSync(dest).filter(n => n.includes('connection-test')).length, 0, 'test file removed');
+      });
+      r = await req('POST', '/api/backup/run');
+      check('a backup is copied to the folder as soon as it is taken', () => {
+        eq(r.body.offsite?.ok, true, `offsite ${JSON.stringify(r.body.offsite)}`);
+        truthy(fs.existsSync(path.join(dest, r.body.name)), 'copy present');
+      });
+      await new Promise(res => setTimeout(res, 1100)); // backup names are stamped to the second
+      r = await req('POST', '/api/backup/run');
+      check('only the newest copies are kept at the destination', () => {
+        eq(fs.readdirSync(dest).filter(n => n.endsWith('.zip')).length, 1, 'copies kept');
+      });
+
+      // WebDAV
+      const dav = new Map(); let davAuth = '';
+      const davServer = http.createServer((q, s2) => {
+        davAuth = q.headers.authorization || '';
+        const name = decodeURIComponent(q.url.split('/').pop());
+        if (q.method === 'PUT') { const chunks = []; q.on('data', c => chunks.push(c)); q.on('end', () => { dav.set(name, Buffer.concat(chunks)); s2.writeHead(201); s2.end(); }); return; }
+        if (q.method === 'DELETE') { dav.delete(name); s2.writeHead(204); s2.end(); return; }
+        if (q.method === 'PROPFIND') {
+          s2.writeHead(207, { 'Content-Type': 'application/xml' });
+          s2.end(`<?xml version="1.0"?><d:multistatus xmlns:d="DAV:"><d:response><d:href>/dav/backups/</d:href></d:response>${[...dav.keys()].map(k => `<d:response><d:href>/dav/backups/${encodeURIComponent(k)}</d:href></d:response>`).join('')}</d:multistatus>`);
+          return;
+        }
+        s2.writeHead(405); s2.end();
+      });
+      await new Promise(res => davServer.listen(0, '127.0.0.1', res));
+      r = await req('PUT', '/api/backup/offsite', { target: 'webdav', webdavUrl: `http://127.0.0.1:${davServer.address().port}/dav/backups`, webdavUser: 'owner', webdavPassword: 'dav-secret-value', keep: 2 });
+      check('the WebDAV password is never sent back', () => {
+        eq(r.body.has_webdavPassword, true, 'has password'); truthy(!JSON.stringify(r.body).includes('dav-secret-value'), 'password hidden');
+      });
+      r = await req('POST', '/api/backup/offsite/push');
+      check('a backup reaches the WebDAV server with credentials', () => {
+        eq(r.status, 200, `status ${JSON.stringify(r.body)}`);
+        eq(davAuth, 'Basic ' + Buffer.from('owner:dav-secret-value').toString('base64'), 'basic auth');
+        const sent = dav.get(r.body.name);
+        truthy(sent && sent.length === fs.statSync(path.join(tmp, 'backups', r.body.name)).size, 'whole file arrived');
+      });
+      r = await req('GET', '/api/backup/settings');
+      check('backup settings never include stored secrets', () => truthy(!JSON.stringify(r.body).includes('dav-secret-value'), 'hidden'));
+      davServer.close();
+
+      // S3: the stand-in recomputes each signature with the shared secret.
+      const { signV4 } = require('../server/services/offsite');
+      const bucket = new Map(); const sigProblems = [];
+      const s3Server = http.createServer((q, s2) => {
+        const u = new URL(q.url, 'http://x');
+        const query = Object.fromEntries(u.searchParams);
+        const headers = { host: q.headers.host };
+        for (const h of ['content-type', 'content-length']) if (q.headers[h] && (q.headers.authorization || '').includes(h)) headers[h] = q.headers[h];
+        const amz = q.headers['x-amz-date'];
+        const now = new Date(`${amz.slice(0, 4)}-${amz.slice(4, 6)}-${amz.slice(6, 8)}T${amz.slice(9, 11)}:${amz.slice(11, 13)}:${amz.slice(13, 15)}Z`);
+        const want = signV4({ method: q.method, pathname: u.pathname, query, headers, region: 'auto', accessKey: 'TESTKEY', secretKey: 's3-secret-value', now }).Authorization;
+        if (want !== q.headers.authorization) sigProblems.push(`${q.method} ${q.url}`);
+        const key = u.pathname.replace(/^\/rt-backups\/?/, '');
+        if (q.method === 'PUT') { const chunks = []; q.on('data', c => chunks.push(c)); q.on('end', () => { bucket.set(key, Buffer.concat(chunks)); s2.writeHead(200); s2.end(); }); return; }
+        if (q.method === 'DELETE') { bucket.delete(key); s2.writeHead(204); s2.end(); return; }
+        if (q.method === 'GET') {
+          const keys = [...bucket.keys()].filter(k => k.startsWith(query.prefix || ''));
+          s2.writeHead(200, { 'Content-Type': 'application/xml' });
+          s2.end(`<ListBucketResult>${keys.map(k => `<Contents><Key>${k}</Key></Contents>`).join('')}</ListBucketResult>`);
+          return;
+        }
+        s2.writeHead(405); s2.end();
+      });
+      await new Promise(res => s3Server.listen(0, '127.0.0.1', res));
+      r = await req('PUT', '/api/backup/offsite', {
+        target: 's3', s3Endpoint: `http://127.0.0.1:${s3Server.address().port}`, s3Region: 'auto', s3Bucket: 'rt-backups',
+        s3Prefix: 'nightly', s3AccessKey: 'TESTKEY', s3SecretKey: 's3-secret-value', s3PathStyle: true, keep: 1,
+      });
+      r = await req('POST', '/api/backup/offsite/test');
+      check('the S3 test signs its requests correctly', () => { eq(r.status, 200, `status ${JSON.stringify(r.body)}`); eq(sigProblems.length, 0, `bad signatures: ${sigProblems}`); });
+      r = await req('POST', '/api/backup/offsite/push');
+      check('a backup lands in the bucket under the prefix', () => {
+        eq(r.status, 200, `status ${JSON.stringify(r.body)}`);
+        truthy(bucket.has(`nightly/${r.body.name}`), `keys: ${[...bucket.keys()]}`);
+        eq(sigProblems.length, 0, `bad signatures: ${sigProblems}`);
+      });
+      s3Server.close();
+      r = await req('POST', '/api/backup/offsite/push');
+      check('an unreachable destination is reported, not thrown', () => {
+        eq(r.status, 502, 'status'); truthy(r.body.status.last.error, 'error recorded');
+      });
+      await req('PUT', '/api/backup/offsite', { target: 'none' });
+    }
+
     // --- Cross-cutting reads ----------------------------------------------
     r = await req('GET', `/api/logbook?vehicle_id=${vid}`);
     check('the logbook merges every record type', () => {

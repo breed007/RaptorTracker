@@ -170,6 +170,14 @@ try {
     if (u.unitsForLocale('en-AU').distance !== 'km' || u.unitsForLocale('en-GB').economy !== 'mpg_imp') throw new Error('locale defaults');
   });
 
+  check("off-box S3 signing matches AWS's published example", () => {
+    const { signV4 } = require('../server/services/offsite');
+    const h = signV4({ method: 'GET', pathname: '/test.txt', headers: { host: 'examplebucket.s3.amazonaws.com', range: 'bytes=0-9' },
+      region: 'us-east-1', accessKey: 'AKIAIOSFODNN7EXAMPLE', secretKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+      payloadHash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', now: new Date('2013-05-24T00:00:00Z') });
+    if (!h.Authorization.endsWith('Signature=f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41')) throw new Error(h.Authorization);
+  });
+
   check('release versions compare the way people read them', () => {
     const { compareVersions: c } = require('../server/services/updates');
     const cases = [['1.0.0', '0.8.0', 1], ['v1.0.0', '1.0.0', 0], ['1.0.0-beta.1', '1.0.0', -1], ['1.10.0', '1.9.3', 1], ['0.9', '0.9.0', 0], ['1.0.1', '1.0.0-rc.2', 1]];
@@ -185,7 +193,7 @@ try {
     'routes/vehicleTransfer', 'routes/intervals', 'routes/wishlist', 'routes/fuel',
     'routes/warranty', 'routes/tco', 'routes/notifications', 'routes/tires', 'routes/recalls',
     'routes/backup', 'routes/logbook', 'routes/mileage', 'routes/analytics', 'routes/search', 'routes/import', 'routes/auxCapacity', 'routes/forecast', 'routes/budget', 'routes/documents', 'routes/specs', 'routes/overview', 'routes/outings', 'routes/share', 'config',
-    'services/settings', 'services/mailer', 'services/reminders', 'services/backupArchive', 'services/csvImport', 'services/mileageStats', 'services/auxCapacity', 'services/buildSheet', 'services/auxLayout', 'services/units', 'services/updates', 'routes/settings', 'scheduler',
+    'services/settings', 'services/mailer', 'services/reminders', 'services/backupArchive', 'services/csvImport', 'services/mileageStats', 'services/auxCapacity', 'services/buildSheet', 'services/auxLayout', 'services/units', 'services/updates', 'services/offsite', 'services/trash', 'services/sampleTruck', 'routes/trash', 'routes/sample', 'routes/settings', 'scheduler',
   ];
   for (const m of modules) check(`require ${m}`, () => { require(`../server/${m}`); });
 
