@@ -12,3 +12,7 @@ client/dist/
 
 # Scratch dir used by test/upgrade.js
 .upgrade-stage/
+
+# Playwright
+playwright-report/
+test-results/

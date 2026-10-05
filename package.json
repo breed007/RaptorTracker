@@ -15,7 +15,8 @@
     "test": "node test/smoke.js",
     "test:api": "node test/api.js",
     "test:upgrade": "node test/upgrade.js",
-    "test:security": "node test/security.js"
+    "test:security": "node test/security.js",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "archiver": "^7.0.1",
@@ -32,6 +33,8 @@
     "yauzl": "^3.4.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0",
     "concurrently": "^8.2.2",
     "nodemon": "^3.1.0"
   },

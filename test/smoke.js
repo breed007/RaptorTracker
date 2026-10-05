@@ -218,6 +218,18 @@ try {
         if (!text) problems.push(`${where(m.index)} icon-only ${m[1]} without aria-label`);
       }
     }
+    // A fixed id inside a .map() repeats once per item, which breaks every
+    // label after the first (the AUX switch rows did this).
+    for (const f of files) {
+      const s = fs.readFileSync(f, 'utf8');
+      for (const m of s.matchAll(/\.map\(\s*\(?[\w{}, ]*\)?\s*=>/g)) {
+        let depth = 0; let i = s.indexOf('(', m.index); let j = i;
+        for (; j < s.length; j++) { if (s[j] === '(') depth++; else if (s[j] === ')' && --depth === 0) break; }
+        for (const idm of s.slice(i, j).matchAll(/\bid="([\w-]+)"/g)) {
+          problems.push(`${path.relative(path.join(__dirname, '..'), f)}:${s.slice(0, i).split('\n').length} fixed id "${idm[1]}" inside a loop`);
+        }
+      }
+    }
     if (problems.length) throw new Error(`\n    ${problems.slice(0, 15).join('\n    ')}`);
   });
 

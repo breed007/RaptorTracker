@@ -262,8 +262,8 @@ export default function ModDetail({ isNew }) {
                   return (
                     <div key={idx} className="flex items-end gap-3">
                       <div className="flex-shrink-0">
-                        <label htmlFor="mod-detail-switch-number" className="label">Switch</label>
-                        <select id="mod-detail-switch-number"
+                        <label htmlFor={`mod-detail-switch-${idx}`} className="label">Switch</label>
+                        <select id={`mod-detail-switch-${idx}`}
                           value={sw.switch_number != null ? String(sw.switch_number) : ''}
                           onChange={e => {
                             const updated = form.aux_switches.map((s, i) =>
@@ -282,10 +282,10 @@ export default function ModDetail({ isNew }) {
                         </select>
                       </div>
                       <div className="flex-1">
-                        <label htmlFor="mod-detail-label" className="label">
+                        <label htmlFor={`mod-detail-switch-label-${idx}`} className="label">
                           Label <span className="font-normal text-raptor-muted">(what this switch controls)</span>
                         </label>
-                        <input id="mod-detail-label"
+                        <input id={`mod-detail-switch-label-${idx}`}
                           type="text"
                           value={sw.label ?? ''}
                           onChange={e => {

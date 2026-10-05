@@ -192,8 +192,6 @@ if (fs.existsSync(DIST_DIR)) {
   });
 }
 
-// Only bind a port when run directly. Requiring this file (integration tests)
-// gets the configured app without a listening socket or a live cron scheduler.
 // Last-resort error handler. Anything a route didn't handle lands here as a
 // JSON 500 with the detail in the server log, instead of Express's default
 // HTML page (which includes a stack trace outside production).
@@ -205,6 +203,8 @@ app.use((err, req, res, next) => {
   res.status(status).json({ error: message });
 });
 
+// Only bind a port when run directly. Requiring this file (integration tests)
+// gets the configured app without a listening socket or a live cron scheduler.
 if (require.main === module) {
   // Log, don't crash silently, on a promise nobody awaited. PM2 or Docker
   // restarts the process on a real crash; this keeps the reason in the log.
