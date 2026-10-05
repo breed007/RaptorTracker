@@ -505,6 +505,23 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
       });
     }
 
+    // --- Air-down card ---------------------------------------------------------
+    {
+      r = await req('POST', '/api/tires', { user_vehicle_id: vid, name: 'Air Test 37s', tire_size: '37x12.50R17', street_psi_front: 38, street_psi_rear: 40 });
+      const setId = r.body.id;
+      for (const [terrain, f, rr] of [['rock', 18, 20], ['rock', 16, 18], ['rock', 17, 19], ['sand', 14, 14]]) {
+        await req('POST', '/api/outings', { user_vehicle_id: vid, name: `Air ${terrain}`, date: '2024-05-01', terrain, tire_set_id: setId, tire_psi_front: f, tire_psi_rear: rr });
+      }
+      r = await req('GET', `/api/tires/${setId}/air-down`);
+      check('the air-down card groups logged pressures by terrain', () => {
+        eq(r.status, 200, 'status');
+        eq(r.body.street.front, 38, 'street front'); eq(r.body.street.rear, 40, 'street rear');
+        const rock = r.body.byTerrain.find(t => t.terrain === 'rock');
+        eq(rock.trips, 3, 'rock trips'); eq(rock.front, 17, 'median front'); eq(rock.rear, 19, 'median rear'); eq(rock.lowestFront, 16, 'lowest');
+        eq(r.body.byTerrain[0].terrain, 'rock', 'most-used terrain first');
+      });
+    }
+
     // --- PDFs -------------------------------------------------------------------
     {
       const pdfOf = async (url) => { const res = await fetch(base + url, { headers: { Cookie: cookie } }); return { status: res.status, type: res.headers.get('content-type'), bytes: Buffer.from(await res.arrayBuffer()) }; };

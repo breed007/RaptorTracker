@@ -252,6 +252,12 @@ function runMigrations(db) {
     db.prepare('ALTER TABLE fuel_log ADD COLUMN missed_previous INTEGER NOT NULL DEFAULT 0').run();
   }
 
+  // tire_sets: the door-jamb (street) pressure for the set, the top line of
+  // its air-down card.
+  const tsCols = db.prepare('PRAGMA table_info(tire_sets)').all().map(c => c.name);
+  if (!tsCols.includes('street_psi_front')) db.prepare('ALTER TABLE tire_sets ADD COLUMN street_psi_front REAL').run();
+  if (!tsCols.includes('street_psi_rear')) db.prepare('ALTER TABLE tire_sets ADD COLUMN street_psi_rear REAL').run();
+
   // maintenance_log columns
   const mlCols = db.prepare('PRAGMA table_info(maintenance_log)').all().map(c => c.name);
   if (!mlCols.includes('attachments')) {

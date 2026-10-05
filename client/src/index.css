@@ -198,3 +198,13 @@ body { font-family: var(--rl-font-sans); }
     @apply font-bold text-2xl text-raptor-primary;
   }
 }
+
+/* Printing a single card (the air-down card): everything else on the page is
+   hidden, and the card prints in black on white whatever the theme. */
+@media print {
+  body.print-card-only * { visibility: hidden !important; }
+  body.print-card-only .print-card,
+  body.print-card-only .print-card * { visibility: visible !important; color: #111 !important; background: #fff !important; border-color: #999 !important; }
+  body.print-card-only .print-card { position: absolute; left: 0; top: 0; width: 4.25in; box-shadow: none !important; }
+  body.print-card-only .no-print { display: none !important; }
+}

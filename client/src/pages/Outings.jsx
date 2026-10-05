@@ -35,6 +35,19 @@ export default function Outings() {
   const [error, setError] = useState('')
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [photoTarget, setPhotoTarget] = useState(null)
+
+  // "Last time on rock with these tires you ran 18 / 20" — from the set's air-down history.
+  const [airHint, setAirHint] = useState(null)
+  useEffect(() => {
+    setAirHint(null)
+    if (!showForm || !form.tire_set_id || !form.terrain) return
+    let live = true
+    fetch(`/api/tires/${form.tire_set_id}/air-down`).then(r => (r.ok ? r.json() : null)).then(d => {
+      const g = d?.byTerrain?.find(t => t.terrain === form.terrain)
+      if (live && g) setAirHint({ ...g, setName: d.set.name })
+    }).catch(() => {})
+    return () => { live = false }
+  }, [showForm, form.tire_set_id, form.terrain])
   const photoRef = useRef(null)
 
   const load = useCallback(() => {
@@ -205,6 +218,21 @@ export default function Outings() {
                 {tireSets.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </div>
+            {airHint && (
+              <div className="sm:col-span-2 text-xs text-raptor-secondary flex flex-wrap items-center gap-2">
+                <span>
+                  On {form.terrain} with {airHint.setName} you&apos;ve run{' '}
+                  <b className="text-raptor-primary">{currentUnits().pressureNum(airHint.front)} / {currentUnits().pressureNum(airHint.rear)} {currentUnits().pressure}</b>{' '}
+                  ({airHint.trips} trip{airHint.trips === 1 ? '' : 's'}).
+                </span>
+                {(form.tire_psi_front === '' && form.tire_psi_rear === '') && (
+                  <button type="button" className="text-raptor-accent font-medium hover:underline"
+                    onClick={() => setForm(f => ({ ...f, tire_psi_front: airHint.front ?? '', tire_psi_rear: airHint.rear ?? '' }))}>
+                    Use these
+                  </button>
+                )}
+              </div>
+            )}
             <div>
               <label className="label">Who Came</label>
               <input value={form.companions} onChange={e => set('companions', e.target.value)} className="input-field" placeholder="Optional" />

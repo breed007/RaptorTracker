@@ -131,6 +131,8 @@
 ### Tire & Wheel Sets
 - Track multiple sets (street vs. off-road) with specs, cost, install/removal mileage, and miles-run per set
 - Tire spend rolls into Total Cost of Ownership
+- Air-down card per set: the street pressure from the door jamb, and what you've actually run on rock,
+  sand, mud, and snow with those tires, from your logged trail days. Prints for the glovebox.
 
 ### Dashboard
 - A vehicle home page rather than a wall of alert cards: one **Needs Attention** list and one **Coming Up** list

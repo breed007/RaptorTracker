@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import ConfirmModal from '../components/ConfirmModal'
 import { currentUnits } from '../lib/units'
+import AirDownCard from '../components/AirDownCard'
 
 const EMPTY = {
   name: '', tire_brand: '', tire_model: '', tire_size: '', wheel_brand: '', wheel_size: '',
   quantity: '4', cost: '', purchase_date: '', install_date: '', removed_date: '',
   odometer_installed: '', odometer_removed: '', is_active: false, notes: '',
+  street_psi_front: '', street_psi_rear: '',
 }
 
 function fmtDate(d) {
@@ -29,6 +31,7 @@ export default function TireSets() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [cardFor, setCardFor] = useState(null)
 
   const fetchSets = useCallback(() => {
     if (!selectedVehicleId) return
@@ -54,6 +57,7 @@ export default function TireSets() {
       install_date: s.install_date || '', removed_date: s.removed_date || '',
       odometer_installed: s.odometer_installed ?? '', odometer_removed: s.odometer_removed ?? '',
       is_active: !!s.is_active, notes: s.notes || '',
+      street_psi_front: s.street_psi_front ?? '', street_psi_rear: s.street_psi_rear ?? '',
     })
     setError(''); setShowForm(true)
   }
@@ -121,6 +125,8 @@ export default function TireSets() {
             <div><label className="label">Removed Date</label><input type="date" value={form.removed_date} onChange={e => set('removed_date', e.target.value)} className="input-field" /></div>
             <div><label className="label">Odometer at Install ({currentUnits().dist})</label><input type="number" value={form.odometer_installed} onChange={e => set('odometer_installed', e.target.value)} className="input-field" placeholder="e.g. 8000" /></div>
             <div><label className="label">Odometer at Removal ({currentUnits().dist})</label><input type="number" value={form.odometer_removed} onChange={e => set('odometer_removed', e.target.value)} className="input-field" placeholder="leave blank if still on" /></div>
+            <div><label className="label" htmlFor="street-psi-front">Street pressure, front ({currentUnits().pressure})</label><input id="street-psi-front" type="number" step="0.1" value={form.street_psi_front} onChange={e => set('street_psi_front', e.target.value)} className="input-field" placeholder="door-jamb sticker" /></div>
+            <div><label className="label" htmlFor="street-psi-rear">Street pressure, rear ({currentUnits().pressure})</label><input id="street-psi-rear" type="number" step="0.1" value={form.street_psi_rear} onChange={e => set('street_psi_rear', e.target.value)} className="input-field" placeholder="door-jamb sticker" /></div>
             <div className="flex items-center gap-3 pt-6">
               <input id="is_active" type="checkbox" checked={form.is_active} onChange={e => set('is_active', e.target.checked)} className="w-4 h-4 rounded accent-raptor-accent cursor-pointer" />
               <label htmlFor="is_active" className="label mb-0 cursor-pointer">Currently on the truck</label>
@@ -173,6 +179,9 @@ export default function TireSets() {
                     {s.removed_date && <span>Removed {fmtDate(s.removed_date)}</span>}
                   </div>
                   {s.notes && <div className="text-sm text-raptor-secondary whitespace-pre-wrap pt-1">{s.notes}</div>}
+                  <button type="button" onClick={() => setCardFor(s.id)} className="text-xs font-medium text-raptor-accent hover:underline pt-1">
+                    Air-down card
+                  </button>
                 </div>
                 <div className="flex gap-1 flex-shrink-0">
                   <button onClick={() => openEdit(s)} className="text-raptor-muted hover:text-raptor-primary p-1.5 rounded-lg hover:bg-raptor-elevated transition-colors" title="Edit">
@@ -187,6 +196,8 @@ export default function TireSets() {
           ))}
         </div>
       )}
+
+      {cardFor && <AirDownCard setId={cardFor} onClose={() => setCardFor(null)} />}
 
       {deleteTarget && (
         <ConfirmModal title="Delete Set" message="Delete this tire/wheel set? You can restore it from Settings → Trash for 30 days." danger

@@ -38,7 +38,7 @@ const COLUMNS = {
   ],
   volume: [['fuel_log', 'gallons']],
   perVolume: [['fuel_log', 'price_per_gallon']], // a price per volume converts the other way
-  pressure: [['outings', 'tire_psi_front'], ['outings', 'tire_psi_rear']],
+  pressure: [['outings', 'tire_psi_front'], ['outings', 'tire_psi_rear'], ['tire_sets', 'street_psi_front'], ['tire_sets', 'street_psi_rear']],
 };
 
 function getUnits() {
