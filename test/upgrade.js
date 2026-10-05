@@ -37,9 +37,13 @@ function eq(a, b, what) {
 function tags() {
   const out = execFileSync('git', ['tag', '-l'], { cwd: ROOT, encoding: 'utf8' });
   const all = out.split('\n').map(s => s.trim()).filter(Boolean);
-  // Only tags whose schema files exist and that predate HEAD.
+  const commit = (ref) => execFileSync('git', ['rev-parse', `${ref}^{commit}`], { cwd: ROOT, encoding: 'utf8' }).trim();
+  const head = commit('HEAD');
+  // Only tags whose schema files exist and that predate HEAD. CI also runs on
+  // the release tag itself, where that tag is HEAD, not an earlier release.
   return all
     .filter(t => /^v\d+\.\d+\.\d+$/.test(t))
+    .filter(t => commit(t) !== head)
     .filter(t => {
       try {
         execFileSync('git', ['cat-file', '-e', `${t}:server/db/index.js`], { cwd: ROOT, stdio: 'ignore' });
@@ -52,14 +56,18 @@ function tags() {
     });
 }
 
+/**
+ * Check out that release's server/ (and package.json, which some modules read)
+ * into the stage. From 1.0 the schema code requires reference data and
+ * services beside it, so copying server/db alone isn't enough. Returns the
+ * staged server/db folder.
+ */
 function stageTag(tag) {
   const dir = path.join(STAGE, tag.replace(/\./g, '_'));
   fs.mkdirSync(dir, { recursive: true });
-  for (const f of ['index.js', 'init.js']) {
-    const content = execFileSync('git', ['show', `${tag}:server/db/${f}`], { cwd: ROOT, encoding: 'utf8' });
-    fs.writeFileSync(path.join(dir, f), content);
-  }
-  return dir;
+  const tar = execFileSync('git', ['archive', '--format=tar', tag, 'server', 'package.json'], { cwd: ROOT, maxBuffer: 256 * 1024 * 1024 });
+  execFileSync('tar', ['-x', '-C', dir], { input: tar });
+  return path.join(dir, 'server', 'db');
 }
 
 /**
@@ -195,8 +203,11 @@ function run() {
     ];
     // From 1.0 the vehicle's mileage is recomputed from its records. The
     // fixture's typed current_mileage (41,234) is above every record, so the
-    // first recalculation after upgrading must keep it, not drop it.
-    if ((inserted.used.user_vehicles || []).includes('current_mileage')) {
+    // first recalculation after upgrading from 0.x must keep it, not drop it.
+    // A 1.x database already ran that one-time carry-over (while empty), and
+    // 1.x records a typed mileage as a reading, so the check is 0.x only.
+    const from0x = Number(tag.slice(1).split('.')[0]) < 1;
+    if (from0x && (inserted.used.user_vehicles || []).includes('current_mileage')) {
       check('a typed current mileage survives the first recalculation', () => {
         const { refreshCurrentMileage } = require(path.join(ROOT, 'server/services/odometer'));
         eq(refreshCurrentMileage(db, inserted.uvId), FIXTURE.user_vehicles.current_mileage, 'current_mileage');
