@@ -522,6 +522,15 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
       });
     }
 
+    // --- Factory fluids reference --------------------------------------------------
+    r = await req('GET', `/api/specs/factory?vehicle_id=${vid}`);
+    check("the truck's generation has Ford's figures with the manual cited", () => {
+      eq(r.status, 200, 'status'); eq(r.body.generation, 'Gen 3', 'generation');
+      truthy(/owner_information/.test(r.body.reference.source.url), 'manual link');
+      const oil = r.body.reference.groups[0].items.find(i => i.name === 'Engine oil');
+      truthy(/6\.0 qt \(5\.7 L\)/.test(oil.value), `oil: ${oil.value}`);
+    });
+
     // --- PDFs -------------------------------------------------------------------
     {
       const pdfOf = async (url) => { const res = await fetch(base + url, { headers: { Cookie: cookie } }); return { status: res.status, type: res.headers.get('content-type'), bytes: Buffer.from(await res.arrayBuffer()) }; };

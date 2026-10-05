@@ -3,11 +3,13 @@ const router = express.Router();
 const { getDb } = require('../db');
 const trash = require('../services/trash');
 
-const CATEGORIES = ['fluids', 'capacities', 'torque', 'electrical', 'tires', 'dimensions', 'other'];
+const CATEGORIES = ['fluids', 'capacities', 'torque', 'parts', 'electrical', 'tires', 'dimensions', 'other'];
 
-// Curated links to primary sources. We point at official documentation rather
-// than copying it — Ford's workshop/service data is licensed content, and
-// reproducing it in a distributed app isn't ours to do.
+// Curated links to primary sources. Ford's workshop/service data is licensed
+// content and isn't reproduced here. The one exception is reference/fluids.js:
+// a short list of capacities and part numbers from the free owner's manuals,
+// each generation citing the manual it came from.
+const { fluidsFor } = require('../reference/fluids');
 const RESOURCES = [
   {
     id: 'ford-owner-manuals',
@@ -38,6 +40,13 @@ const RESOURCES = [
 // GET /api/specs/resources — public reference links
 router.get('/resources', (req, res) => {
   res.json({ resources: RESOURCES, categories: CATEGORIES });
+});
+
+// GET /api/specs/factory?vehicle_id=X — Ford's figures for this generation, read-only.
+router.get('/factory', (req, res) => {
+  const v = getDb().prepare(`SELECT ve.model, ve.generation FROM user_vehicles uv JOIN vehicles ve ON ve.id = uv.vehicle_id WHERE uv.id = ?`).get(req.query.vehicle_id);
+  if (!v) return res.status(404).json({ error: 'Vehicle not found' });
+  res.json({ model: v.model, generation: v.generation, reference: fluidsFor(v.model, v.generation) });
 });
 
 // GET /api/specs?vehicle_id=X

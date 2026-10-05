@@ -170,6 +170,21 @@ try {
     if (u.unitsForLocale('en-AU').distance !== 'km' || u.unitsForLocale('en-GB').economy !== 'mpg_imp') throw new Error('locale defaults');
   });
 
+  check('every generation has cited factory fluids, and each line is usable', () => {
+    const { FLUIDS } = require('../server/reference/fluids');
+    const { REFERENCE_VEHICLES } = require('../server/reference/vehicles');
+    const cats = ['fluids', 'capacities', 'torque', 'parts', 'electrical', 'tires', 'dimensions', 'other'];
+    for (const v of REFERENCE_VEHICLES) {
+      const f = FLUIDS[`${v.model}|${v.generation}`];
+      if (!f) throw new Error(`no fluids for ${v.model} ${v.generation}`);
+      if (!/^https:\/\/www\.fordservicecontent\.com\//.test(f.source.url)) throw new Error(`${v.generation}: source must be a Ford manual`);
+      for (const g of f.groups) for (const it of g.items) {
+        if (!cats.includes(it.category) || !it.name || !it.value) throw new Error(`${v.generation}: bad line ${JSON.stringify(it)}`);
+      }
+    }
+    if (Object.keys(FLUIDS).length !== REFERENCE_VEHICLES.length) throw new Error('fluids for a generation that does not exist');
+  });
+
   check('reference corrections reach an existing install', () => {
     const db = getDb();
     db.prepare("UPDATE vehicles SET horsepower = 700, torque = 645 WHERE model = 'F-150 Raptor' AND generation = 'Gen 3'").run();

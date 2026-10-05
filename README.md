@@ -147,6 +147,9 @@ Read-only factory specs for the full Ford Raptor lineup:
 - **Gen 3.5** — 2024–present (3.5L EcoBoost HO / Raptor R 5.2L Supercharged V8)
 
 Engine, transmission, suspension, towing, payload, and AUX panel specs per generation.
+- Ford's figures for your generation from the free owner's manual: oil capacity and grade, coolant,
+  axle and transfer case fluids, wheel nut torque, and filter, plug, and battery part numbers, with the
+  manual cited. Copy any line into your own spec sheet to keep or edit it.
 
 ### Reports & Exports
 - **Vehicle history for a sale**: a PDF for buyers with every service and its odometer reading, the

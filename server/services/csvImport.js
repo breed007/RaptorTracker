@@ -186,7 +186,7 @@ const TYPES = {
 // Constrained columns get snapped to a legal value rather than rejected.
 const MOD_CATEGORIES = ['Armor', 'Audio', 'Bed_Accessories', 'Bumpers', 'Electrical', 'Engine', 'Interior', 'Lighting', 'Performance', 'Recovery', 'Suspension', 'Tires_Wheels', 'Other'];
 const MOD_STATUSES = ['Researching', 'Ordered', 'In_Transit', 'Installed', 'Removed'];
-const SPEC_CATEGORIES = ['fluids', 'capacities', 'torque', 'electrical', 'tires', 'dimensions', 'other'];
+const SPEC_CATEGORIES = ['fluids', 'capacities', 'torque', 'parts', 'electrical', 'tires', 'dimensions', 'other'];
 
 function snap(value, allowed, fallback) {
   if (!value) return fallback;

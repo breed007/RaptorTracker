@@ -6,6 +6,7 @@ const CATEGORY_LABELS = {
   fluids: 'Fluids',
   capacities: 'Capacities',
   torque: 'Torque Specs',
+  parts: 'Service Parts',
   electrical: 'Electrical',
   tires: 'Tires & Wheels',
   dimensions: 'Dimensions',
@@ -16,13 +17,85 @@ const CATEGORIES = Object.keys(CATEGORY_LABELS)
 const EMPTY = { category: 'fluids', name: '', value: '', unit: '', source: '', notes: '' }
 
 /**
- * Owner-maintained spec sheet.
+ * Owner-maintained spec sheet, plus Ford's own figures for the generation.
  *
- * Deliberately user-supplied: Ford's workshop/service data (torque values, wire
- * colors) is licensed content, so RaptorTracker links to the official sources
- * rather than reproducing them. What you record here is yours, and it can be
- * exported/imported as CSV so specs can be shared between owners.
+ * Ford's workshop/service data (wire colors, most torque values) is licensed
+ * content and isn't reproduced. The factory panel is a short list of
+ * capacities and part numbers from the free owner's manual, with the manual
+ * cited; owners copy lines into their own sheet, where they can edit them.
  */
+function FactoryFigures({ vehicleId, specs, onAdded }) {
+  const [data, setData] = useState(null)
+  const [busy, setBusy] = useState(false)
+  useEffect(() => {
+    fetch(`/api/specs/factory?vehicle_id=${vehicleId}`).then(r => (r.ok ? r.json() : null)).then(setData).catch(() => {})
+  }, [vehicleId])
+  const ref = data?.reference
+  if (!ref) return null
+
+  const have = new Set(specs.map(s => `${s.category}|${s.name}`.toLowerCase()))
+  const keyOf = (it, group) => `${it.category}|${group.title ? `${it.name} (${group.title})` : it.name}`.toLowerCase()
+  const add = async (items) => {
+    setBusy(true)
+    try {
+      for (const { it, group } of items) {
+        await fetch('/api/specs', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_vehicle_id: vehicleId, category: it.category,
+            name: group.title ? `${it.name} (${group.title})` : it.name,
+            value: it.value, unit: '', source: ref.source.title, notes: it.spec || '',
+          }),
+        })
+      }
+      onAdded()
+    } finally { setBusy(false) }
+  }
+  const missing = ref.groups.flatMap(group => group.items.filter(it => !have.has(keyOf(it, group))).map(it => ({ it, group })))
+
+  return (
+    <div className="card p-5 space-y-4">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <div className="section-title">Ford&apos;s Figures — {data.model} {data.generation}</div>
+          <div className="text-xs text-raptor-muted mt-0.5">
+            From the{' '}
+            <a href={ref.source.url} target="_blank" rel="noopener noreferrer" className="text-raptor-accent hover:underline">{ref.source.title} ↗</a>
+            , as Ford printed it. {ref.note}
+          </div>
+        </div>
+        {missing.length > 0 && (
+          <button type="button" disabled={busy} onClick={() => add(missing)} className="btn-secondary text-sm disabled:opacity-50">
+            {busy ? 'Adding…' : `Add ${missing.length === ref.groups.reduce((n, g) => n + g.items.length, 0) ? 'all' : `the other ${missing.length}`} to my sheet`}
+          </button>
+        )}
+      </div>
+      {ref.groups.map(group => (
+        <div key={group.title || 'main'} className="space-y-1">
+          {group.title && <div className="text-xs font-semibold uppercase tracking-wide text-raptor-muted pt-1">{group.title}</div>}
+          <div className="divide-y divide-raptor-border">
+            {group.items.map(it => {
+              const added = have.has(keyOf(it, group))
+              return (
+                <div key={it.name} className="py-2 flex items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm"><span className="font-medium text-raptor-primary">{it.name}</span>{' '}
+                      <span className="text-raptor-secondary">{it.value}</span></div>
+                    {it.spec && <div className="text-xs text-raptor-muted">{it.spec}</div>}
+                  </div>
+                  {added
+                    ? <span className="text-xs text-raptor-muted flex-shrink-0 pt-0.5">In my sheet</span>
+                    : <button type="button" disabled={busy} onClick={() => add([{ it, group }])} className="text-xs text-raptor-accent hover:underline flex-shrink-0 pt-0.5 disabled:opacity-50">Add</button>}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+      <p className="text-xs text-raptor-muted">Check your own manual when a figure depends on equipment, and your door-jamb label for tire pressures.</p>
+    </div>
+  )
+}
 export default function SpecSheet() {
   const { selectedVehicleId, selectedVehicle } = useApp()
   const [specs, setSpecs] = useState([])
@@ -83,13 +156,15 @@ export default function SpecSheet() {
 
   return (
     <div className="space-y-5">
+      {selectedVehicleId && <FactoryFigures vehicleId={selectedVehicleId} specs={specs} onAdded={load} />}
+
       {/* Official sources */}
       <div className="card p-5">
         <div className="section-title mb-2">Official Sources</div>
         <p className="text-sm text-raptor-secondary mb-3">
-          RaptorTracker links to Ford's own documentation rather than reproducing it — service manual
-          content is licensed, and copying it into an app you can share isn't ours to do. Grab the figures
-          you need from the source, then record them below so they're a tap away next time.
+          Ford&apos;s service manual content is licensed, so RaptorTracker links to it rather than copying it.
+          The owner&apos;s-manual figures above cover the common jobs; for anything else, look it up at the
+          source and record it below so it&apos;s a tap away next time.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {resources.map(r => (
