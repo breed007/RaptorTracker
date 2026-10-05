@@ -120,6 +120,20 @@ try {
     if (amps({ model_year: 2012, aux_fuse_overrides: '{"4":20}' }) !== '30/30/15/20') throw new Error('override not applied');
   });
 
+  check('NHTSA component names read as titles', () => {
+    const { humanizeComponent: h } = require('../server/routes/recalls');
+    const cases = [
+      ['POWER TRAIN:DRIVELINE:DRIVESHAFT', 'Driveshaft', 'Power Train'],
+      ['ELECTRICAL SYSTEM: INTEGRATED TRAILER BRAKE CONTROL', 'Integrated Trailer Brake Control', 'Electrical System'],
+      ['WHEELS:LUGS/NUTS/BOLTS/STUDS', 'Lugs/Nuts/Bolts/Studs', 'Wheels'],
+      ['SERVICE BRAKES, HYDRAULIC:ANTILOCK/TRACTION CONTROL/ELECTRONIC STABILITY CONTROL:ABS', 'ABS', 'Service Brakes, Hydraulic'],
+    ];
+    for (const [raw, title, area] of cases) {
+      const got = h(raw);
+      if (got.title !== title || got.area !== area) throw new Error(`${raw} -> ${JSON.stringify(got)}`);
+    }
+  });
+
   closeDb();
 
   // 7) Every route/service module loads without throwing

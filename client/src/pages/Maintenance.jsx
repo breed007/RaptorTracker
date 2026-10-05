@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import ConfirmModal from '../components/ConfirmModal'
 import Lightbox from '../components/Lightbox'
+import { formatDue } from '../lib/dates'
 
 // ── Interval status helpers ──────────────────────────────────────────────────
 
@@ -400,7 +401,7 @@ function ServiceForecast({ vehicleId }) {
                 <span className="text-raptor-primary font-medium">{item.service_type}</span>
                 {item.projectedDate ? (
                   <span className="block text-xs text-raptor-muted">
-                    {item.overdue ? 'Overdue now' : `in ${item.daysOut} days`}
+                    {item.overdue ? 'Overdue now' : formatDue(item.daysOut)}
                     {item.milesRemaining != null && ` · ${Math.round(item.milesRemaining).toLocaleString()} mi to go`}
                     {item.basis === 'time' && ' · time-based'}
                   </span>

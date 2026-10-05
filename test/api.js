@@ -305,6 +305,35 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
     r = await req('GET', '/api/share/build-sheet?vehicle_id=999999');
     check('a build sheet for a missing vehicle 404s', () => eq(r.status, 404, 'status'));
 
+    // --- Recall triage (state only; the list itself comes from NHTSA) ------
+    {
+      const stored = () => {
+        const Database = require('better-sqlite3');
+        const db = new Database(path.join(tmp, 'raptortracker.db'), { readonly: true });
+        const row = db.prepare('SELECT confirmed_recalls, dismissed_recalls, fixed_recalls FROM user_vehicles WHERE id = ?').get(vid);
+        db.close();
+        return { applies: JSON.parse(row.confirmed_recalls), not_applicable: JSON.parse(row.dismissed_recalls), fixed: JSON.parse(row.fixed_recalls) };
+      };
+      r = await req('PUT', '/api/recalls/state', { vehicle_id: vid, campaign: '22V253000', state: 'applies' });
+      check('a recall can be confirmed for this truck', () => {
+        eq(r.status, 200, 'status');
+        eq(stored().applies.includes('22V253000'), true, 'stored as applies');
+      });
+      await req('PUT', '/api/recalls/state', { vehicle_id: vid, campaign: '22V253000', state: 'fixed' });
+      check('marking it repaired moves it out of "applies"', () => {
+        const st = stored();
+        eq(st.applies.includes('22V253000'), false, 'still applies');
+        eq(st.fixed.includes('22V253000'), true, 'fixed');
+      });
+      await req('PUT', '/api/recalls/state', { vehicle_id: vid, campaign: '22V253000', state: 'review' });
+      check('undo puts it back to "may apply"', () => {
+        const st = stored();
+        eq(st.fixed.length + st.applies.length + st.not_applicable.length, 0, 'any state left');
+      });
+      r = await req('PUT', '/api/recalls/state', { vehicle_id: vid, campaign: '22V253000', state: 'ignored' });
+      check('an unknown recall state is refused', () => eq(r.status, 400, 'status'));
+    }
+
     // --- Cross-cutting reads ----------------------------------------------
     r = await req('GET', `/api/logbook?vehicle_id=${vid}`);
     check('the logbook merges every record type', () => {

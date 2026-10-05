@@ -5,7 +5,8 @@ import StatsCard from '../components/StatsCard'
 import SpendChart from '../components/SpendChart'
 import StatusBadge from '../components/StatusBadge'
 import { internalPath } from '../lib/links'
-import { localDate } from '../lib/dates'
+import { formatDue, monthYear } from '../lib/dates'
+import { logRecallAsService } from '../lib/recalls'
 
 const money = (v, dp = 0) =>
   v == null ? '—' : '$' + Number(v).toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp })
@@ -50,35 +51,8 @@ export default function Dashboard() {
       .then(r => r.ok ? r.json() : null).then(setRecalls).catch(() => {})
   }, [selectedVehicleId])
 
-  const dismissRecall = (campaign, dismiss = true) => {
-    setRecalls(prev => {
-      if (!prev) return prev
-      const list = prev.recalls.map(r => r.campaign === campaign ? { ...r, dismissed: dismiss } : r)
-      return { ...prev, recalls: list }
-    })
-    fetch('/api/recalls/dismiss', {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ vehicle_id: selectedVehicleId, campaign, dismiss }),
-    }).catch(() => {})
-  }
-
   const trackRecall = async (r) => {
-    const notes = [
-      r.component ? `Component: ${r.component}` : null,
-      r.summary ? `\n${r.summary}` : null,
-      r.remedy ? `\nRemedy: ${r.remedy}` : null,
-    ].filter(Boolean).join('')
-    const res = await fetch('/api/maintenance', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_vehicle_id: selectedVehicleId,
-        service_type: r.campaign ? `Recall ${r.campaign}` : 'Recall service',
-        date_performed: localDate(),
-        service_provider_type: 'dealership',
-        notes,
-      }),
-    }).catch(() => null)
-    if (res && res.ok) { dismissRecall(r.campaign, true); navigate('/maintenance') }
+    if (await logRecallAsService(selectedVehicleId, r)) navigate('/maintenance')
   }
 
   if (!selectedVehicleId) {
@@ -93,19 +67,28 @@ export default function Dashboard() {
   if (loading || !overview) return <div className="text-raptor-muted animate-pulse">Loading…</div>
 
   const { vehicle, stats, attention, attentionSummary } = overview
-  const openRecalls = (recalls?.recalls || []).filter(r => !r.dismissed)
-
-  // Recalls merge into the same attention list so there's one place to look
-  const allAttention = [
-    ...openRecalls.map(r => ({
-      severity: 'critical', category: 'recall',
-      title: r.component || 'Open recall',
-      detail: r.campaign ? `NHTSA ${r.campaign}` : '',
-      recall: r,
-    })),
-    ...attention,
-  ]
-  const criticalCount = attentionSummary.critical + openRecalls.length
+  // Recalls come from NHTSA by make, model, and year — they *may* apply.
+  // Only ones the owner has confirmed against their VIN are urgent; the rest
+  // are a single review item, after things that are known to need doing
+  // (an overdue oil change must never sit below a list of maybes).
+  const confirmedRecalls = (recalls?.recalls || []).filter(r => r.state === 'applies')
+  const reviewCount = recalls?.counts?.review || 0
+  const confirmedItems = confirmedRecalls.map(r => ({
+    severity: 'critical', category: 'recall',
+    title: `Recall: ${r.title}`,
+    detail: `Confirmed for your truck · NHTSA ${r.campaign} · not yet repaired`,
+    recall: r, link: '/recalls',
+  }))
+  const reviewItem = reviewCount > 0 ? [{
+    severity: 'info', category: 'recall',
+    title: `${reviewCount} recall${reviewCount === 1 ? '' : 's'} may apply to ${recalls.year} ${recalls.model}s`,
+    detail: 'NHTSA lists recalls by model year, not by truck. Check your VIN to see which affect yours.',
+    link: '/recalls',
+  }] : []
+  const critical = attention.filter(a => a.severity === 'critical')
+  const rest = attention.filter(a => a.severity !== 'critical')
+  const allAttention = [...critical, ...confirmedItems, ...rest, ...reviewItem]
+  const criticalCount = attentionSummary.critical + confirmedItems.length
   const shownAttention = showAllAttention ? allAttention : allAttention.slice(0, 6)
 
   const upcoming = (forecast?.items || []).filter(i => i.projectedDate && !i.overdue).slice(0, 4)
@@ -178,43 +161,35 @@ export default function Dashboard() {
 
         {allAttention.length === 0 ? (
           <p className="text-sm text-raptor-secondary">
-            Nothing overdue or expiring. Service, warranties, registration, and recalls are all current.
+            Nothing overdue or expiring. Service, warranties, and registration are current, and no recalls are waiting on you.
           </p>
         ) : (
           <div className="space-y-2">
             {shownAttention.map((a, i) => {
               const critical = a.severity === 'critical'
+              const info = a.severity === 'info'
               const body = (
                 <div className={`px-3 py-2 rounded-lg border flex items-start gap-2.5 ${
                   critical
                     ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/40'
-                    : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-900/40'
+                    : info
+                      ? 'bg-raptor-elevated border-raptor-border'
+                      : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-900/40'
                 }`}>
-                  <svg className={`w-4 h-4 mt-0.5 flex-shrink-0 ${critical ? 'text-red-500' : 'text-yellow-600 dark:text-yellow-500'}`}
+                  <svg className={`w-4 h-4 mt-0.5 flex-shrink-0 ${critical ? 'text-red-500' : info ? 'text-raptor-muted' : 'text-yellow-600 dark:text-yellow-500'}`}
                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={CATEGORY_ICON[a.category] || CATEGORY_ICON.service} />
                   </svg>
                   <div className="flex-1 min-w-0">
-                    <div className={`text-sm font-medium ${critical ? 'text-red-700 dark:text-red-400' : 'text-yellow-700 dark:text-yellow-500'}`}>
+                    <div className={`text-sm font-medium ${critical ? 'text-red-700 dark:text-red-400' : info ? 'text-raptor-primary' : 'text-yellow-700 dark:text-yellow-500'}`}>
                       {a.title}
                     </div>
                     {a.detail && <div className="text-xs text-raptor-secondary mt-0.5">{a.detail}</div>}
                     {a.recall && (
                       <button onClick={e => { e.preventDefault(); trackRecall(a.recall) }}
-                        className="text-xs text-raptor-accent hover:underline mt-1">+ Log as service</button>
+                        className="text-xs text-raptor-accent hover:underline mt-1">+ Log the repair</button>
                     )}
                   </div>
-                  {a.recall && (
-                    <button
-                      onClick={e => { e.preventDefault(); dismissRecall(a.recall.campaign, true) }}
-                      className="text-raptor-muted hover:text-raptor-primary p-1 rounded flex-shrink-0"
-                      title="Dismiss this recall"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  )}
                 </div>
               )
               return internalPath(a.link)
@@ -242,7 +217,9 @@ export default function Dashboard() {
               <div key={u.id} className="flex items-center gap-3 text-sm">
                 <span className="flex-1 min-w-0 text-raptor-primary truncate">{u.service_type}</span>
                 {u.estimatedCost != null && <span className="text-xs text-raptor-secondary flex-shrink-0">~{money(u.estimatedCost)}</span>}
-                <span className="text-xs text-raptor-muted flex-shrink-0 w-24 text-right">in {u.daysOut} days</span>
+                <span className="text-xs text-raptor-muted flex-shrink-0 text-right">
+                  {formatDue(u.daysOut)}{u.daysOut >= 730 && u.projectedDate ? ` (${monthYear(u.projectedDate)})` : ''}
+                </span>
               </div>
             ))}
           </div>

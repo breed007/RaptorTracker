@@ -296,6 +296,14 @@ function runMigrations(db) {
   if (!vCols2.includes('aux_source')) db.prepare('ALTER TABLE vehicles ADD COLUMN aux_source TEXT').run();
   if (!vCols2.includes('aux_source_confidence')) db.prepare('ALTER TABLE vehicles ADD COLUMN aux_source_confidence TEXT').run();
   const uvCols3 = db.prepare('PRAGMA table_info(user_vehicles)').all().map(c => c.name);
+  // Recalls the owner has confirmed apply to their truck (by VIN check);
+  // dismissed_recalls already holds the ones that don't.
+  if (!uvCols3.includes('fixed_recalls')) {
+    db.prepare("ALTER TABLE user_vehicles ADD COLUMN fixed_recalls TEXT NOT NULL DEFAULT '[]'").run();
+  }
+  if (!uvCols3.includes('confirmed_recalls')) {
+    db.prepare("ALTER TABLE user_vehicles ADD COLUMN confirmed_recalls TEXT NOT NULL DEFAULT '[]'").run();
+  }
   if (!uvCols3.includes('aux_fuse_overrides')) {
     db.prepare("ALTER TABLE user_vehicles ADD COLUMN aux_fuse_overrides TEXT NOT NULL DEFAULT '{}'").run();
   }

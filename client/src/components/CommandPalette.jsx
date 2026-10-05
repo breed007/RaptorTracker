@@ -11,6 +11,7 @@ const PAGES = [
   { title: 'Add a Mod', link: '/mods/new' },
   { title: 'AUX Panel', link: '/aux' },
   { title: 'Maintenance', link: '/maintenance' },
+  { title: 'Recalls', link: '/recalls' },
   { title: 'Tire Sets', link: '/tires' },
   { title: 'Wishlist', link: '/wishlist' },
   { title: 'Share Build', link: '/share' },

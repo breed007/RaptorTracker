@@ -24,6 +24,7 @@ import QuickAdd from './pages/QuickAdd'
 import Outings from './pages/Outings'
 import Account from './pages/Account'
 import ShareBuild from './pages/ShareBuild'
+import Recalls from './pages/Recalls'
 
 function AppRoutes() {
   const { user, authLoading, userVehicles, vehiclesLoaded } = useApp()
@@ -56,6 +57,7 @@ function AppRoutes() {
         <Route path="/aux" element={<AuxPanel />} />
         <Route path="/share" element={<ShareBuild />} />
         <Route path="/maintenance" element={<Maintenance />} />
+        <Route path="/recalls" element={<Recalls />} />
         <Route path="/wishlist" element={<Wishlist />} />
         <Route path="/fuel" element={<FuelLog />} />
         <Route path="/tires" element={<TireSets />} />
