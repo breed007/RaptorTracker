@@ -120,6 +120,7 @@ router.get('/', (req, res) => {
       make: v.make, model: v.model, generation: v.generation, variant: v.variant,
       color: v.color, profile_photo: v.profile_photo,
       current_mileage: v.current_mileage,
+      is_sample: v.is_sample === 1,
       milesPerMonth,
     },
     attention,

@@ -23,7 +23,15 @@ const CATEGORY_ICON = {
 }
 
 export default function Dashboard() {
-  const { selectedVehicleId } = useApp()
+  const { selectedVehicleId, refreshVehicles } = useApp()
+  const [removingSample, setRemovingSample] = useState(false)
+  const removeSample = async () => {
+    setRemovingSample(true)
+    try {
+      await fetch('/api/sample', { method: 'DELETE' })
+      await refreshVehicles()
+    } finally { setRemovingSample(false) }
+  }
   const navigate = useNavigate()
 
   const [overview, setOverview] = useState(null)
@@ -95,6 +103,19 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-5">
+      {vehicle.is_sample && (
+        <div className="card p-4 border-l-4 border-l-raptor-accent flex flex-wrap items-center gap-3">
+          <p className="flex-1 text-sm text-raptor-secondary min-w-[14rem]">
+            <span className="font-semibold text-raptor-primary">This is a sample truck.</span>{' '}
+            Its records are made up so you can see how everything fits together. Add your own truck in{' '}
+            <Link to="/garage" className="text-raptor-accent hover:underline">My Garage</Link>, then remove this one.
+          </p>
+          <button type="button" onClick={removeSample} disabled={removingSample} className="btn-secondary text-sm disabled:opacity-50">
+            {removingSample ? 'Removing…' : 'Remove sample truck'}
+          </button>
+        </div>
+      )}
+
       {/* ── Hero ── */}
       <div className="card overflow-hidden">
         <div className="flex flex-col sm:flex-row">

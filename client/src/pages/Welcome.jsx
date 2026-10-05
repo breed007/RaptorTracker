@@ -29,7 +29,7 @@ export default function Welcome() {
 
   useEffect(() => {
     fetch('/api/vehicles').then(r => r.json()).then(setRefVehicles).catch(() => {})
-    fetch('/api/trash').then(r => r.json()).then(d => setTrashed((d.items || []).filter(i => i.table_name === 'user_vehicles'))).catch(() => {})
+    fetch('/api/trash').then(r => r.json()).then(d => setTrashed((d.items || []).filter(i => i.table_name === 'user_vehicles' && i.kind !== 'Sample truck'))).catch(() => {})
     fetch('/api/settings/units').then(r => r.json()).then(async (d) => {
       if (d.chosen) return
       const locale = navigator.language || 'en-US'
@@ -98,6 +98,26 @@ export default function Welcome() {
     if (!res.ok) { setError(body.error || 'Could not restore it.'); return }
     await refreshVehicles()
     if (body.restored?.id) selectVehicle(body.restored.id)
+  }
+
+  const trySample = async () => {
+    setError(''); setSaving(true)
+    try {
+      if (units) {
+        const unitsRes = await fetch('/api/settings/units', {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(units),
+        })
+        if (!unitsRes.ok) { setError((await unitsRes.json().catch(() => ({}))).error || 'Could not save your units.'); return }
+        await refreshUnits()
+      }
+      const res = await fetch('/api/sample', { method: 'POST' })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(body.error || 'Could not create the sample truck.'); return }
+      await refreshVehicles()
+      selectVehicle(body.id)
+    } catch {
+      setError('Could not create the sample truck — check your connection.')
+    } finally { setSaving(false) }
   }
 
   const vinValid = VIN_RE.test(form.vin)
@@ -205,6 +225,14 @@ export default function Welcome() {
             You can add more vehicles, photos, and purchase details later in My Garage.
           </p>
         </form>
+
+        <div className="text-center text-sm text-raptor-secondary">
+          Not ready yet?{' '}
+          <button type="button" onClick={trySample} disabled={saving} className="text-raptor-accent font-medium hover:underline disabled:opacity-50">
+            Look around with a sample truck
+          </button>
+          <span className="block text-xs text-raptor-muted mt-1">Made-up records you can remove in one click.</span>
+        </div>
       </div>
     </div>
   )

@@ -423,6 +423,36 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
       });
     }
 
+    // --- Sample truck ---------------------------------------------------------
+    r = await req('POST', '/api/sample');
+    const sampleId = r.body.id;
+    check('the sample truck is created with a history', () => {
+      eq(r.status, 200, 'status'); truthy(sampleId, 'id');
+    });
+    r = await req('GET', '/api/user-vehicles');
+    check('the sample is flagged and has a believable mileage', () => {
+      const v = r.body.find(x => x.id === sampleId);
+      eq(v.is_sample, 1, 'is_sample'); eq(v.nickname, 'Sample Raptor', 'nickname');
+      truthy(v.current_mileage > 25000 && v.current_mileage < 40000, `mileage ${v.current_mileage}`);
+      truthy(v.mod_count >= 6, 'mods');
+    });
+    r = await req('GET', `/api/fuel?vehicle_id=${sampleId}`);
+    check('the sample has a year of fill-ups with an average', () => {
+      truthy(r.body.entries.length >= 15, `fill-ups: ${r.body.entries.length}`);
+      truthy(r.body.stats.avgMpg > 10 && r.body.stats.avgMpg < 20, `avg ${r.body.stats.avgMpg}`);
+    });
+    r = await req('GET', `/api/aux-capacity?vehicle_id=${sampleId}`);
+    check("the sample's ordered roof bar is flagged as too big for any switch", () => {
+      const bar = (r.body.needsHome || []).find(i => /Roof Bar/.test(i.name));
+      truthy(bar && bar.tooBig, 'roof bar flagged');
+    });
+    r = await req('POST', '/api/sample');
+    check('asking twice keeps one sample', () => { eq(r.body.id, sampleId, 'same id'); eq(r.body.existing, true, 'existing'); });
+    r = await req('DELETE', '/api/sample');
+    check('removing the sample sends it to the trash', () => eq(r.body.removed, 1, 'removed'));
+    r = await req('GET', '/api/user-vehicles');
+    check('the sample is gone from the garage', () => eq(r.body.some(x => x.id === sampleId), false, 'still listed'));
+
     // --- Update check, against a stand-in for GitHub ----------------------
     {
       const http = require('http');

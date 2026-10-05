@@ -26,7 +26,7 @@ const VERSION = 3;
 const SKIP_TABLES = new Set(['sent_reminders', 'trash']);
 
 // Columns re-derived on import rather than copied.
-const USER_VEHICLE_SKIP = new Set(['id', 'vehicle_id', 'current_mileage']);
+const USER_VEHICLE_SKIP = new Set(['id', 'vehicle_id', 'current_mileage', 'is_sample']);
 
 const columnsOf = (db, table) => db.prepare(`PRAGMA table_info(${table})`).all().map(c => c.name);
 

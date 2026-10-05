@@ -313,6 +313,7 @@ function runMigrations(db) {
   require('../reference/auxLayouts').syncReferenceAux(db);
 
   require('../services/trash').ensureTable(db);
+  require('../services/sampleTruck').ensureColumn(db);
 
   carryOverTypedMileage(db);
 }
