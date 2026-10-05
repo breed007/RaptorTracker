@@ -3,6 +3,7 @@ import ConfirmModal from '../../components/ConfirmModal'
 import { localDate } from '../../lib/dates'
 import { toast } from '../../lib/toast'
 import OffsiteBackupCard from '../../components/OffsiteBackupCard'
+import { shrinkImage, SCAN } from '../../lib/shrinkImage'
 
 const fmtSize = (b) => b > 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`
 
@@ -95,6 +96,33 @@ export default function BackupSettings() {
   const [cleaning, setCleaning] = useState(false)
   const loadStorage = () => fetch('/api/storage').then(r => (r.ok ? r.json() : null)).then(setStorage).catch(() => {})
   useEffect(() => { loadStorage() }, [])
+  // Photos uploaded before 1.0 went up full-size. Resize them here, in the
+  // browser, and send the smaller copies back.
+  const [large, setLarge] = useState(null)
+  const [shrinking, setShrinking] = useState(null) // { done, total, saved }
+  const loadLarge = () => fetch('/api/storage/large-photos').then(r => (r.ok ? r.json() : null)).then(setLarge).catch(() => {})
+  useEffect(() => { loadLarge() }, [])
+  const shrinkExisting = async () => {
+    const files = large?.files || []
+    let saved = 0
+    for (let i = 0; i < files.length; i++) {
+      setShrinking({ done: i, total: files.length, saved })
+      try {
+        const blob = await (await fetch(`/uploads/${encodeURIComponent(files[i].name)}`)).blob()
+        const original = new File([blob], files[i].name, { type: 'image/jpeg' })
+        const small = await shrinkImage(original, { ...SCAN, force: true })
+        if (small !== original && small.size < original.size) {
+          const res = await fetch(`/api/storage/photos/${encodeURIComponent(files[i].name)}`, { method: 'PUT', headers: { 'Content-Type': 'image/jpeg' }, body: small })
+          const body = await res.json().catch(() => ({}))
+          if (body.replaced) saved += body.before - body.after
+        }
+      } catch { /* leave that one as it is */ }
+    }
+    setShrinking(null)
+    toast(`Shrunk ${files.length} photo${files.length === 1 ? '' : 's'}, saving ${fmtSize(saved)}.`, { tone: 'success' })
+    loadLarge(); loadStorage()
+  }
+
   const cleanOrphans = async () => {
     setCleaning(true)
     try {
@@ -234,6 +262,19 @@ export default function BackupSettings() {
             </div>
           ) : (
             <p className="text-xs text-raptor-muted pt-2 border-t border-raptor-border">Every uploaded file belongs to a record.</p>
+          )}
+          {large?.count > 0 && (
+            <div className="pt-2 border-t border-raptor-border space-y-2">
+              <p className="text-sm text-raptor-secondary">
+                {large.count} photo{large.count === 1 ? ' was' : 's were'} uploaded full-size ({fmtSize(large.bytes)}).
+                Shrinking resizes {large.count === 1 ? 'it' : 'them'} to 3000 pixels on the long side, which keeps receipts
+                legible, frees most of that space, and lets {large.count === 1 ? 'it' : 'them'} appear in PDFs. The originals are
+                replaced, so take a backup first if you want to keep them.
+              </p>
+              <button onClick={shrinkExisting} disabled={!!shrinking} className="btn-secondary text-sm disabled:opacity-50">
+                {shrinking ? `Shrinking ${shrinking.done + 1} of ${shrinking.total}…` : 'Shrink existing photos'}
+              </button>
+            </div>
           )}
         </div>
       )}

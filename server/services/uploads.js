@@ -48,4 +48,10 @@ function detachUpload(uploadDir, list, requestedName) {
   return list.filter(p => p !== url);
 }
 
-module.exports = { UPLOAD_EXTS, isAllowedUpload, serveUploads, detachUpload };
+// Photos, PDFs, and office files are already compressed; deflating them again
+// costs a Raspberry Pi minutes of CPU per backup for no size gain.
+const PRECOMPRESSED = /\.(jpe?g|png|webp|heic|heif|gif|pdf|zip|docx|xlsx|mp4|mov)$/i;
+const storeInZip = (name) => PRECOMPRESSED.test(String(name));
+
+module.exports = {
+  storeInZip, UPLOAD_EXTS, isAllowedUpload, serveUploads, detachUpload };

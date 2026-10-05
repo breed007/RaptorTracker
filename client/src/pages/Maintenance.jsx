@@ -4,6 +4,7 @@ import { useApp, useUnits } from '../context/AppContext'
 import ConfirmModal from '../components/ConfirmModal'
 import Lightbox from '../components/Lightbox'
 import { formatDue } from '../lib/dates'
+import { shrinkAll, SCAN } from '../lib/shrinkImage'
 
 // ── Interval status helpers ──────────────────────────────────────────────────
 
@@ -604,7 +605,7 @@ export default function Maintenance() {
     setUploading(attachTarget)
     setAttachError('')
     const formData = new FormData()
-    files.forEach(f => formData.append('attachments', f))
+    for (const f of await shrinkAll(files, SCAN)) formData.append('attachments', f)
     try {
       const res = await fetch(`/api/maintenance/${attachTarget}/attachments`, { method: 'POST', body: formData })
       if (!res.ok) {

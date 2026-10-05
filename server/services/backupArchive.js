@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const archiver = require('archiver');
+const { storeInZip } = require('./uploads');
 const { getDb, DB_PATH, DATA_DIR } = require('../db');
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
@@ -14,7 +15,7 @@ function pipeBackupTo(outStream) {
     // Flush the WAL into the main db file so the snapshot is consistent
     try { getDb().pragma('wal_checkpoint(TRUNCATE)'); } catch (_) { /* ignore */ }
 
-    const archive = archiver('zip', { zlib: { level: 9 } });
+    const archive = archiver('zip', { zlib: { level: 6 } });
     archive.on('error', reject);
     outStream.on('error', reject);
     outStream.on('close', resolve);
@@ -22,7 +23,7 @@ function pipeBackupTo(outStream) {
 
     archive.pipe(outStream);
     if (fs.existsSync(DB_PATH)) archive.file(DB_PATH, { name: 'raptortracker.db' });
-    if (fs.existsSync(UPLOAD_DIR)) archive.directory(UPLOAD_DIR, 'uploads');
+    if (fs.existsSync(UPLOAD_DIR)) archive.directory(UPLOAD_DIR, 'uploads', entry => ({ ...entry, store: storeInZip(entry.name) }));
     archive.append(
       JSON.stringify({ created: new Date().toISOString(), kind: 'raptortracker-backup', version: 1 }, null, 2),
       { name: 'backup-manifest.json' }

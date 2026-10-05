@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import Dialog from './Dialog'
+import { shrinkImage, SCAN } from '../lib/shrinkImage'
 
 const DOC_TYPES = [
   { id: 'title', label: 'Title' },
@@ -56,7 +57,7 @@ export default function DocumentVault({ vehicle, onClose }) {
     setUploading(true); setError('')
     try {
       const fd = new FormData()
-      fd.append('file', file)
+      fd.append('file', await shrinkImage(file, SCAN))
       fd.append('user_vehicle_id', vehicle.id)
       fd.append('name', form.name || file.name)
       fd.append('doc_type', form.doc_type)

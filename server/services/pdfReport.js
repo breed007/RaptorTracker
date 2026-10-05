@@ -139,11 +139,28 @@ function table(doc, columns, rows, { size = 8.5 } = {}) {
   doc.moveDown(0.5);
 }
 
-/** Photos in a row of up to three, scaled to fit. Missing or unreadable files are skipped. */
+// pdfkit embeds an image file whole. A full-size phone photo is 5-12 MB; a
+// build sheet of them can need several hundred MB of memory, which is more
+// than a 512 MB Raspberry Pi has to spare. Photos uploaded through the app are
+// resized first; anything still this large (older uploads) is left out.
+const MAX_PDF_IMAGE_BYTES = 4 * 1024 * 1024;
+
+/**
+ * Photos in a row of up to three, scaled to fit. Missing or unreadable files
+ * are skipped. Returns how many were left out for being too large.
+ */
 function photoRow(doc, files) {
   const fs = require('fs');
-  const usable = files.filter(f => { try { return fs.statSync(f).isFile(); } catch (_) { return false; } }).slice(0, 3);
-  if (!usable.length) return;
+  let tooLarge = 0;
+  const usable = files.filter(f => {
+    try {
+      const st = fs.statSync(f);
+      if (!st.isFile()) return false;
+      if (st.size > MAX_PDF_IMAGE_BYTES) { tooLarge++; return false; }
+      return true;
+    } catch (_) { return false; }
+  }).slice(0, 3);
+  if (!usable.length) return tooLarge;
   const w = (contentWidth(doc) - 20) / 3;
   const h = w * 0.66;
   ensureSpace(doc, h + 10);
@@ -152,6 +169,7 @@ function photoRow(doc, files) {
     try { doc.image(f, MARGIN + i * (w + 10), top, { fit: [w, h], align: 'center', valign: 'center' }); } catch (_) { /* not an image pdfkit reads */ }
   });
   doc.y = top + h + 8;
+  return tooLarge;
 }
 
 /** Footer on every page: who made it, and page x of y. Call last. */
@@ -168,4 +186,4 @@ function finish(doc, footer) {
   doc.end();
 }
 
-module.exports = { COLOR, MARGIN, createDoc, banner, section, paragraph, facts, table, photoRow, finish, ensureSpace, formatDay, formatMonth };
+module.exports = { MAX_PDF_IMAGE_BYTES, COLOR, MARGIN, createDoc, banner, section, paragraph, facts, table, photoRow, finish, ensureSpace, formatDay, formatMonth };

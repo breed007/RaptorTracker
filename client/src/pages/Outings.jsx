@@ -5,6 +5,7 @@ import ConfirmModal from '../components/ConfirmModal'
 import StatsCard from '../components/StatsCard'
 import { localDate } from '../lib/dates'
 import { currentUnits } from '../lib/units'
+import { shrinkAll, PHOTO } from '../lib/shrinkImage'
 
 const DIFFICULTY_CLS = {
   easy: 'bg-green-500/15 text-green-800 dark:text-green-400',
@@ -106,7 +107,7 @@ export default function Outings() {
     const files = e.target.files
     if (!files?.length || !photoTarget) return
     const fd = new FormData()
-    for (const f of files) fd.append('photos', f)
+    for (const f of await shrinkAll(files, PHOTO)) fd.append('photos', f)
     await fetch(`/api/outings/${photoTarget}/photos`, { method: 'POST', body: fd })
     e.target.value = ''; setPhotoTarget(null); load()
   }

@@ -5,6 +5,7 @@ import StatusBadge from '../components/StatusBadge'
 import PhotoGrid from '../components/PhotoGrid'
 import ConfirmModal from '../components/ConfirmModal'
 import { currentUnits } from '../lib/units'
+import { shrinkAll, PHOTO, SCAN } from '../lib/shrinkImage'
 
 const CATEGORIES = ['Armor','Audio','Bed_Accessories','Bumpers','Electrical','Engine','Interior','Lighting','Performance','Recovery','Suspension','Tires_Wheels','Other']
 const STATUSES = ['Researching','Ordered','In_Transit','Installed','Removed']
@@ -116,7 +117,7 @@ export default function ModDetail({ isNew }) {
     }
     setUploading(true)
     const fd = new FormData()
-    for (const f of files) fd.append('photos', f)
+    for (const f of await shrinkAll(files, PHOTO)) fd.append('photos', f)
     try {
       const res = await fetch('/api/upload', { method: 'POST', body: fd })
       const data = await res.json()
@@ -135,7 +136,7 @@ export default function ModDetail({ isNew }) {
     if (!files || files.length === 0) return
     setReceiptUploading(true)
     const fd = new FormData()
-    for (const f of files) fd.append('attachments', f)
+    for (const f of await shrinkAll(files, SCAN)) fd.append('attachments', f)
     try {
       const res = await fetch(`/api/mods/${id}/attachments`, { method: 'POST', body: fd })
       const data = await res.json()

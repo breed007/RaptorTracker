@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const archiver = require('archiver');
 const { openZip } = require('../services/zipReader');
-const { isAllowedUpload } = require('../services/uploads');
+const { isAllowedUpload, storeInZip } = require('../services/uploads');
 const { DATA_DIR } = require('../db');
 const multer = require('multer');
 const { randomUUID: uuidv4 } = require('crypto');
@@ -41,7 +41,7 @@ router.get('/:id/export', (req, res) => {
   archive.append(JSON.stringify(result.manifest, null, 2), { name: 'vehicle.json' });
   for (const name of result.files) {
     const filePath = path.join(UPLOAD_DIR, name);
-    if (isAllowedUpload(name) && fs.existsSync(filePath)) archive.file(filePath, { name: `files/${name}` });
+    if (isAllowedUpload(name) && fs.existsSync(filePath)) archive.file(filePath, { name: `files/${name}`, store: storeInZip(name) });
   }
   archive.finalize();
 });

@@ -6,6 +6,7 @@ import ConfirmModal from '../components/ConfirmModal'
 import DocumentVault from '../components/DocumentVault'
 import Dialog from '../components/Dialog'
 import { localDate } from '../lib/dates'
+import { shrinkAll, PHOTO } from '../lib/shrinkImage'
 
 // Valid VIN: 17 chars, no I O Q
 const VIN_RE = /^[A-HJ-NPR-Z0-9]{17}$/
@@ -73,7 +74,7 @@ function VehiclePhotoModal({ vehicle, onClose, onRefresh }) {
     setUploading(true)
     setError('')
     const formData = new FormData()
-    files.forEach(f => formData.append('photos', f))
+    for (const f of await shrinkAll(files, PHOTO)) formData.append('photos', f)
     try {
       const res = await fetch(`/api/user-vehicles/${vehicle.id}/photos`, { method: 'POST', body: formData })
       if (!res.ok) { const d = await res.json(); setError(d.error || 'Upload failed') }

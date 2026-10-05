@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const archiver = require('archiver');
 const { openZip } = require('../services/zipReader');
-const { isAllowedUpload } = require('../services/uploads');
+const { isAllowedUpload, storeInZip } = require('../services/uploads');
 const { DATA_DIR } = require('../db');
 const multer = require('multer');
 const { randomUUID: uuidv4 } = require('crypto');
@@ -112,7 +112,7 @@ router.get('/export/zip', (req, res) => {
   for (const imgName of imageFilenames) {
     const filePath = path.join(UPLOAD_DIR, imgName);
     if (fs.existsSync(filePath)) {
-      archive.file(filePath, { name: `images/${imgName}` });
+      archive.file(filePath, { name: `images/${imgName}`, store: storeInZip(imgName) });
     }
   }
 

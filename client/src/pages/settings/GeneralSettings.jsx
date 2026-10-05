@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import UnitsForm from '../../components/UnitsForm'
 import { toast } from '../../lib/toast'
+import { keepFullSize, setKeepFullSize } from '../../lib/shrinkImage'
 
 const CONVERTED = { distance: 'distance', volume: 'fuel volume and price', pressure: 'tire pressure' }
 
@@ -86,6 +87,31 @@ function UpdatesCard() {
   )
 }
 
+function PhotosCard() {
+  const [full, setFull] = useState(keepFullSize())
+  return (
+    <div className="card p-5 space-y-3">
+      <div className="section-title">Photos</div>
+      <p className="text-sm text-raptor-secondary">
+        Photos are resized to 2560 pixels on the long side before they upload (receipts and documents to 3000),
+        which keeps them sharp while using a fraction of the space. Resizing also removes the location and
+        camera details stored in the photo.
+      </p>
+      <label htmlFor="keep-full-size" className="flex items-start gap-3 cursor-pointer select-none">
+        <input
+          id="keep-full-size" type="checkbox" checked={full}
+          onChange={e => { setKeepFullSize(e.target.checked); setFull(e.target.checked) }}
+          className="w-4 h-4 rounded accent-raptor-accent mt-0.5 cursor-pointer"
+        />
+        <span>
+          <span className="text-sm font-medium text-raptor-primary">Upload full-size photos from this device</span>
+          <span className="block text-xs text-raptor-muted">Original files, location data included. This choice is saved in this browser only.</span>
+        </span>
+      </label>
+    </div>
+  )
+}
+
 export default function GeneralSettings() {
   const { refreshUnits } = useApp()
   const [saved, setSaved] = useState(null)
@@ -157,6 +183,8 @@ export default function GeneralSettings() {
           )}
         </div>
       </div>
+
+      <PhotosCard />
 
       <UpdatesCard />
     </div>

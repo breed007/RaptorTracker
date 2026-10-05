@@ -99,7 +99,12 @@ function photoRow(doc, caption, files) {
   pdf.ensureSpace(doc, 120);
   doc.fillColor(pdf.COLOR.muted).font('Helvetica').fontSize(7.5).text(caption, pdf.MARGIN, doc.y);
   doc.moveDown(0.2);
-  pdf.photoRow(doc, files);
+  const tooLarge = pdf.photoRow(doc, files);
+  if (tooLarge) {
+    doc.fillColor(pdf.COLOR.muted).font('Helvetica').fontSize(7.5)
+      .text(`${tooLarge} photo${tooLarge === 1 ? ' is' : 's are'} too large to include. Shrink existing photos under Settings > Backups to add ${tooLarge === 1 ? 'it' : 'them'}.`, pdf.MARGIN, doc.y);
+    doc.moveDown(0.4);
+  }
 }
 
 function stickerPage(doc, uv) {

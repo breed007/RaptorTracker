@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { currentUnits } from '../lib/units'
 import { localDate } from '../lib/dates'
+import { shrinkImage, SCAN } from '../lib/shrinkImage'
 
 const SERVICE_TYPES = [
   'Oil Change', 'Tire Rotation', 'Air Filter (Engine)', 'Air Filter (Cabin)',
@@ -111,10 +112,11 @@ export default function QuickAdd() {
     setSaving(true); setMsg(null)
     try {
       const fd = new FormData()
+      const file = await shrinkImage(cap.file, SCAN)
       let url
       if (cap.dest === 'document') {
         url = '/api/documents'
-        fd.append('file', cap.file)
+        fd.append('file', file)
         fd.append('user_vehicle_id', selectedVehicleId)
         fd.append('name', cap.name || cap.file.name)
         fd.append('doc_type', cap.docType)
@@ -123,7 +125,7 @@ export default function QuickAdd() {
         url = cap.dest === 'mod'
           ? `/api/mods/${cap.targetId}/attachments`
           : `/api/maintenance/${cap.targetId}/attachments`
-        fd.append('attachments', cap.file)
+        fd.append('attachments', file)
       }
       const res = await fetch(url, { method: 'POST', body: fd })
       const data = await res.json().catch(() => ({}))

@@ -522,6 +522,31 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
       });
     }
 
+    // --- Shrinking photos uploaded full-size ------------------------------------
+    {
+      const big = Buffer.concat([Buffer.from([0xFF, 0xD8, 0xFF, 0xE0]), Buffer.alloc(3 * 1024 * 1024, 7)]);
+      fs.writeFileSync(path.join(process.env.UPLOAD_DIR, 'big-old-photo.jpg'), big);
+      await req('POST', '/api/mods', { user_vehicle_id: vid, part_name: 'Big Photo Mod', category: 'Other', status: 'Installed', photos: ['/uploads/big-old-photo.jpg'] });
+      r = await req('GET', '/api/storage/large-photos');
+      check('large photos in use are listed for shrinking', () => truthy(r.body.files.some(f => f.name === 'big-old-photo.jpg'), 'listed'));
+      const put = async (name, body, type = 'image/jpeg') => {
+        const res = await fetch(`${base}/api/storage/photos/${encodeURIComponent(name)}`, { method: 'PUT', headers: { Cookie: cookie, 'Content-Type': type }, body });
+        return { status: res.status, body: await res.json().catch(() => ({})) };
+      };
+      let p = await put('../raptortracker.db', Buffer.from([0xFF, 0xD8, 1, 2]));
+      check('a replacement outside uploads is refused', () => truthy(p.status === 400 || p.status === 404, `status ${p.status}`));
+      p = await put('big-old-photo.jpg', Buffer.from('not a jpeg at all'));
+      check('a replacement that is not a JPEG is refused', () => eq(p.status, 400, 'status'));
+      p = await put('big-old-photo.jpg', Buffer.concat([big, Buffer.alloc(10)]));
+      check('a larger replacement is ignored', () => eq(p.body.replaced, false, 'replaced'));
+      const small = Buffer.concat([Buffer.from([0xFF, 0xD8, 0xFF, 0xE0]), Buffer.alloc(300 * 1024, 3)]);
+      p = await put('big-old-photo.jpg', small);
+      check('a smaller JPEG replaces the photo in place', () => {
+        eq(p.body.replaced, true, 'replaced');
+        eq(fs.statSync(path.join(process.env.UPLOAD_DIR, 'big-old-photo.jpg')).size, small.length, 'new size');
+      });
+    }
+
     // --- Factory fluids reference --------------------------------------------------
     r = await req('GET', `/api/specs/factory?vehicle_id=${vid}`);
     check("the truck's generation has Ford's figures with the manual cited", () => {
