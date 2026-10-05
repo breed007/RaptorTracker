@@ -185,6 +185,42 @@ try {
     if (Object.keys(FLUIDS).length !== REFERENCE_VEHICLES.length) throw new Error('fluids for a generation that does not exist');
   });
 
+  // Accessibility basics that are easy to lose in a new form. The browser audit
+  // (axe) found these; this keeps them from coming back.
+  check('form labels are tied to their inputs, and icon-only controls have names', () => {
+    const fs = require('fs'); const path = require('path');
+    const files = [];
+    const walk = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else if (p.endsWith('.jsx')) files.push(p); } };
+    walk(path.join(__dirname, '..', 'client', 'src'));
+    const problems = [];
+    const tagEnd = (s, from) => { let depth = 0; for (let i = from; i < s.length; i++) { const c = s[i]; if (c === '{') depth++; else if (c === '}') depth--; else if (c === '>' && depth === 0) return i; } return -1; };
+    for (const f of files) {
+      const s = fs.readFileSync(f, 'utf8');
+      const where = (i) => `${path.relative(path.join(__dirname, '..'), f)}:${s.slice(0, i).split('\n').length}`;
+      for (const m of s.matchAll(/<label\b([^>]*)>/g)) {
+        if (/htmlFor/.test(m[1])) continue;
+        const close = s.indexOf('</label>', m.index);
+        if (/<(input|select|textarea)\b/.test(s.slice(m.index, close))) continue; // wraps its control
+        problems.push(`${where(m.index)} label without htmlFor`);
+      }
+      for (const m of s.matchAll(/<select\s/g)) { // a real tag has attributes; '<select>' in a comment doesn't
+        const tag = s.slice(m.index, tagEnd(s, m.index) + 1);
+        if (!/\bid=|aria-label/.test(tag)) problems.push(`${where(m.index)} select without id or aria-label`);
+      }
+      for (const m of s.matchAll(/<(button|a|Link)\b/g)) {
+        const end = tagEnd(s, m.index);
+        const opening = s.slice(m.index, end + 1);
+        if (opening.endsWith('/>') || /aria-label/.test(opening)) continue;
+        const close = s.indexOf(`</${m[1]}>`, end);
+        const inner = s.slice(end + 1, close);
+        if (new RegExp(`<${m[1]}\\b`).test(inner)) continue;
+        const text = inner.replace(/<svg[\s\S]*?<\/svg>/g, '').replace(/<[^>]+>/g, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '').trim();
+        if (!text) problems.push(`${where(m.index)} icon-only ${m[1]} without aria-label`);
+      }
+    }
+    if (problems.length) throw new Error(`\n    ${problems.slice(0, 15).join('\n    ')}`);
+  });
+
   check('reference corrections reach an existing install', () => {
     const db = getDb();
     db.prepare("UPDATE vehicles SET horsepower = 700, torque = 645 WHERE model = 'F-150 Raptor' AND generation = 'Gen 3'").run();

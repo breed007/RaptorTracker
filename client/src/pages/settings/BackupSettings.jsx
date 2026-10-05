@@ -118,15 +118,15 @@ export default function BackupSettings() {
 
         {backupMsg && (
           <div className={`rounded-lg px-3 py-2 text-sm ${backupMsg.type === 'ok'
-            ? 'border border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400'
-            : 'border border-red-500/30 bg-red-500/10 text-red-500 dark:text-red-400'}`}>
+            ? 'border border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400'
+            : 'border border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300'}`}>
             {backupMsg.text}
           </div>
         )}
 
         <div className="flex flex-wrap gap-3">
           <button onClick={handleBackup} className="btn-primary text-sm flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
             Download Backup
@@ -171,8 +171,8 @@ export default function BackupSettings() {
 
           <div className="flex flex-wrap gap-4">
             <div>
-              <label className="label">Hour (0–23)</label>
-              <input
+              <label htmlFor="backup-hour" className="label">Hour (0–23)</label>
+              <input id="backup-hour"
                 type="number" min="0" max="23" value={bset.hour}
                 onChange={e => setBset(s => ({ ...s, hour: e.target.value }))}
                 onBlur={e => saveBackupSettings({ hour: e.target.value })}
@@ -180,8 +180,8 @@ export default function BackupSettings() {
               />
             </div>
             <div>
-              <label className="label">Keep last</label>
-              <input
+              <label htmlFor="backup-keep" className="label">Keep last</label>
+              <input id="backup-keep"
                 type="number" min="1" max="90" value={bset.keep}
                 onChange={e => setBset(s => ({ ...s, keep: e.target.value }))}
                 onBlur={e => saveBackupSettings({ keep: e.target.value })}
@@ -203,7 +203,7 @@ export default function BackupSettings() {
                   <div key={b.name} className="flex items-center gap-3 text-xs py-1">
                     <span className="text-raptor-secondary truncate flex-1">{b.name}</span>
                     <span className="text-raptor-muted flex-shrink-0">{fmtSize(b.size)}</span>
-                    <a href={`/api/backup/file/${encodeURIComponent(b.name)}`} className="text-raptor-accent hover:underline flex-shrink-0">Download</a>
+                    <a href={`/api/backup/file/${encodeURIComponent(b.name)}`} className="text-raptor-link underline underline-offset-2 hover:no-underline flex-shrink-0">Download</a>
                     <button onClick={() => deleteStoredBackup(b.name)} className="text-raptor-muted hover:text-red-500 flex-shrink-0">Delete</button>
                   </div>
                 ))}

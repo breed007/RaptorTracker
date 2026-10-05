@@ -34,7 +34,7 @@ export default function Toaster() {
             <button
               type="button"
               onClick={() => { dismiss(item.id); item.action.onClick() }}
-              className="text-sm font-semibold text-raptor-accent hover:underline -my-0.5 px-1"
+              className="text-sm font-semibold text-raptor-link underline underline-offset-2 hover:no-underline -my-0.5 px-1"
             >
               {item.action.label}
             </button>

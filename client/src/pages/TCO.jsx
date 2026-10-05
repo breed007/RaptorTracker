@@ -123,7 +123,7 @@ export default function TCO() {
         </button>
       </div>
 
-      {error && <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>}
+      {error && <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-400">{error}</div>}
       {loading && !data ? <div className="text-raptor-muted animate-pulse text-sm">Loading…</div> : null}
 
       {/* Financing editor */}
@@ -138,7 +138,7 @@ export default function TCO() {
                   onClick={() => setF('ownership_type', o.value)}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
                     fin.ownership_type === o.value
-                      ? 'bg-raptor-accent text-white border-raptor-accent'
+                      ? 'bg-raptor-accent text-raptor-on-accent border-raptor-accent'
                       : 'border-raptor-border text-raptor-secondary hover:text-raptor-primary'
                   }`}
                 >{o.label}</button>
@@ -148,34 +148,34 @@ export default function TCO() {
             {fin.ownership_type === 'owned' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="label">Purchase Price</label>
-                  <input type="number" step="0.01" value={fin.purchase_price} onChange={e => setF('purchase_price', e.target.value)} className="input-field" placeholder="e.g. 78000" />
+                  <label htmlFor="t-c-o-purchase-price" className="label">Purchase Price</label>
+                  <input id="t-c-o-purchase-price" type="number" step="0.01" value={fin.purchase_price} onChange={e => setF('purchase_price', e.target.value)} className="input-field" placeholder="e.g. 78000" />
                 </div>
               </div>
             )}
 
             {fin.ownership_type === 'loan' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><label className="label">Lender</label><input value={fin.loan_lender} onChange={e => setF('loan_lender', e.target.value)} className="input-field" placeholder="e.g. Ford Credit" /></div>
-                <div><label className="label">Purchase Price</label><input type="number" step="0.01" value={fin.purchase_price} onChange={e => setF('purchase_price', e.target.value)} className="input-field" /></div>
-                <div><label className="label">Amount Financed</label><input type="number" step="0.01" value={fin.loan_amount} onChange={e => setF('loan_amount', e.target.value)} className="input-field" /></div>
-                <div><label className="label">Down Payment</label><input type="number" step="0.01" value={fin.loan_down_payment} onChange={e => setF('loan_down_payment', e.target.value)} className="input-field" /></div>
-                <div><label className="label">APR (%)</label><input type="number" step="0.01" value={fin.loan_apr} onChange={e => setF('loan_apr', e.target.value)} className="input-field" placeholder="e.g. 6.9" /></div>
-                <div><label className="label">Monthly Payment</label><input type="number" step="0.01" value={fin.loan_monthly_payment} onChange={e => setF('loan_monthly_payment', e.target.value)} className="input-field" /></div>
-                <div><label className="label">Term (months)</label><input type="number" value={fin.loan_term_months} onChange={e => setF('loan_term_months', e.target.value)} className="input-field" placeholder="e.g. 72" /></div>
-                <div><label className="label">First Payment Date</label><input type="date" value={fin.loan_start_date} onChange={e => setF('loan_start_date', e.target.value)} className="input-field" /></div>
+                <div><label htmlFor="t-c-o-loan-lender" className="label">Lender</label><input id="t-c-o-loan-lender" value={fin.loan_lender} onChange={e => setF('loan_lender', e.target.value)} className="input-field" placeholder="e.g. Ford Credit" /></div>
+                <div><label htmlFor="t-c-o-purchase-price-2" className="label">Purchase Price</label><input id="t-c-o-purchase-price-2" type="number" step="0.01" value={fin.purchase_price} onChange={e => setF('purchase_price', e.target.value)} className="input-field" /></div>
+                <div><label htmlFor="t-c-o-loan-amount" className="label">Amount Financed</label><input id="t-c-o-loan-amount" type="number" step="0.01" value={fin.loan_amount} onChange={e => setF('loan_amount', e.target.value)} className="input-field" /></div>
+                <div><label htmlFor="t-c-o-loan-down-payment" className="label">Down Payment</label><input id="t-c-o-loan-down-payment" type="number" step="0.01" value={fin.loan_down_payment} onChange={e => setF('loan_down_payment', e.target.value)} className="input-field" /></div>
+                <div><label htmlFor="t-c-o-loan-apr" className="label">APR (%)</label><input id="t-c-o-loan-apr" type="number" step="0.01" value={fin.loan_apr} onChange={e => setF('loan_apr', e.target.value)} className="input-field" placeholder="e.g. 6.9" /></div>
+                <div><label htmlFor="t-c-o-loan-monthly-payment" className="label">Monthly Payment</label><input id="t-c-o-loan-monthly-payment" type="number" step="0.01" value={fin.loan_monthly_payment} onChange={e => setF('loan_monthly_payment', e.target.value)} className="input-field" /></div>
+                <div><label htmlFor="t-c-o-loan-term-months" className="label">Term (months)</label><input id="t-c-o-loan-term-months" type="number" value={fin.loan_term_months} onChange={e => setF('loan_term_months', e.target.value)} className="input-field" placeholder="e.g. 72" /></div>
+                <div><label htmlFor="t-c-o-loan-start-date" className="label">First Payment Date</label><input id="t-c-o-loan-start-date" type="date" value={fin.loan_start_date} onChange={e => setF('loan_start_date', e.target.value)} className="input-field" /></div>
               </div>
             )}
 
             {fin.ownership_type === 'lease' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><label className="label">Leasing Company</label><input value={fin.lease_lender} onChange={e => setF('lease_lender', e.target.value)} className="input-field" placeholder="e.g. Ford Credit" /></div>
-                <div><label className="label">Monthly Payment</label><input type="number" step="0.01" value={fin.lease_monthly_payment} onChange={e => setF('lease_monthly_payment', e.target.value)} className="input-field" /></div>
-                <div><label className="label">Due at Signing</label><input type="number" step="0.01" value={fin.lease_down_payment} onChange={e => setF('lease_down_payment', e.target.value)} className="input-field" /></div>
-                <div><label className="label">Term (months)</label><input type="number" value={fin.lease_term_months} onChange={e => setF('lease_term_months', e.target.value)} className="input-field" placeholder="e.g. 36" /></div>
-                <div><label className="label">First Payment Date</label><input type="date" value={fin.lease_start_date} onChange={e => setF('lease_start_date', e.target.value)} className="input-field" /></div>
-                <div><label className="label">Allowance ({currentUnits().dist}/yr)</label><input type="number" value={fin.lease_mileage_allowance} onChange={e => setF('lease_mileage_allowance', e.target.value)} className="input-field" placeholder="e.g. 12000" /></div>
-                <div><label className="label">Buyout / Residual</label><input type="number" step="0.01" value={fin.lease_buyout} onChange={e => setF('lease_buyout', e.target.value)} className="input-field" /></div>
+                <div><label htmlFor="t-c-o-lease-lender" className="label">Leasing Company</label><input id="t-c-o-lease-lender" value={fin.lease_lender} onChange={e => setF('lease_lender', e.target.value)} className="input-field" placeholder="e.g. Ford Credit" /></div>
+                <div><label htmlFor="t-c-o-lease-monthly-payment" className="label">Monthly Payment</label><input id="t-c-o-lease-monthly-payment" type="number" step="0.01" value={fin.lease_monthly_payment} onChange={e => setF('lease_monthly_payment', e.target.value)} className="input-field" /></div>
+                <div><label htmlFor="t-c-o-lease-down-payment" className="label">Due at Signing</label><input id="t-c-o-lease-down-payment" type="number" step="0.01" value={fin.lease_down_payment} onChange={e => setF('lease_down_payment', e.target.value)} className="input-field" /></div>
+                <div><label htmlFor="t-c-o-lease-term-months" className="label">Term (months)</label><input id="t-c-o-lease-term-months" type="number" value={fin.lease_term_months} onChange={e => setF('lease_term_months', e.target.value)} className="input-field" placeholder="e.g. 36" /></div>
+                <div><label htmlFor="t-c-o-lease-start-date" className="label">First Payment Date</label><input id="t-c-o-lease-start-date" type="date" value={fin.lease_start_date} onChange={e => setF('lease_start_date', e.target.value)} className="input-field" /></div>
+                <div><label htmlFor="t-c-o-lease-mileage-allowance" className="label">Allowance ({currentUnits().dist}/yr)</label><input id="t-c-o-lease-mileage-allowance" type="number" value={fin.lease_mileage_allowance} onChange={e => setF('lease_mileage_allowance', e.target.value)} className="input-field" placeholder="e.g. 12000" /></div>
+                <div><label htmlFor="t-c-o-lease-buyout" className="label">Buyout / Residual</label><input id="t-c-o-lease-buyout" type="number" step="0.01" value={fin.lease_buyout} onChange={e => setF('lease_buyout', e.target.value)} className="input-field" /></div>
               </div>
             )}
 
@@ -213,7 +213,7 @@ export default function TCO() {
           <div className="card p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="section-title">Financing — {OWNERSHIP.find(o => o.value === f.type)?.label || f.type}</div>
-              {!editFin && <button onClick={() => setEditFin(true)} className="text-xs text-raptor-accent hover:underline">Edit</button>}
+              {!editFin && <button onClick={() => setEditFin(true)} className="text-xs text-raptor-link underline underline-offset-2 hover:no-underline">Edit</button>}
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-3 gap-x-4 text-sm">
               {f.type === 'owned' && (
@@ -249,7 +249,7 @@ export default function TCO() {
           {data.timeline.length >= 2 && (
             <div className="card p-5">
               <div className="section-title mb-3">Cumulative Spend Over Time</div>
-              <div style={{ height: 200 }}><Line data={chartData} options={chartOpts} /></div>
+              <div style={{ height: 200 }}><Line data={chartData} options={chartOpts} aria-label={(data?.timeline || []).length ? `Cumulative cost by month, reaching ${money((data.timeline[data.timeline.length - 1] || {}).cumulative)} in ${data.timeline[data.timeline.length - 1].month}` : 'Cumulative cost by month'} /></div>
             </div>
           )}
         </>

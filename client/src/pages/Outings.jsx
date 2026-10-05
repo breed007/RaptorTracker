@@ -7,10 +7,10 @@ import { localDate } from '../lib/dates'
 import { currentUnits } from '../lib/units'
 
 const DIFFICULTY_CLS = {
-  easy: 'bg-green-500/15 text-green-600 dark:text-green-400',
-  moderate: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
-  difficult: 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-500',
-  extreme: 'bg-red-500/15 text-red-500',
+  easy: 'bg-green-500/15 text-green-800 dark:text-green-400',
+  moderate: 'bg-blue-500/15 text-blue-700 dark:text-blue-400',
+  difficult: 'bg-yellow-500/15 text-yellow-800 dark:text-yellow-500',
+  extreme: 'bg-red-500/15 text-red-700 dark:text-red-300',
 }
 
 const EMPTY = {
@@ -135,7 +135,7 @@ export default function Outings() {
           </p>
         </div>
         <button onClick={openNew} className="btn-primary text-sm flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           Log an Outing
@@ -162,58 +162,58 @@ export default function Outings() {
           <div className="section-title mb-4">{editId ? 'Edit Outing' : 'Log an Outing'}</div>
           <form onSubmit={submit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
-              <label className="label">Name *</label>
-              <input value={form.name} onChange={e => set('name', e.target.value)} className="input-field" placeholder="e.g. Johnson Valley weekend" required />
+              <label htmlFor="outings-name" className="label">Name *</label>
+              <input id="outings-name" value={form.name} onChange={e => set('name', e.target.value)} className="input-field" placeholder="e.g. Johnson Valley weekend" required />
             </div>
             <div>
-              <label className="label">Date *</label>
-              <input type="date" value={form.date} onChange={e => set('date', e.target.value)} className="input-field" required />
+              <label htmlFor="outings-date" className="label">Date *</label>
+              <input id="outings-date" type="date" value={form.date} onChange={e => set('date', e.target.value)} className="input-field" required />
             </div>
             <div>
-              <label className="label">End Date <span className="font-normal text-raptor-muted">(multi-day)</span></label>
-              <input type="date" value={form.end_date} onChange={e => set('end_date', e.target.value)} className="input-field" />
+              <label htmlFor="outings-end-date" className="label">End Date <span className="font-normal text-raptor-muted">(multi-day)</span></label>
+              <input id="outings-end-date" type="date" value={form.end_date} onChange={e => set('end_date', e.target.value)} className="input-field" />
             </div>
             <div>
-              <label className="label">Location</label>
-              <input value={form.location} onChange={e => set('location', e.target.value)} className="input-field" placeholder="e.g. Moab, UT" />
+              <label htmlFor="outings-location" className="label">Location</label>
+              <input id="outings-location" value={form.location} onChange={e => set('location', e.target.value)} className="input-field" placeholder="e.g. Moab, UT" />
             </div>
             <div>
-              <label className="label">Trail</label>
-              <input value={form.trail_name} onChange={e => set('trail_name', e.target.value)} className="input-field" placeholder="e.g. Hell's Revenge" />
+              <label htmlFor="outings-trail-name" className="label">Trail</label>
+              <input id="outings-trail-name" value={form.trail_name} onChange={e => set('trail_name', e.target.value)} className="input-field" placeholder="e.g. Hell's Revenge" />
             </div>
             <div>
-              <label className="label">Difficulty</label>
-              <select value={form.difficulty} onChange={e => set('difficulty', e.target.value)} className="input-field">
+              <label htmlFor="outings-difficulty" className="label">Difficulty</label>
+              <select id="outings-difficulty" value={form.difficulty} onChange={e => set('difficulty', e.target.value)} className="input-field">
                 <option value="">—</option>
                 {difficulties.map(d => <option key={d} value={d}>{cap(d)}</option>)}
               </select>
             </div>
             <div>
-              <label className="label">Terrain</label>
-              <select value={form.terrain} onChange={e => set('terrain', e.target.value)} className="input-field">
+              <label htmlFor="outings-terrain" className="label">Terrain</label>
+              <select id="outings-terrain" value={form.terrain} onChange={e => set('terrain', e.target.value)} className="input-field">
                 <option value="">—</option>
                 {terrain.map(t => <option key={t} value={t}>{cap(t)}</option>)}
               </select>
             </div>
             <div>
-              <label className="label">Odometer Start ({currentUnits().dist})</label>
-              <input type="number" value={form.odometer_start} onChange={e => set('odometer_start', e.target.value)} className="input-field" placeholder="e.g. 24500" />
+              <label htmlFor="outings-odometer-start" className="label">Odometer Start ({currentUnits().dist})</label>
+              <input id="outings-odometer-start" type="number" value={form.odometer_start} onChange={e => set('odometer_start', e.target.value)} className="input-field" placeholder="e.g. 24500" />
             </div>
             <div>
-              <label className="label">Odometer End ({currentUnits().dist})</label>
-              <input type="number" value={form.odometer_end} onChange={e => set('odometer_end', e.target.value)} className="input-field" placeholder="e.g. 24680" />
+              <label htmlFor="outings-odometer-end" className="label">Odometer End ({currentUnits().dist})</label>
+              <input id="outings-odometer-end" type="number" value={form.odometer_end} onChange={e => set('odometer_end', e.target.value)} className="input-field" placeholder="e.g. 24680" />
             </div>
             <div>
-              <label className="label">Aired-down front ({currentUnits().pressure})</label>
-              <input type="number" step="0.5" value={form.tire_psi_front} onChange={e => set('tire_psi_front', e.target.value)} className="input-field" placeholder="e.g. 18" />
+              <label htmlFor="outings-tire-psi-front" className="label">Aired-down front ({currentUnits().pressure})</label>
+              <input id="outings-tire-psi-front" type="number" step="0.5" value={form.tire_psi_front} onChange={e => set('tire_psi_front', e.target.value)} className="input-field" placeholder="e.g. 18" />
             </div>
             <div>
-              <label className="label">Aired-down rear ({currentUnits().pressure})</label>
-              <input type="number" step="0.5" value={form.tire_psi_rear} onChange={e => set('tire_psi_rear', e.target.value)} className="input-field" placeholder="e.g. 20" />
+              <label htmlFor="outings-tire-psi-rear" className="label">Aired-down rear ({currentUnits().pressure})</label>
+              <input id="outings-tire-psi-rear" type="number" step="0.5" value={form.tire_psi_rear} onChange={e => set('tire_psi_rear', e.target.value)} className="input-field" placeholder="e.g. 20" />
             </div>
             <div>
-              <label className="label">Tire Set</label>
-              <select value={form.tire_set_id} onChange={e => set('tire_set_id', e.target.value)} className="input-field">
+              <label htmlFor="outings-tire-set-id" className="label">Tire Set</label>
+              <select id="outings-tire-set-id" value={form.tire_set_id} onChange={e => set('tire_set_id', e.target.value)} className="input-field">
                 <option value="">—</option>
                 {tireSets.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
@@ -226,7 +226,7 @@ export default function Outings() {
                   ({airHint.trips} trip{airHint.trips === 1 ? '' : 's'}).
                 </span>
                 {(form.tire_psi_front === '' && form.tire_psi_rear === '') && (
-                  <button type="button" className="text-raptor-accent font-medium hover:underline"
+                  <button type="button" className="text-raptor-link font-medium hover:underline"
                     onClick={() => setForm(f => ({ ...f, tire_psi_front: airHint.front ?? '', tire_psi_rear: airHint.rear ?? '' }))}>
                     Use these
                   </button>
@@ -234,22 +234,22 @@ export default function Outings() {
               </div>
             )}
             <div>
-              <label className="label">Who Came</label>
-              <input value={form.companions} onChange={e => set('companions', e.target.value)} className="input-field" placeholder="Optional" />
+              <label htmlFor="outings-companions" className="label">Who Came</label>
+              <input id="outings-companions" value={form.companions} onChange={e => set('companions', e.target.value)} className="input-field" placeholder="Optional" />
             </div>
             <div className="sm:col-span-2">
-              <label className="label">Conditions</label>
-              <input value={form.conditions} onChange={e => set('conditions', e.target.value)} className="input-field" placeholder="Weather, trail state…" />
+              <label htmlFor="outings-conditions" className="label">Conditions</label>
+              <input id="outings-conditions" value={form.conditions} onChange={e => set('conditions', e.target.value)} className="input-field" placeholder="Weather, trail state…" />
             </div>
             <div className="sm:col-span-2">
-              <label className="label">Damage / Issues</label>
-              <textarea value={form.damage} onChange={e => set('damage', e.target.value)} className="input-field" rows={2} placeholder="Anything that broke, rubbed, or needs attention" />
+              <label htmlFor="outings-damage" className="label">Damage / Issues</label>
+              <textarea id="outings-damage" value={form.damage} onChange={e => set('damage', e.target.value)} className="input-field" rows={2} placeholder="Anything that broke, rubbed, or needs attention" />
             </div>
             <div className="sm:col-span-2">
-              <label className="label">Notes</label>
-              <textarea value={form.notes} onChange={e => set('notes', e.target.value)} className="input-field" rows={2} />
+              <label htmlFor="outings-notes" className="label">Notes</label>
+              <textarea id="outings-notes" value={form.notes} onChange={e => set('notes', e.target.value)} className="input-field" rows={2} />
             </div>
-            {error && <div className="sm:col-span-2 text-sm text-red-500">{error}</div>}
+            {error && <div className="sm:col-span-2 text-sm text-red-700 dark:text-red-400">{error}</div>}
             <div className="sm:col-span-2 flex gap-3">
               <button type="submit" disabled={saving} className="btn-primary text-sm">{saving ? 'Saving…' : editId ? 'Save Changes' : 'Log Outing'}</button>
               <button type="button" onClick={() => { setShowForm(false); setEditId(null) }} className="btn-secondary text-sm">Cancel</button>
@@ -287,7 +287,7 @@ export default function Outings() {
                       </span>
                     )}
                     {o.damage && (
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded bg-red-500/15 text-red-500">damage</span>
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded bg-red-500/15 text-red-700 dark:text-red-300">damage</span>
                     )}
                   </div>
 
@@ -307,9 +307,9 @@ export default function Outings() {
 
                   {o.conditions && <div className="text-sm text-raptor-secondary">{o.conditions}</div>}
                   {o.damage && (
-                    <div className="text-sm text-red-600 dark:text-red-400 whitespace-pre-wrap">
+                    <div className="text-sm text-red-700 dark:text-red-400 whitespace-pre-wrap">
                       {o.damage}
-                      <Link to="/maintenance" className="ml-2 text-xs text-raptor-accent hover:underline">Log a repair →</Link>
+                      <Link to="/maintenance" className="ml-2 text-xs text-raptor-link underline underline-offset-2 hover:no-underline">Log a repair →</Link>
                     </div>
                   )}
                   {o.notes && <div className="text-sm text-raptor-secondary whitespace-pre-wrap">{o.notes}</div>}
@@ -317,7 +317,7 @@ export default function Outings() {
                   {o.photos?.length > 0 && (
                     <div className="flex flex-wrap gap-2 pt-1">
                       {o.photos.map(p => (
-                        <a key={p} href={p} target="_blank" rel="noopener noreferrer"
+                        <a key={p} href={p} target="_blank" rel="noopener noreferrer" aria-label={`Open photo from ${o.name}`}
                           className="w-16 h-16 rounded-lg border border-raptor-border overflow-hidden hover:border-raptor-accent transition-colors">
                           <img src={p} alt="" className="w-full h-full object-cover" />
                         </a>
@@ -327,20 +327,20 @@ export default function Outings() {
                 </div>
 
                 <div className="flex gap-1 flex-shrink-0">
-                  <button onClick={() => { setPhotoTarget(o.id); setTimeout(() => photoRef.current?.click(), 0) }}
-                    className="text-raptor-muted hover:text-raptor-accent p-1.5 rounded-lg hover:bg-raptor-elevated transition-colors" title="Add photos">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <button aria-label="Add photos" onClick={() => { setPhotoTarget(o.id); setTimeout(() => photoRef.current?.click(), 0) }}
+                    className="text-raptor-muted hover:text-raptor-link p-1.5 rounded-lg hover:bg-raptor-elevated transition-colors" title="Add photos">
+                    <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                         d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                   </button>
-                  <button onClick={() => openEdit(o)} className="text-raptor-muted hover:text-raptor-primary p-1.5 rounded-lg hover:bg-raptor-elevated transition-colors" title="Edit">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <button aria-label="Edit" onClick={() => openEdit(o)} className="text-raptor-muted hover:text-raptor-primary p-1.5 rounded-lg hover:bg-raptor-elevated transition-colors" title="Edit">
+                    <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                   </button>
-                  <button onClick={() => setDeleteTarget(o.id)} className="text-raptor-muted hover:text-red-500 p-1.5 rounded-lg hover:bg-raptor-elevated transition-colors" title="Delete">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <button aria-label="Delete" onClick={() => setDeleteTarget(o.id)} className="text-raptor-muted hover:text-red-500 p-1.5 rounded-lg hover:bg-raptor-elevated transition-colors" title="Delete">
+                    <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                         d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>

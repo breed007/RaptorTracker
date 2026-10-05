@@ -43,7 +43,7 @@ function RecallCard({ recall, onState, onLogRepair, busy }) {
         </div>
       )}
       {(recall.summary || recall.remedy) && (
-        <button type="button" onClick={() => setOpen(v => !v)} className="text-xs text-raptor-accent hover:underline mt-1">
+        <button type="button" onClick={() => setOpen(v => !v)} className="text-xs text-raptor-link underline underline-offset-2 hover:no-underline mt-1">
           {open ? 'Show less' : 'Read the full recall'}
         </button>
       )}
@@ -169,7 +169,7 @@ export default function Recalls() {
             </>
           ) : (
             <span className="text-sm text-raptor-muted">
-              No VIN on file. <Link to="/garage" className="text-raptor-accent hover:underline">Add it in My Garage</Link> to check quickly.
+              No VIN on file. <Link to="/garage" className="text-raptor-link underline underline-offset-2 hover:no-underline">Add it in My Garage</Link> to check quickly.
             </span>
           )}
           <a href={NHTSA_LOOKUP} target="_blank" rel="noopener noreferrer" className="btn-primary text-xs px-3 py-1.5">

@@ -82,7 +82,7 @@ export default function NotificationsSettings() {
     <div className="space-y-5">
 
       {!settings.smtpConfigured && (
-        <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-600 dark:text-yellow-400">
+        <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-800 dark:text-yellow-400">
           <strong>SMTP is not configured.</strong> Add <code>SMTP_HOST</code>, <code>SMTP_FROM</code>, and credentials
           to your <code>.env</code> to send email — or skip email entirely and use a <strong>webhook</strong> below
           (Discord / Slack), which needs no mail server.
@@ -91,8 +91,8 @@ export default function NotificationsSettings() {
 
       {msg && (
         <div className={`rounded-lg px-4 py-3 text-sm ${msg.type === 'ok'
-          ? 'border border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400'
-          : 'border border-red-500/30 bg-red-500/10 text-red-500 dark:text-red-400'}`}>
+          ? 'border border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400'
+          : 'border border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300'}`}>
           {msg.text}
         </div>
       )}
@@ -109,8 +109,8 @@ export default function NotificationsSettings() {
         />
 
         <div>
-          <label className="label">Recipient email <span className="font-normal text-raptor-muted">(requires SMTP)</span></label>
-          <input
+          <label htmlFor="notifications-email" className="label">Recipient email <span className="font-normal text-raptor-muted">(requires SMTP)</span></label>
+          <input id="notifications-email"
             type="email" value={settings.email}
             onChange={e => set('email', e.target.value)}
             className="input-field" placeholder="you@example.com"
@@ -118,8 +118,8 @@ export default function NotificationsSettings() {
         </div>
 
         <div>
-          <label className="label">Webhook URL <span className="font-normal text-raptor-muted">(Discord or Slack incoming webhook)</span></label>
-          <input
+          <label htmlFor="notifications-webhookurl" className="label">Webhook URL <span className="font-normal text-raptor-muted">(Discord or Slack incoming webhook)</span></label>
+          <input id="notifications-webhookurl"
             type="url" value={settings.webhookUrl}
             onChange={e => set('webhookUrl', e.target.value)}
             className="input-field" placeholder="https://discord.com/api/webhooks/…"
@@ -133,8 +133,8 @@ export default function NotificationsSettings() {
         </div>
 
         <div>
-          <label className="label">Warranty reminder window (days before expiry)</label>
-          <input
+          <label htmlFor="notifications-warrantythresholddays" className="label">Warranty reminder window (days before expiry)</label>
+          <input id="notifications-warrantythresholddays"
             type="number" min="1" value={settings.warrantyThresholdDays}
             onChange={e => set('warrantyThresholdDays', e.target.value)}
             className="input-field w-32"
@@ -160,7 +160,7 @@ export default function NotificationsSettings() {
               <div key={i} className="flex items-center gap-3 text-sm">
                 <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
                   it.state === 'overdue' || it.state === 'expired'
-                    ? 'bg-red-500/15 text-red-400' : 'bg-yellow-500/15 text-yellow-500'
+                    ? 'bg-red-500/15 text-red-700 dark:text-red-300' : 'bg-yellow-500/15 text-yellow-800 dark:text-yellow-300'
                 }`}>{it.state}</span>
                 <span className="text-raptor-primary font-medium">{it.title}</span>
                 <span className="text-raptor-muted">{it.detail}</span>

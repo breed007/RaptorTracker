@@ -109,7 +109,7 @@ export default function Reports() {
       </div>
 
       <p className="text-xs text-raptor-muted">
-        Spreadsheet exports of every record are under <Link to="/settings/data" className="text-raptor-accent hover:underline">Settings → Import &amp; Export</Link>.
+        Spreadsheet exports of every record are under <Link to="/settings/data" className="text-raptor-link underline underline-offset-2 hover:no-underline">Settings → Import &amp; Export</Link>.
       </p>
     </div>
   )

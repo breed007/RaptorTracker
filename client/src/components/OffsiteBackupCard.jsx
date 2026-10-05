@@ -83,7 +83,7 @@ export default function OffsiteBackupCard() {
         {TARGETS.map(x => (
           <button key={x.id} type="button" aria-pressed={t === x.id} onClick={() => set('target', x.id)}
             className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${t === x.id
-              ? 'bg-raptor-accent text-white border-raptor-accent'
+              ? 'bg-raptor-accent text-raptor-on-accent border-raptor-accent'
               : 'border-raptor-border text-raptor-secondary hover:text-raptor-primary'}`}>
             {x.label}
           </button>
@@ -152,14 +152,14 @@ export default function OffsiteBackupCard() {
         </div>
       )}
 
-      {error && <div className="text-sm text-red-500">{error}</div>}
+      {error && <div className="text-sm text-red-700 dark:text-red-400">{error}</div>}
 
       <div className="flex flex-wrap items-center gap-3">
         <button type="button" onClick={save} disabled={!!busy} className="btn-primary text-sm disabled:opacity-50">
           {busy === 'save' ? 'Saving…' : 'Save'}
         </button>
         {last?.at && cfg?.target !== 'none' && (
-          <span className={`text-xs ${last.error ? 'text-red-500' : 'text-raptor-muted'}`}>
+          <span className={`text-xs ${last.error ? 'text-red-700 dark:text-red-400' : 'text-raptor-muted'}`}>
             Last copy {fmtWhen(last.at)}: {last.error ? `failed — ${last.error}` : last.name}
           </span>
         )}

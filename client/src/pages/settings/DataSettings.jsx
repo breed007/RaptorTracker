@@ -105,7 +105,7 @@ export default function DataSettings() {
               onClick={() => handleCsv(type)}
               className="btn-secondary text-sm flex items-center justify-center gap-2"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
               {label}
@@ -130,8 +130,8 @@ export default function DataSettings() {
 
         <div className="flex flex-wrap items-end gap-3">
           <div>
-            <label className="label">What is this?</label>
-            <select
+            <label htmlFor="data-imptype" className="label">What is this?</label>
+            <select id="data-imptype"
               value={impType}
               onChange={e => { setImpType(e.target.value); setImpPreview(null); setImpFile(null); setImpMsg(null); if (importInputRef.current) importInputRef.current.value = '' }}
               className="input-field w-44"
@@ -148,8 +148,8 @@ export default function DataSettings() {
 
         {impMsg && (
           <div className={`rounded-lg px-3 py-2 text-sm ${impMsg.type === 'ok'
-            ? 'border border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400'
-            : 'border border-red-500/30 bg-red-500/10 text-red-500 dark:text-red-400'}`}>
+            ? 'border border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400'
+            : 'border border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300'}`}>
             {impMsg.text}
           </div>
         )}
@@ -166,9 +166,9 @@ export default function DataSettings() {
           <div className="rounded-lg border border-raptor-border bg-raptor-elevated p-4 space-y-3">
             <div className="flex flex-wrap gap-4 text-sm">
               <span className="text-raptor-secondary">Rows found: <span className="text-raptor-primary font-semibold">{impPreview.total}</span></span>
-              <span className="text-green-600 dark:text-green-400">Ready: <span className="font-semibold">{impPreview.validCount}</span></span>
+              <span className="text-green-700 dark:text-green-400">Ready: <span className="font-semibold">{impPreview.validCount}</span></span>
               {impPreview.errorCount > 0 && (
-                <span className="text-red-500 dark:text-red-400">Skipped: <span className="font-semibold">{impPreview.errorCount}</span></span>
+                <span className="text-red-700 dark:text-red-400">Skipped: <span className="font-semibold">{impPreview.errorCount}</span></span>
               )}
             </div>
 
@@ -184,7 +184,7 @@ export default function DataSettings() {
 
             {impPreview.errors?.length > 0 && (
               <div className="space-y-1">
-                <div className="text-xs font-medium text-red-500 dark:text-red-400">Rows that will be skipped:</div>
+                <div className="text-xs font-medium text-red-700 dark:text-red-400">Rows that will be skipped:</div>
                 {impPreview.errors.map((e, i) => (
                   <div key={i} className="text-xs text-raptor-secondary">Line {e.line}: {e.message}</div>
                 ))}

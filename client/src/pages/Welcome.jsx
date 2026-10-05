@@ -11,6 +11,7 @@ const VIN_RE = /^[A-HJ-NPR-Z0-9]{17}$/
  * them into an empty dashboard.
  */
 export default function Welcome() {
+  useEffect(() => { document.title = 'Welcome · RaptorTracker' }, [])
   const { refreshVehicles, selectVehicle, refreshUnits } = useApp()
   const [refVehicles, setRefVehicles] = useState([])
   const [form, setForm] = useState({ vin: '', vehicle_id: '', nickname: '', model_year: '', color: '' })
@@ -123,10 +124,10 @@ export default function Welcome() {
   const vinValid = VIN_RE.test(form.vin)
 
   return (
-    <div className="min-h-screen bg-raptor-base flex items-center justify-center p-4">
+    <main className="min-h-screen bg-raptor-base flex items-center justify-center p-4">
       <div className="w-full max-w-lg space-y-6">
         <div className="text-center">
-          <div className="font-display font-bold text-3xl text-raptor-accent tracking-wide">RaptorTracker</div>
+          <div className="font-display font-bold text-3xl text-raptor-link tracking-wide">RaptorTracker</div>
           <p className="text-raptor-secondary mt-2">
             Let's add your truck. Everything else — mods, service, fuel, costs — hangs off this.
           </p>
@@ -146,9 +147,9 @@ export default function Welcome() {
 
         <form onSubmit={submit} className="card p-6 space-y-4">
           <div>
-            <label className="label">VIN <span className="font-normal text-raptor-muted">(optional — fills in the rest)</span></label>
+            <label htmlFor="welcome-vin" className="label">VIN <span className="font-normal text-raptor-muted">(optional — fills in the rest)</span></label>
             <div className="flex gap-2">
-              <input
+              <input id="welcome-vin"
                 type="text" value={form.vin} onChange={e => handleVinChange(e.target.value)}
                 className="input-field font-mono uppercase tracking-wider flex-1"
                 placeholder="17-character VIN" maxLength={17} spellCheck={false}
@@ -161,9 +162,9 @@ export default function Welcome() {
             {form.vin && !vinValid && (
               <p className="mt-1 text-xs text-raptor-muted">{form.vin.length}/17 — letters I, O and Q aren't used in VINs.</p>
             )}
-            {vinError && <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{vinError}</p>}
+            {vinError && <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">{vinError}</p>}
             {vinResult && (
-              <p className="mt-1.5 text-xs text-green-600 dark:text-green-400">
+              <p className="mt-1.5 text-xs text-green-700 dark:text-green-400">
                 Found: {[vinResult.year, vinResult.make, vinResult.model].filter(Boolean).join(' ')}
                 {vinResult.generation ? ` · ${vinResult.generation}` : ''}
               </p>
@@ -171,8 +172,8 @@ export default function Welcome() {
           </div>
 
           <div>
-            <label className="label">Which Raptor? *</label>
-            <select value={form.vehicle_id} onChange={e => set('vehicle_id', e.target.value)} className="input-field" required>
+            <label htmlFor="welcome-vehicle-id" className="label">Which Raptor? *</label>
+            <select id="welcome-vehicle-id" value={form.vehicle_id} onChange={e => set('vehicle_id', e.target.value)} className="input-field" required>
               <option value="">Select your model…</option>
               {refVehicles.map(v => (
                 <option key={v.id} value={v.id}>
@@ -184,18 +185,18 @@ export default function Welcome() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="label">Name it *</label>
-              <input type="text" value={form.nickname} onChange={e => set('nickname', e.target.value)}
+              <label htmlFor="welcome-nickname" className="label">Name it *</label>
+              <input id="welcome-nickname" type="text" value={form.nickname} onChange={e => set('nickname', e.target.value)}
                 className="input-field" placeholder="e.g. Daily Driver" required />
             </div>
             <div>
-              <label className="label">Model Year *</label>
-              <input type="number" value={form.model_year} onChange={e => set('model_year', e.target.value)}
+              <label htmlFor="welcome-model-year" className="label">Model Year *</label>
+              <input id="welcome-model-year" type="number" value={form.model_year} onChange={e => set('model_year', e.target.value)}
                 className="input-field" placeholder="2025" min="2010" max="2030" required />
             </div>
             <div className="sm:col-span-2">
-              <label className="label">Color</label>
-              <input type="text" value={form.color} onChange={e => set('color', e.target.value)}
+              <label htmlFor="welcome-color" className="label">Color</label>
+              <input id="welcome-color" type="text" value={form.color} onChange={e => set('color', e.target.value)}
                 className="input-field" placeholder="e.g. Carbonized Gray" />
             </div>
           </div>
@@ -208,7 +209,7 @@ export default function Welcome() {
                     {PRESETS.find(p => p.key === presetFor(units))?.label || 'Custom'}
                   </span>, {units.currency}
                 </div>
-                <button type="button" onClick={() => setUnitsOpen(v => !v)} className="text-xs text-raptor-accent hover:underline" aria-expanded={unitsOpen}>
+                <button type="button" onClick={() => setUnitsOpen(v => !v)} className="text-xs text-raptor-link underline underline-offset-2 hover:no-underline" aria-expanded={unitsOpen}>
                   {unitsOpen ? 'Done' : 'Change'}
                 </button>
               </div>
@@ -216,7 +217,7 @@ export default function Welcome() {
             </div>
           )}
 
-          {error && <div className="text-sm text-red-500">{error}</div>}
+          {error && <div className="text-sm text-red-700 dark:text-red-400">{error}</div>}
 
           <button type="submit" disabled={saving} className="btn-primary w-full py-3 disabled:opacity-50">
             {saving ? 'Adding…' : 'Add My Truck'}
@@ -228,12 +229,12 @@ export default function Welcome() {
 
         <div className="text-center text-sm text-raptor-secondary">
           Not ready yet?{' '}
-          <button type="button" onClick={trySample} disabled={saving} className="text-raptor-accent font-medium hover:underline disabled:opacity-50">
+          <button type="button" onClick={trySample} disabled={saving} className="text-raptor-link font-medium hover:underline disabled:opacity-50">
             Look around with a sample truck
           </button>
           <span className="block text-xs text-raptor-muted mt-1">Made-up records you can remove in one click.</span>
         </div>
       </div>
-    </div>
+    </main>
   )
 }

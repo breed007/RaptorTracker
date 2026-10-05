@@ -87,7 +87,7 @@ export default function BuildSheet({ mods }) {
                 {catCost > 0 && (
                   <span className="font-semibold text-sm text-raptor-primary tabular-nums">{fmt(catCost)}</span>
                 )}
-                <svg
+                <svg aria-hidden="true"
                   className={`w-4 h-4 text-raptor-muted transition-transform duration-150 ${isCollapsed ? '-rotate-90' : ''}`}
                   fill="none" stroke="currentColor" viewBox="0 0 24 24"
                 >
@@ -112,7 +112,7 @@ export default function BuildSheet({ mods }) {
                     {items.map(mod => (
                       <tr key={mod.id} className="border-t border-raptor-border hover:bg-raptor-elevated transition-colors">
                         <td className="px-4 py-3">
-                          <Link to={`/mods/${mod.id}`} className="hover:text-raptor-accent transition-colors">
+                          <Link to={`/mods/${mod.id}`} className="hover:text-raptor-link transition-colors">
                             <span className="font-medium text-raptor-primary">{mod.part_name}</span>
                             {mod.part_number && (
                               <span className="block text-xs text-raptor-muted mt-0.5">#{mod.part_number}</span>
@@ -129,10 +129,10 @@ export default function BuildSheet({ mods }) {
                               target="_blank"
                               rel="noopener noreferrer"
                               title={mod.vendor || 'View Product'}
-                              className="inline-flex items-center gap-1 text-xs text-raptor-accent hover:opacity-70 transition-opacity"
+                              className="inline-flex items-center gap-1 text-xs text-raptor-link hover:opacity-70 transition-opacity"
                             >
                               {mod.vendor && <span className="max-w-[120px] truncate">{mod.vendor}</span>}
-                              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg aria-hidden="true" className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                               </svg>
                             </a>
@@ -166,7 +166,7 @@ export default function BuildSheet({ mods }) {
       <div className="card p-5">
         <div className="flex items-baseline justify-between mb-4">
           <span className="font-display font-bold text-base tracking-widest uppercase text-raptor-secondary">Build Total</span>
-          <span className="font-display font-bold text-2xl text-raptor-accent tabular-nums">{fmt(totalCost)}</span>
+          <span className="font-display font-bold text-2xl text-raptor-link tabular-nums">{fmt(totalCost)}</span>
         </div>
 
         <div className="space-y-2 mb-4">

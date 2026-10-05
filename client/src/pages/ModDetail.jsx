@@ -163,8 +163,8 @@ export default function ModDetail({ isNew }) {
   return (
     <div className="max-w-2xl mx-auto space-y-5">
       <div className="flex items-center gap-3">
-        <Link to="/mods" className="text-raptor-secondary hover:text-raptor-primary">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <Link to="/mods" aria-label="Back to modifications" className="text-raptor-secondary hover:text-raptor-primary">
+          <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </Link>
@@ -177,34 +177,34 @@ export default function ModDetail({ isNew }) {
           <div className="section-title">Part Details</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
-              <label className="label">Part Name *</label>
-              <input type="text" value={form.part_name} onChange={e => set('part_name', e.target.value)} className="input-field" required />
+              <label htmlFor="mod-detail-part-name" className="label">Part Name *</label>
+              <input id="mod-detail-part-name" type="text" value={form.part_name} onChange={e => set('part_name', e.target.value)} className="input-field" required />
             </div>
             <div>
-              <label className="label">Brand</label>
-              <input type="text" value={form.brand} onChange={e => set('brand', e.target.value)} className="input-field" placeholder="e.g. Baja Designs" />
+              <label htmlFor="mod-detail-brand" className="label">Brand</label>
+              <input id="mod-detail-brand" type="text" value={form.brand} onChange={e => set('brand', e.target.value)} className="input-field" placeholder="e.g. Baja Designs" />
             </div>
             <div>
-              <label className="label">Part Number</label>
-              <input type="text" value={form.part_number} onChange={e => set('part_number', e.target.value)} className="input-field" />
+              <label htmlFor="mod-detail-part-number" className="label">Part Number</label>
+              <input id="mod-detail-part-number" type="text" value={form.part_number} onChange={e => set('part_number', e.target.value)} className="input-field" />
             </div>
             <div>
-              <label className="label">Vendor</label>
-              <input type="text" value={form.vendor} onChange={e => set('vendor', e.target.value)} className="input-field" placeholder="e.g. Carid, Amazon" />
+              <label htmlFor="mod-detail-vendor" className="label">Vendor</label>
+              <input id="mod-detail-vendor" type="text" value={form.vendor} onChange={e => set('vendor', e.target.value)} className="input-field" placeholder="e.g. Carid, Amazon" />
             </div>
             <div>
-              <label className="label">Vendor URL</label>
-              <input type="url" value={form.vendor_url} onChange={e => set('vendor_url', e.target.value)} className="input-field" placeholder="https://…" />
+              <label htmlFor="mod-detail-vendor-url" className="label">Vendor URL</label>
+              <input id="mod-detail-vendor-url" type="url" value={form.vendor_url} onChange={e => set('vendor_url', e.target.value)} className="input-field" placeholder="https://…" />
             </div>
             <div>
-              <label className="label">Category</label>
-              <select value={form.category} onChange={e => set('category', e.target.value)} className="input-field">
+              <label htmlFor="mod-detail-category" className="label">Category</label>
+              <select id="mod-detail-category" value={form.category} onChange={e => set('category', e.target.value)} className="input-field">
                 {CATEGORIES.map(c => <option key={c} value={c}>{c.replace('_', ' ')}</option>)}
               </select>
             </div>
             <div>
-              <label className="label">Status</label>
-              <select value={form.status} onChange={e => set('status', e.target.value)} className="input-field">
+              <label htmlFor="mod-detail-status" className="label">Status</label>
+              <select id="mod-detail-status" value={form.status} onChange={e => set('status', e.target.value)} className="input-field">
                 {STATUSES.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
               </select>
             </div>
@@ -215,20 +215,20 @@ export default function ModDetail({ isNew }) {
           <div className="section-title">Purchase & Install</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="label">Cost ({currentUnits().currency})</label>
-              <input type="number" value={form.cost} onChange={e => set('cost', e.target.value)} className="input-field" placeholder="0.00" step="0.01" min="0" />
+              <label htmlFor="mod-detail-cost" className="label">Cost ({currentUnits().currency})</label>
+              <input id="mod-detail-cost" type="number" value={form.cost} onChange={e => set('cost', e.target.value)} className="input-field" placeholder="0.00" step="0.01" min="0" />
             </div>
             <div>
-              <label className="label">Purchase Date</label>
-              <input type="date" value={form.purchase_date} onChange={e => set('purchase_date', e.target.value)} className="input-field" />
+              <label htmlFor="mod-detail-purchase-date" className="label">Purchase Date</label>
+              <input id="mod-detail-purchase-date" type="date" value={form.purchase_date} onChange={e => set('purchase_date', e.target.value)} className="input-field" />
             </div>
             <div>
-              <label className="label">Install Date</label>
-              <input type="date" value={form.install_date} onChange={e => set('install_date', e.target.value)} className="input-field" />
+              <label htmlFor="mod-detail-install-date" className="label">Install Date</label>
+              <input id="mod-detail-install-date" type="date" value={form.install_date} onChange={e => set('install_date', e.target.value)} className="input-field" />
             </div>
             <div>
-              <label className="label">Odometer at Install ({currentUnits().dist})</label>
-              <input type="number" value={form.mileage_at_install} onChange={e => set('mileage_at_install', e.target.value)} className="input-field" placeholder="e.g. 8420" min="0" step="1" />
+              <label htmlFor="mod-detail-mileage-at-install" className="label">Odometer at Install ({currentUnits().dist})</label>
+              <input id="mod-detail-mileage-at-install" type="number" value={form.mileage_at_install} onChange={e => set('mileage_at_install', e.target.value)} className="input-field" placeholder="e.g. 8420" min="0" step="1" />
             </div>
           </div>
         </div>
@@ -238,10 +238,10 @@ export default function ModDetail({ isNew }) {
             <div className="section-title">AUX Switch Assignments</div>
 
             <div className="sm:w-1/2">
-              <label className="label">
+              <label htmlFor="mod-detail-amp-draw" className="label">
                 Amp Draw <span className="font-normal text-raptor-muted">(A — powers the capacity planner)</span>
               </label>
-              <input
+              <input id="mod-detail-amp-draw"
                 type="number" min="0" step="0.1"
                 value={form.amp_draw}
                 onChange={e => set('amp_draw', e.target.value)}
@@ -261,8 +261,8 @@ export default function ModDetail({ isNew }) {
                   return (
                     <div key={idx} className="flex items-end gap-3">
                       <div className="flex-shrink-0">
-                        <label className="label">Switch</label>
-                        <select
+                        <label htmlFor="mod-detail-switch-number" className="label">Switch</label>
+                        <select id="mod-detail-switch-number"
                           value={sw.switch_number != null ? String(sw.switch_number) : ''}
                           onChange={e => {
                             const updated = form.aux_switches.map((s, i) =>
@@ -281,10 +281,10 @@ export default function ModDetail({ isNew }) {
                         </select>
                       </div>
                       <div className="flex-1">
-                        <label className="label">
+                        <label htmlFor="mod-detail-label" className="label">
                           Label <span className="font-normal text-raptor-muted">(what this switch controls)</span>
                         </label>
-                        <input
+                        <input id="mod-detail-label"
                           type="text"
                           value={sw.label ?? ''}
                           onChange={e => {
@@ -297,13 +297,13 @@ export default function ModDetail({ isNew }) {
                           placeholder={idx === 0 ? 'e.g. Power' : 'e.g. Color Change'}
                         />
                       </div>
-                      <button
+                      <button aria-label="Remove this switch"
                         type="button"
                         onClick={() => set('aux_switches', form.aux_switches.filter((_, i) => i !== idx))}
                         className="flex-shrink-0 mb-0.5 text-raptor-muted hover:text-red-500 p-2 rounded-lg hover:bg-raptor-elevated transition-colors"
                         title="Remove this switch"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                       </button>
@@ -320,7 +320,7 @@ export default function ModDetail({ isNew }) {
                 onClick={() => set('aux_switches', [...(Array.isArray(form.aux_switches) ? form.aux_switches : []), { switch_number: '', label: '' }])}
                 className="btn-secondary text-sm flex items-center gap-2"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
                 {Array.isArray(form.aux_switches) && form.aux_switches.length > 0 ? 'Add Another Switch' : 'Assign an AUX Switch'}
@@ -332,12 +332,12 @@ export default function ModDetail({ isNew }) {
         <div className="card p-5 space-y-4">
           <div className="section-title">Notes</div>
           <div>
-            <label className="label">Install Notes</label>
-            <textarea value={form.install_notes} onChange={e => set('install_notes', e.target.value)} className="input-field" rows={3} placeholder="Steps, torque specs, tips…" />
+            <label htmlFor="mod-detail-install-notes" className="label">Install Notes</label>
+            <textarea id="mod-detail-install-notes" value={form.install_notes} onChange={e => set('install_notes', e.target.value)} className="input-field" rows={3} placeholder="Steps, torque specs, tips…" />
           </div>
           <div>
-            <label className="label">Wiring Notes</label>
-            <textarea value={form.wiring_notes} onChange={e => set('wiring_notes', e.target.value)} className="input-field" rows={3} placeholder="Wire colors, connector types, fuse locations…" />
+            <label htmlFor="mod-detail-wiring-notes" className="label">Wiring Notes</label>
+            <textarea id="mod-detail-wiring-notes" value={form.wiring_notes} onChange={e => set('wiring_notes', e.target.value)} className="input-field" rows={3} placeholder="Wire colors, connector types, fuse locations…" />
           </div>
         </div>
 
@@ -347,7 +347,7 @@ export default function ModDetail({ isNew }) {
           {form.photos.length < 10 && (
             <div className="mt-3">
               <label className="btn-secondary text-sm cursor-pointer inline-flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 {uploading ? 'Uploading…' : 'Add Photos'}
@@ -374,15 +374,15 @@ export default function ModDetail({ isNew }) {
                     <div key={src} className="relative group">
                       {pdf ? (
                         <a href={src} target="_blank" rel="noopener noreferrer"
-                          className="flex flex-col items-center justify-center w-20 h-20 rounded-lg border border-raptor-border bg-raptor-elevated text-raptor-muted hover:text-raptor-accent hover:border-raptor-accent transition-colors gap-1">
-                          <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          className="flex flex-col items-center justify-center w-20 h-20 rounded-lg border border-raptor-border bg-raptor-elevated text-raptor-muted hover:text-raptor-link hover:border-raptor-accent transition-colors gap-1">
+                          <svg aria-hidden="true" className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                           <span className="text-xs font-medium">PDF</span>
                         </a>
                       ) : (
-                        <a href={src} target="_blank" rel="noopener noreferrer"
+                        <a href={src} target="_blank" rel="noopener noreferrer" aria-label="Open receipt"
                           className="block w-20 h-20 rounded-lg border border-raptor-border overflow-hidden hover:border-raptor-accent transition-colors">
                           <img src={src} alt="" className="w-full h-full object-cover" />
                         </a>
@@ -397,7 +397,7 @@ export default function ModDetail({ isNew }) {
             )}
 
             <label className="btn-secondary text-sm cursor-pointer inline-flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
               </svg>
@@ -409,7 +409,7 @@ export default function ModDetail({ isNew }) {
         )}
 
         {error && (
-          <div className="text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 rounded-lg px-3 py-2">
+          <div className="text-red-700 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 rounded-lg px-3 py-2">
             {error}
           </div>
         )}

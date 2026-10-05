@@ -60,7 +60,7 @@ function FactoryFigures({ vehicleId, specs, onAdded }) {
           <div className="section-title">Ford&apos;s Figures — {data.model} {data.generation}</div>
           <div className="text-xs text-raptor-muted mt-0.5">
             From the{' '}
-            <a href={ref.source.url} target="_blank" rel="noopener noreferrer" className="text-raptor-accent hover:underline">{ref.source.title} ↗</a>
+            <a href={ref.source.url} target="_blank" rel="noopener noreferrer" className="text-raptor-link underline underline-offset-2 hover:no-underline">{ref.source.title} ↗</a>
             , as Ford printed it. {ref.note}
           </div>
         </div>
@@ -85,7 +85,7 @@ function FactoryFigures({ vehicleId, specs, onAdded }) {
                   </div>
                   {added
                     ? <span className="text-xs text-raptor-muted flex-shrink-0 pt-0.5">In my sheet</span>
-                    : <button type="button" disabled={busy} onClick={() => add([{ it, group }])} className="text-xs text-raptor-accent hover:underline flex-shrink-0 pt-0.5 disabled:opacity-50">Add</button>}
+                    : <button type="button" disabled={busy} onClick={() => add([{ it, group }])} className="text-xs text-raptor-link underline underline-offset-2 hover:no-underline flex-shrink-0 pt-0.5 disabled:opacity-50">Add</button>}
                 </div>
               )
             })}
@@ -175,7 +175,7 @@ export default function SpecSheet() {
               rel="noopener noreferrer"
               className="rounded-lg border border-raptor-border bg-raptor-elevated p-3 hover:border-raptor-accent transition-colors"
             >
-              <div className="text-sm font-medium text-raptor-accent">{r.label} ↗</div>
+              <div className="text-sm font-medium text-raptor-link">{r.label} ↗</div>
               <div className="text-xs text-raptor-muted mt-0.5">{r.note}</div>
             </a>
           ))}
@@ -191,7 +191,7 @@ export default function SpecSheet() {
           </div>
           {selectedVehicleId && (
             <button onClick={openNew} className="btn-primary text-sm flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
               Add Spec
@@ -201,39 +201,39 @@ export default function SpecSheet() {
 
         {!selectedVehicleId ? (
           <p className="text-sm text-raptor-secondary">
-            Add a vehicle in <Link to="/garage" className="text-raptor-accent hover:underline">My Garage</Link> to start a spec sheet.
+            Add a vehicle in <Link to="/garage" className="text-raptor-link underline underline-offset-2 hover:no-underline">My Garage</Link> to start a spec sheet.
           </p>
         ) : (
           <>
             {showForm && (
               <form onSubmit={submit} className="rounded-lg border border-raptor-border bg-raptor-elevated p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="label">Category</label>
-                  <select value={form.category} onChange={e => set('category', e.target.value)} className="input-field">
+                  <label htmlFor="spec-sheet-category" className="label">Category</label>
+                  <select id="spec-sheet-category" value={form.category} onChange={e => set('category', e.target.value)} className="input-field">
                     {CATEGORIES.map(c => <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="label">Spec *</label>
-                  <input value={form.name} onChange={e => set('name', e.target.value)} className="input-field" placeholder="e.g. Engine oil capacity" required />
+                  <label htmlFor="spec-sheet-name" className="label">Spec *</label>
+                  <input id="spec-sheet-name" value={form.name} onChange={e => set('name', e.target.value)} className="input-field" placeholder="e.g. Engine oil capacity" required />
                 </div>
                 <div>
-                  <label className="label">Value</label>
-                  <input value={form.value} onChange={e => set('value', e.target.value)} className="input-field" placeholder="e.g. 7.0" />
+                  <label htmlFor="spec-sheet-value" className="label">Value</label>
+                  <input id="spec-sheet-value" value={form.value} onChange={e => set('value', e.target.value)} className="input-field" placeholder="e.g. 7.0" />
                 </div>
                 <div>
-                  <label className="label">Unit</label>
-                  <input value={form.unit} onChange={e => set('unit', e.target.value)} className="input-field" placeholder="e.g. qt, lb-ft, psi" />
+                  <label htmlFor="spec-sheet-unit" className="label">Unit</label>
+                  <input id="spec-sheet-unit" value={form.unit} onChange={e => set('unit', e.target.value)} className="input-field" placeholder="e.g. qt, lb-ft, psi" />
                 </div>
                 <div>
-                  <label className="label">Source</label>
-                  <input value={form.source} onChange={e => set('source', e.target.value)} className="input-field" placeholder="e.g. Owner's manual p.312" />
+                  <label htmlFor="spec-sheet-source" className="label">Source</label>
+                  <input id="spec-sheet-source" value={form.source} onChange={e => set('source', e.target.value)} className="input-field" placeholder="e.g. Owner's manual p.312" />
                 </div>
                 <div>
-                  <label className="label">Notes</label>
-                  <input value={form.notes} onChange={e => set('notes', e.target.value)} className="input-field" placeholder="Optional" />
+                  <label htmlFor="spec-sheet-notes" className="label">Notes</label>
+                  <input id="spec-sheet-notes" value={form.notes} onChange={e => set('notes', e.target.value)} className="input-field" placeholder="Optional" />
                 </div>
-                {error && <div className="sm:col-span-2 text-sm text-red-500">{error}</div>}
+                {error && <div className="sm:col-span-2 text-sm text-red-700 dark:text-red-400">{error}</div>}
                 <div className="sm:col-span-2 flex gap-2">
                   <button type="submit" disabled={saving} className="btn-primary text-sm">{saving ? 'Saving…' : editId ? 'Save' : 'Add Spec'}</button>
                   <button type="button" onClick={() => { setShowForm(false); setEditId(null) }} className="btn-secondary text-sm">Cancel</button>
@@ -245,7 +245,7 @@ export default function SpecSheet() {
               <p className="text-sm text-raptor-secondary">
                 No specs recorded yet. Add the numbers you actually look up — oil capacity, lug nut torque,
                 tire pressures — or bulk-import a sheet from{' '}
-                <Link to="/settings/data" className="text-raptor-accent hover:underline">Settings → Import &amp; Export</Link>.
+                <Link to="/settings/data" className="text-raptor-link underline underline-offset-2 hover:no-underline">Settings → Import &amp; Export</Link>.
               </p>
             ) : (
               <div className="space-y-4">
@@ -266,13 +266,13 @@ export default function SpecSheet() {
                           <span className="text-raptor-primary font-medium tabular-nums flex-shrink-0">
                             {s.value}{s.unit ? ` ${s.unit}` : ''}
                           </span>
-                          <button onClick={() => openEdit(s)} className="text-raptor-muted hover:text-raptor-primary flex-shrink-0" title="Edit">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <button aria-label="Edit" onClick={() => openEdit(s)} className="text-raptor-muted hover:text-raptor-primary flex-shrink-0" title="Edit">
+                            <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                           </button>
-                          <button onClick={() => remove(s.id)} className="text-raptor-muted hover:text-red-500 flex-shrink-0" title="Delete">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <button aria-label="Delete" onClick={() => remove(s.id)} className="text-raptor-muted hover:text-red-500 flex-shrink-0" title="Delete">
+                            <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                           </button>

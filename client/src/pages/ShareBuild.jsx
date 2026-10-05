@@ -152,6 +152,7 @@ export default function ShareBuild() {
             </div>
           ) : (
             <textarea
+              aria-label="Build sheet text to copy"
               readOnly
               value={sheet?.content || ''}
               onFocus={e => e.target.select()}

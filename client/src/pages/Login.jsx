@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useApp } from '../context/AppContext'
 
 // The same bolt mark as the home-screen icon, favicon, and landing page, so
@@ -12,6 +12,7 @@ function BoltMark() {
 }
 
 export default function Login() {
+  useEffect(() => { document.title = 'Sign in · RaptorTracker' }, [])
   const { setUser } = useApp()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -44,7 +45,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-raptor-base flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-sm flex-1 flex flex-col items-center justify-center">
+      <main className="w-full max-w-sm flex-1 flex flex-col items-center justify-center">
         {/* Logo + wordmark */}
         <div className="text-center mb-8">
           <div
@@ -85,7 +86,7 @@ export default function Login() {
               />
             </div>
             {error && (
-              <div className="text-red-600 text-sm bg-red-50 border border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-900 rounded-lg px-3 py-2">
+              <div className="text-red-700 text-sm bg-red-50 border border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-900 rounded-lg px-3 py-2">
                 {error}
               </div>
             )}
@@ -98,7 +99,7 @@ export default function Login() {
             </button>
           </form>
         </div>
-      </div>
+      </main>
 
       <footer className="py-4 w-full flex items-center justify-between gap-4 max-w-sm">
         <p className="text-xs text-raptor-muted">© 2026 breed007 · MIT licensed</p>
@@ -106,7 +107,7 @@ export default function Login() {
           href="https://github.com/breed007/RaptorTracker"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs text-raptor-muted hover:text-raptor-accent transition-colors flex-shrink-0"
+          className="text-xs text-raptor-muted hover:text-raptor-link transition-colors flex-shrink-0"
         >
           v{__APP_VERSION__}
         </a>

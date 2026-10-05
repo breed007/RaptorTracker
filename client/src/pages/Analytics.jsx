@@ -111,7 +111,7 @@ export default function Analytics() {
       <div className="card p-5">
         <div className="section-title mb-3">Odometer Over Time</div>
         {trend.length >= 2 ? (
-          <div style={{ height: 200 }}><Line data={chartData} options={chartOpts} /></div>
+          <div style={{ height: 200 }}><Line data={chartData} options={chartOpts} aria-label={trend.length ? `Odometer over time: ${currentUnits().fmtDist(trend[0].odometer)} on ${trend[0].date}, ${currentUnits().fmtDist(trend[trend.length - 1].odometer)} on ${trend[trend.length - 1].date}` : 'Odometer over time'} /></div>
         ) : (
           <p className="text-sm text-raptor-secondary">Log at least two odometer readings (or fuel/service entries with mileage) to see a trend.</p>
         )}
@@ -143,20 +143,20 @@ export default function Analytics() {
         <div className="section-title mb-3">Odometer Log</div>
         <form onSubmit={addReading} className="flex flex-wrap items-end gap-3 mb-4">
           <div>
-            <label className="label">Date</label>
-            <input type="date" value={form.date} onChange={e => set('date', e.target.value)} className="input-field" required />
+            <label htmlFor="analytics-date" className="label">Date</label>
+            <input id="analytics-date" type="date" value={form.date} onChange={e => set('date', e.target.value)} className="input-field" required />
           </div>
           <div>
-            <label className="label">Odometer</label>
-            <input type="number" value={form.odometer} onChange={e => set('odometer', e.target.value)} className="input-field w-36" placeholder="e.g. 24500" required />
+            <label htmlFor="analytics-odometer" className="label">Odometer</label>
+            <input id="analytics-odometer" type="number" value={form.odometer} onChange={e => set('odometer', e.target.value)} className="input-field w-36" placeholder="e.g. 24500" required />
           </div>
           <div className="flex-1 min-w-[8rem]">
-            <label className="label">Note</label>
-            <input type="text" value={form.note} onChange={e => set('note', e.target.value)} className="input-field" placeholder="Optional" />
+            <label htmlFor="analytics-note" className="label">Note</label>
+            <input id="analytics-note" type="text" value={form.note} onChange={e => set('note', e.target.value)} className="input-field" placeholder="Optional" />
           </div>
           <button type="submit" disabled={saving} className="btn-primary text-sm">{saving ? 'Saving…' : 'Log'}</button>
         </form>
-        {error && <div className="text-sm text-red-500 mb-3">{error}</div>}
+        {error && <div className="text-sm text-red-700 dark:text-red-400 mb-3">{error}</div>}
 
         {loading ? (
           <div className="text-raptor-muted animate-pulse text-sm">Loading…</div>
@@ -169,8 +169,8 @@ export default function Analytics() {
                 <span className="text-raptor-primary font-medium w-28">{currentUnits().fmtDist(r.odometer)}</span>
                 <span className="text-raptor-muted">{fmtDate(r.date)}</span>
                 {r.note && <span className="text-raptor-secondary truncate">{r.note}</span>}
-                <button onClick={() => deleteReading(r.id)} className="ml-auto text-raptor-muted hover:text-red-500" title="Delete">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button aria-label="Delete" onClick={() => deleteReading(r.id)} className="ml-auto text-raptor-muted hover:text-red-500" title="Delete">
+                  <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>

@@ -68,11 +68,11 @@ function MpgBadge({ dpv, factoryCombinedMpg }) {
     )
   }
   const mpg = u.toMpgUs(Number(dpv))
-  let colorCls = 'bg-green-500/15 text-green-500'
+  let colorCls = 'bg-green-500/15 text-green-800 dark:text-green-400'
   if (factoryCombinedMpg != null) {
-    if (mpg >= factoryCombinedMpg) colorCls = 'bg-green-500/15 text-green-500'
-    else if (mpg >= factoryCombinedMpg * 0.88) colorCls = 'bg-yellow-500/15 text-yellow-500'
-    else colorCls = 'bg-red-500/15 text-red-400'
+    if (mpg >= factoryCombinedMpg) colorCls = 'bg-green-500/15 text-green-800 dark:text-green-400'
+    else if (mpg >= factoryCombinedMpg * 0.88) colorCls = 'bg-yellow-500/15 text-yellow-800 dark:text-yellow-300'
+    else colorCls = 'bg-red-500/15 text-red-700 dark:text-red-300'
   }
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${colorCls}`}>
@@ -357,7 +357,7 @@ export default function FuelLog() {
   if (!selectedVehicleId) {
     return (
       <div className="flex flex-col items-center justify-center min-h-64 gap-4 text-center">
-        <svg className="w-12 h-12 text-raptor-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg aria-hidden="true" className="w-12 h-12 text-raptor-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
             d="M3 10h2l1 2h12l1-2h2M5 10V6a2 2 0 012-2h10a2 2 0 012 2v4M7 16a1 1 0 100 2 1 1 0 000-2zm10 0a1 1 0 100 2 1 1 0 000-2z" />
         </svg>
@@ -376,7 +376,7 @@ export default function FuelLog() {
       <div className="flex items-center justify-between">
         <h1 className="page-title">Fuel Log</h1>
         <button onClick={openNew} className="btn-primary text-sm flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           Add Fill-up
@@ -384,7 +384,7 @@ export default function FuelLog() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-400">
           {error}
         </div>
       )}
@@ -458,7 +458,7 @@ export default function FuelLog() {
         <div className="card p-4">
           <div className="section-title mb-3">{u.econName} over time</div>
           <div style={{ height: 180 }}>
-            <Line data={lineChartData} options={lineChartOptions} />
+            <Line data={lineChartData} options={lineChartOptions} aria-label={`${u.econName} for each of the last ${chartData.length} measured tanks, from ${u.fmtEcon(u.economy(chartData[0].mpg))} to ${u.fmtEcon(u.economy(chartData[chartData.length - 1].mpg))}`} />
           </div>
         </div>
       )}
@@ -474,8 +474,8 @@ export default function FuelLog() {
 
             {/* Date */}
             <div>
-              <label className="label">Date *</label>
-              <input
+              <label htmlFor="fuel-log-date" className="label">Date *</label>
+              <input id="fuel-log-date"
                 type="date"
                 value={form.date}
                 onChange={e => setField('date', e.target.value)}
@@ -486,8 +486,8 @@ export default function FuelLog() {
 
             {/* Odometer */}
             <div>
-              <label className="label">Odometer ({u.dist}) *</label>
-              <input
+              <label htmlFor="fuel-log-odometer" className="label">Odometer ({u.dist}) *</label>
+              <input id="fuel-log-odometer"
                 type="number"
                 value={form.odometer}
                 onChange={e => setField('odometer', e.target.value)}
@@ -501,8 +501,8 @@ export default function FuelLog() {
 
             {/* Gallons */}
             <div>
-              <label className="label">{capVol} *</label>
-              <input
+              <label htmlFor="fuel-log-gallons" className="label">{capVol} *</label>
+              <input id="fuel-log-gallons"
                 type="number"
                 value={form.gallons}
                 onChange={e => handleGallonsOrPriceChange('gallons', e.target.value)}
@@ -516,8 +516,8 @@ export default function FuelLog() {
 
             {/* Price per gallon */}
             <div>
-              <label className="label">Price per {u.volLong === 'liters' ? 'Liter' : 'Gallon'} ({u.symbol})</label>
-              <input
+              <label htmlFor="fuel-log-price-per-gallon" className="label">Price per {u.volLong === 'liters' ? 'Liter' : 'Gallon'} ({u.symbol})</label>
+              <input id="fuel-log-price-per-gallon"
                 type="number"
                 value={form.price_per_gallon}
                 onChange={e => handleGallonsOrPriceChange('price_per_gallon', e.target.value)}
@@ -530,8 +530,8 @@ export default function FuelLog() {
 
             {/* Total cost */}
             <div>
-              <label className="label">Total Cost</label>
-              <input
+              <label htmlFor="fuel-log-total-cost" className="label">Total Cost</label>
+              <input id="fuel-log-total-cost"
                 type="number"
                 value={form.total_cost}
                 onChange={e => handleTotalCostChange(e.target.value)}
@@ -544,8 +544,8 @@ export default function FuelLog() {
 
             {/* Station */}
             <div>
-              <label className="label">Station</label>
-              <input
+              <label htmlFor="fuel-log-station" className="label">Station</label>
+              <input id="fuel-log-station"
                 type="text"
                 value={form.station}
                 onChange={e => setField('station', e.target.value)}
@@ -556,8 +556,8 @@ export default function FuelLog() {
 
             {/* Trip type */}
             <div>
-              <label className="label">Trip Type</label>
-              <select
+              <label htmlFor="fuel-log-trip-type" className="label">Trip Type</label>
+              <select id="fuel-log-trip-type"
                 value={form.trip_type}
                 onChange={e => setField('trip_type', e.target.value)}
                 className="input-field"
@@ -603,8 +603,8 @@ export default function FuelLog() {
 
             {/* Notes */}
             <div className="sm:col-span-2">
-              <label className="label">Notes</label>
-              <textarea
+              <label htmlFor="fuel-log-notes" className="label">Notes</label>
+              <textarea id="fuel-log-notes"
                 value={form.notes}
                 onChange={e => setField('notes', e.target.value)}
                 className="input-field"
@@ -614,7 +614,7 @@ export default function FuelLog() {
             </div>
 
             {formError && (
-              <div className="sm:col-span-2 text-sm text-red-500 dark:text-red-400">{formError}</div>
+              <div className="sm:col-span-2 text-sm text-red-700 dark:text-red-400">{formError}</div>
             )}
 
             <div className="sm:col-span-2 flex gap-3">
@@ -634,7 +634,7 @@ export default function FuelLog() {
         <div className="text-raptor-muted animate-pulse text-sm">Loading…</div>
       ) : entries.length === 0 ? (
         <div className="card p-10 text-center space-y-4">
-          <svg className="w-10 h-10 text-raptor-muted mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" className="w-10 h-10 text-raptor-muted mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
               d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
           </svg>
@@ -710,7 +710,7 @@ function FuelEntryRow({ entry, factoryCombinedMpg, onEdit, onDelete }) {
           <div className="flex flex-wrap gap-3 text-sm text-raptor-secondary">
             <span>{gallonsStr}</span>
             {priceStr && <span className="text-raptor-muted">{priceStr}</span>}
-            {costStr && <span className="font-semibold text-raptor-accent">{costStr}</span>}
+            {costStr && <span className="font-semibold text-raptor-link">{costStr}</span>}
           </div>
 
           {/* Station + notes */}
@@ -730,7 +730,7 @@ function FuelEntryRow({ entry, factoryCombinedMpg, onEdit, onDelete }) {
             title="Edit"
             aria-label="Edit fill-up"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
@@ -741,7 +741,7 @@ function FuelEntryRow({ entry, factoryCombinedMpg, onEdit, onDelete }) {
             title="Delete"
             aria-label="Delete fill-up"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>

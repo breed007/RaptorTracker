@@ -75,7 +75,7 @@ export default function SpendChart({ data }) {
 
   return (
     <div style={{ height: Math.max(data.length * 36, 120) }}>
-      <Bar data={chartData} options={options} />
+      <Bar data={chartData} options={options} aria-label={`Spend by category: ${sorted.map(d => `${d.category.replace('_', ' ')} ${currentUnits().money0(d.spend)}`).join(', ')}`} />
     </div>
   )
 }

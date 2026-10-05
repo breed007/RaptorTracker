@@ -40,9 +40,9 @@ function UpdatesCard() {
         You&apos;re running <span className="font-medium text-raptor-primary">v{info.current}</span>.{' '}
         {info.available ? (
           <>
-            <span className="font-medium text-green-600 dark:text-green-400">v{info.latest} is available</span>
+            <span className="font-medium text-green-700 dark:text-green-400">v{info.latest} is available</span>
             {fmtWhen(info.publishedAt) && <> (released {fmtWhen(info.publishedAt)})</>}.{' '}
-            <a href={info.url} target="_blank" rel="noopener noreferrer" className="text-raptor-accent hover:underline">What&apos;s new ↗</a>
+            <a href={info.url} target="_blank" rel="noopener noreferrer" className="text-raptor-link underline underline-offset-2 hover:no-underline">What&apos;s new ↗</a>
           </>
         ) : info.latest ? 'That\'s the latest release.' : null}
       </p>
@@ -146,7 +146,7 @@ export default function GeneralSettings() {
             Changing currency changes the symbol only. Amounts you&apos;ve entered aren&apos;t exchanged.
           </p>
         )}
-        {error && <div className="text-sm text-red-500">{error}</div>}
+        {error && <div className="text-sm text-red-700 dark:text-red-400">{error}</div>}
 
         <div className="flex gap-2">
           <button type="button" onClick={save} disabled={!changed || saving} className="btn-primary disabled:opacity-40">

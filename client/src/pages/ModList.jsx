@@ -105,7 +105,7 @@ export default function ModList() {
 
   const SortIcon = ({ field }) => {
     if (sortField !== field) return <span className="text-raptor-muted ml-1">↕</span>
-    return <span className="text-raptor-accent ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>
+    return <span className="text-raptor-link ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>
   }
 
   // ── Import / Export handlers ───────────────────────────────────────────────
@@ -180,19 +180,19 @@ export default function ModList() {
               className="btn-secondary text-sm flex items-center gap-2"
             >
               {importing ? (
-                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <svg aria-hidden="true" className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
               ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                     d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                 </svg>
               )}
               {importing ? 'Importing…' : 'Import / Export'}
               {!importing && (
-                <svg className="w-3 h-3 text-raptor-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg aria-hidden="true" className="w-3 h-3 text-raptor-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               )}
@@ -205,7 +205,7 @@ export default function ModList() {
                   onClick={() => handleExport('json')}
                   className="flex items-center gap-2.5 w-full px-3 py-2 text-raptor-primary hover:bg-raptor-elevated transition-colors"
                 >
-                  <svg className="w-4 h-4 text-raptor-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg aria-hidden="true" className="w-4 h-4 text-raptor-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                       d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
@@ -216,7 +216,7 @@ export default function ModList() {
                   onClick={() => handleExport('zip')}
                   className="flex items-center gap-2.5 w-full px-3 py-2 text-raptor-primary hover:bg-raptor-elevated transition-colors"
                 >
-                  <svg className="w-4 h-4 text-raptor-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg aria-hidden="true" className="w-4 h-4 text-raptor-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                       d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
@@ -229,7 +229,7 @@ export default function ModList() {
                   onClick={handleImportClick}
                   className="flex items-center gap-2.5 w-full px-3 py-2 text-raptor-primary hover:bg-raptor-elevated transition-colors"
                 >
-                  <svg className="w-4 h-4 text-raptor-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg aria-hidden="true" className="w-4 h-4 text-raptor-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                       d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4 0l4-4m0 0l4 4m-4-4v12" />
                   </svg>
@@ -240,7 +240,7 @@ export default function ModList() {
           </div>
 
           <Link to="/mods/new" className="btn-primary text-sm flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             Add Mod
@@ -261,8 +261,8 @@ export default function ModList() {
               : `Imported ${importResult.imported} mod${importResult.imported !== 1 ? 's' : ''}${importResult.duplicates > 0 ? `; ${importResult.duplicates} already here, skipped` : ''}${importResult.skipped > 0 ? `; ${importResult.skipped} skipped (missing part name)` : ''}.`
             }
           </span>
-          <button onClick={() => setImportResult(null)} className="flex-shrink-0 opacity-60 hover:opacity-100">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button onClick={() => setImportResult(null)} aria-label="Dismiss" className="flex-shrink-0 opacity-60 hover:opacity-100">
+            <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -297,11 +297,11 @@ export default function ModList() {
             placeholder="Search part, brand, vendor…"
             className="input-field max-w-xs text-sm"
           />
-          <select value={category} onChange={e => setCategory(e.target.value)} className="input-field w-auto text-sm">
+          <select aria-label="Filter by category" value={category} onChange={e => setCategory(e.target.value)} className="input-field w-auto text-sm">
             <option value="">All Categories</option>
             {CATEGORIES.map(c => <option key={c} value={c}>{c.replace('_', ' ')}</option>)}
           </select>
-          <select value={status} onChange={e => setStatus(e.target.value)} className="input-field w-auto text-sm">
+          <select aria-label="Filter by status" value={status} onChange={e => setStatus(e.target.value)} className="input-field w-auto text-sm">
             <option value="">All Statuses</option>
             {STATUSES.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
           </select>
@@ -358,7 +358,7 @@ export default function ModList() {
                           <th className="px-4 py-3 text-raptor-secondary font-medium hidden lg:table-cell">
                             Odometer
                           </th>
-                          <th className="px-4 py-3 w-10" />
+                          <th className="px-4 py-3 w-10"><span className="sr-only">Actions</span></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -380,12 +380,20 @@ export default function ModList() {
                                     />
                                   )}
                                   <div>
-                                    <div className="font-medium text-raptor-primary">{mod.part_name}</div>
+                                    {/* The whole row opens the mod for a mouse; this button is the
+                                        keyboard and screen-reader way in. */}
+                                    <button
+                                      type="button"
+                                      onClick={e => { e.stopPropagation(); setDetailModId(mod.id) }}
+                                      className="font-medium text-raptor-primary text-left hover:underline"
+                                    >
+                                      {mod.part_name}
+                                    </button>
                                     {mod.brand && <div className="text-xs text-raptor-muted mt-0.5">{mod.brand}</div>}
                                     {mod.aux_switches?.length > 0
-                                      ? <div className="text-xs text-raptor-accent mt-0.5">AUX {mod.aux_switches.map(s => s.switch_number).join(', ')}</div>
+                                      ? <div className="text-xs text-raptor-link mt-0.5">AUX {mod.aux_switches.map(s => s.switch_number).join(', ')}</div>
                                       : mod.aux_switch
-                                        ? <div className="text-xs text-raptor-accent mt-0.5">AUX {mod.aux_switch}</div>
+                                        ? <div className="text-xs text-raptor-link mt-0.5">AUX {mod.aux_switch}</div>
                                         : null
                                     }
                                   </div>
@@ -407,12 +415,12 @@ export default function ModList() {
                                 {currentUnits().fmtDist(mod.mileage_at_install)}
                               </td>
                               <td className="px-4 py-3 text-raptor-muted" onClick={e => e.stopPropagation()}>
-                                <Link
+                                <Link aria-label="Edit"
                                   to={`/mods/${mod.id}`}
                                   className="p-1.5 rounded hover:bg-raptor-border hover:text-raptor-primary transition-colors inline-block"
                                   title="Edit"
                                 >
-                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <svg aria-hidden="true" className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                       d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                   </svg>
@@ -432,7 +440,7 @@ export default function ModList() {
                     <span>Total: <span className="text-raptor-primary font-semibold tabular-nums">{currentUnits().money(totalCost)}</span></span>
                   )}
                   {installedCost > 0 && status !== 'Installed' && (
-                    <span>Installed: <span className="text-raptor-accent font-semibold tabular-nums">{currentUnits().money(installedCost)}</span></span>
+                    <span>Installed: <span className="text-raptor-link font-semibold tabular-nums">{currentUnits().money(installedCost)}</span></span>
                   )}
                 </div>
               </>

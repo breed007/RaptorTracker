@@ -181,7 +181,7 @@ export default function AuxPanel() {
                 {capacity.summary.conflicts} sharing a factory circuit
               </span>
             )}
-            <Link to="/wishlist" className="ml-auto text-xs text-raptor-accent hover:underline">Plan in Wishlist →</Link>
+            <Link to="/wishlist" className="ml-auto text-xs text-raptor-link underline underline-offset-2 hover:no-underline">Plan in Wishlist →</Link>
           </div>
           <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
             <span className="text-raptor-secondary">Free switches: <span className="text-raptor-primary font-semibold">{capacity.summary.free}</span></span>
@@ -198,7 +198,7 @@ export default function AuxPanel() {
               <span className="text-raptor-secondary">Default ratings:</span> {capacity.source.text}
               {capacity.source.confidence === 'community' && ' Check your own fuse box before relying on them.'}
               {' '}
-              <button type="button" onClick={() => setEditingFuses(v => !v)} className="text-raptor-accent hover:underline">
+              <button type="button" onClick={() => setEditingFuses(v => !v)} className="text-raptor-link underline underline-offset-2 hover:no-underline">
                 {editingFuses ? 'Done editing' : 'Edit fuse ratings'}
               </button>
             </p>
@@ -227,14 +227,14 @@ export default function AuxPanel() {
                       <button type="button" onClick={() => saveFuse(sw.switch_number, draft)} className="btn-primary text-xs px-3 py-1">Save</button>
                     )}
                     {sw.fuse_overridden && (
-                      <button type="button" onClick={() => saveFuse(sw.switch_number, '')} className="text-xs text-raptor-accent hover:underline">
+                      <button type="button" onClick={() => saveFuse(sw.switch_number, '')} className="text-xs text-raptor-link underline underline-offset-2 hover:no-underline">
                         Reset to {sw.fuse_amps_default}A
                       </button>
                     )}
                   </div>
                 )
               })}
-              {fuseError && <p className="text-xs text-red-500">{fuseError}</p>}
+              {fuseError && <p className="text-xs text-red-700 dark:text-red-400">{fuseError}</p>}
             </div>
           )}
           {capacity.needsHome?.length > 0 && (
@@ -247,15 +247,15 @@ export default function AuxPanel() {
                     {item.amps}A · {item.kind === 'mod' ? (item.status || 'mod').toLowerCase() : 'wishlist'}
                   </span>
                   {item.tooBig ? (
-                    <span className="text-xs text-red-500 font-medium">
+                    <span className="text-xs text-red-700 dark:text-red-400 font-medium">
                       More than any switch carries ({capacity.summary.largestFuse}A max). Plan a relay and its own fused circuit.
                     </span>
                   ) : item.fits.length > 0 ? (
-                    <span className="text-xs text-green-600 dark:text-green-400">
+                    <span className="text-xs text-green-700 dark:text-green-400">
                       Fits on AUX {item.fits.join(', ')}
                     </span>
                   ) : (
-                    <span className="text-xs text-yellow-600 dark:text-yellow-500">No free switch has room for it.</span>
+                    <span className="text-xs text-yellow-800 dark:text-yellow-500">No free switch has room for it.</span>
                   )}
                 </div>
               ))}
@@ -289,7 +289,7 @@ export default function AuxPanel() {
                   AUX {slot.switch_number} — {slot.fuse_amps}A
                 </span>
                 {slot.fuse_overridden && (
-                  <span className="text-[0.65rem] text-raptor-accent font-medium" title={`Ford's rating is ${slot.fuse_amps_default}A`}>
+                  <span className="text-[0.65rem] text-raptor-link font-medium" title={`Ford's rating is ${slot.fuse_amps_default}A`}>
                     your rating
                   </span>
                 )}
@@ -306,11 +306,11 @@ export default function AuxPanel() {
               <div className="flex items-center justify-between text-xs mb-1 gap-2">
                 <span className="text-raptor-muted">
                   {cap.unknownDraw && cap.totalAmps === 0 ? '?' : `${cap.totalAmps}A${cap.unknownDraw ? '+' : ''}`} of {cap.fuse_amps}A
-                  {cap.plannedAmps > 0 && <span className="text-raptor-accent"> · {cap.plannedAmps}A planned</span>}
+                  {cap.plannedAmps > 0 && <span className="text-raptor-link"> · {cap.plannedAmps}A planned</span>}
                 </span>
-                {cap.status === 'over' && <span className="text-red-500 font-semibold flex-shrink-0">over fuse</span>}
-                {cap.status === 'tight' && <span className="text-yellow-600 dark:text-yellow-500 font-semibold flex-shrink-0">near limit</span>}
-                {cap.status === 'conflict' && <span className="text-yellow-600 dark:text-yellow-500 font-semibold flex-shrink-0">shares factory circuit</span>}
+                {cap.status === 'over' && <span className="text-red-700 dark:text-red-400 font-semibold flex-shrink-0">over fuse</span>}
+                {cap.status === 'tight' && <span className="text-yellow-800 dark:text-yellow-500 font-semibold flex-shrink-0">near limit</span>}
+                {cap.status === 'conflict' && <span className="text-yellow-800 dark:text-yellow-500 font-semibold flex-shrink-0">shares factory circuit</span>}
                 {(cap.status === 'ok' || cap.status === 'conflict') && cap.unknownDraw && <span className="text-raptor-muted flex-shrink-0">draw unknown</span>}
               </div>
               <div className="h-1.5 rounded-full bg-raptor-elevated overflow-hidden">
@@ -351,7 +351,7 @@ export default function AuxPanel() {
                 {slot.warning_note && (
                   <div className="bg-amber-50 border border-amber-300 dark:bg-amber-900/30 dark:border-amber-800 rounded px-2.5 py-1.5 mb-2">
                     <div className="flex items-start gap-1.5">
-                      <span className="text-amber-600 dark:text-amber-400 text-xs mt-px flex-shrink-0">⚠</span>
+                      <span className="text-amber-700 dark:text-amber-400 text-xs mt-px flex-shrink-0">⚠</span>
                       <p className="text-xs text-amber-700 dark:text-amber-300 leading-snug flex-1">{slot.warning_note}</p>
                     </div>
                   </div>

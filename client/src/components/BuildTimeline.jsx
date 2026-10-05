@@ -47,7 +47,7 @@ function ModCard({ mod, pipeline }) {
     <div className={`card p-3 ml-2 transition-colors hover:border-raptor-accent ${pipeline ? 'opacity-75' : ''}`}>
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="flex-1 min-w-0">
-          <Link to={`/mods/${mod.id}`} className="hover:text-raptor-accent transition-colors">
+          <Link to={`/mods/${mod.id}`} className="hover:text-raptor-link transition-colors">
             <span className="font-semibold text-raptor-primary">{mod.part_name}</span>
           </Link>
           <div className="flex flex-wrap items-center gap-1.5 mt-1">
@@ -63,14 +63,14 @@ function ModCard({ mod, pipeline }) {
               </span>
             )}
             {mod.vendor_url && (
-              <a
+              <a aria-label={mod.vendor || 'View Product'}
                 href={mod.vendor_url}
                 target="_blank"
                 rel="noopener noreferrer"
                 title={mod.vendor || 'View Product'}
-                className="text-raptor-accent hover:opacity-70 transition-opacity"
+                className="text-raptor-link hover:opacity-70 transition-opacity"
               >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg aria-hidden="true" className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
               </a>
@@ -120,7 +120,7 @@ export default function BuildTimeline({ mods }) {
         <div key={year}>
           {/* Year header */}
           <div className="flex items-center gap-3 mb-5">
-            <span className="font-display font-bold text-2xl text-raptor-accent tracking-wider">{year}</span>
+            <span className="font-display font-bold text-2xl text-raptor-link tracking-wider">{year}</span>
             <div className="flex-1 h-px bg-raptor-border" />
             <span className="text-xs text-raptor-muted tabular-nums">
               {yearMap[year].reduce((s, g) => s + g.mods.length, 0)} mods

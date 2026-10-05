@@ -4,12 +4,12 @@ import { useApp } from '../context/AppContext'
 import { internalPath } from '../lib/links'
 
 const TYPES = {
-  vehicle:  { label: 'Vehicle',     dot: 'bg-purple-500', chip: 'text-purple-600 dark:text-purple-400' },
-  mod:      { label: 'Mods',        dot: 'bg-raptor-accent', chip: 'text-raptor-accent' },
-  service:  { label: 'Service',     dot: 'bg-blue-500', chip: 'text-blue-600 dark:text-blue-400' },
-  fuel:     { label: 'Fuel',        dot: 'bg-green-500', chip: 'text-green-600 dark:text-green-400' },
-  tire:     { label: 'Tires',       dot: 'bg-amber-500', chip: 'text-amber-600 dark:text-amber-400' },
-  warranty: { label: 'Warranty',    dot: 'bg-teal-500', chip: 'text-teal-600 dark:text-teal-400' },
+  vehicle:  { label: 'Vehicle',     dot: 'bg-purple-500', chip: 'text-purple-700 dark:text-purple-400' },
+  mod:      { label: 'Mods',        dot: 'bg-raptor-accent', chip: 'text-raptor-link' },
+  service:  { label: 'Service',     dot: 'bg-blue-500', chip: 'text-blue-700 dark:text-blue-400' },
+  fuel:     { label: 'Fuel',        dot: 'bg-green-500', chip: 'text-green-700 dark:text-green-400' },
+  tire:     { label: 'Tires',       dot: 'bg-amber-500', chip: 'text-amber-700 dark:text-amber-400' },
+  warranty: { label: 'Warranty',    dot: 'bg-teal-500', chip: 'text-teal-700 dark:text-teal-400' },
 }
 
 function fmtDate(d) {

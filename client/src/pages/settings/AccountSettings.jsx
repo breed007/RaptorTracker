@@ -53,15 +53,15 @@ export default function AccountSettings() {
         <div className="section-title mb-4">Change Password</div>
         <form onSubmit={submit} className="space-y-4">
           <div>
-            <label className="label">Current Password</label>
-            <input
+            <label htmlFor="account-current" className="label">Current Password</label>
+            <input id="account-current"
               type="password" value={current} onChange={e => setCurrent(e.target.value)}
               className="input-field" autoComplete="current-password" required
             />
           </div>
           <div>
-            <label className="label">New Password</label>
-            <input
+            <label htmlFor="account-next" className="label">New Password</label>
+            <input id="account-next"
               type="password" value={next} onChange={e => setNext(e.target.value)}
               className="input-field" autoComplete="new-password" required
             />
@@ -70,15 +70,15 @@ export default function AccountSettings() {
             </p>
           </div>
           <div>
-            <label className="label">Confirm New Password</label>
-            <input
+            <label htmlFor="account-confirm" className="label">Confirm New Password</label>
+            <input id="account-confirm"
               type="password" value={confirm} onChange={e => setConfirm(e.target.value)}
               className="input-field" autoComplete="new-password" required
             />
           </div>
 
-          {error && <div className="text-sm text-red-500">{error}</div>}
-          {done && <div className="text-sm text-green-600 dark:text-green-400">Password changed. It takes effect on your next sign-in.</div>}
+          {error && <div className="text-sm text-red-700 dark:text-red-400">{error}</div>}
+          {done && <div className="text-sm text-green-700 dark:text-green-400">Password changed. It takes effect on your next sign-in.</div>}
 
           <button type="submit" disabled={saving} className="btn-primary text-sm">
             {saving ? 'Saving…' : 'Change Password'}

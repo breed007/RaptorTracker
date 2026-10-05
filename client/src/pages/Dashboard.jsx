@@ -108,7 +108,7 @@ export default function Dashboard() {
           <p className="flex-1 text-sm text-raptor-secondary min-w-[14rem]">
             <span className="font-semibold text-raptor-primary">This is a sample truck.</span>{' '}
             Its records are made up so you can see how everything fits together. Add your own truck in{' '}
-            <Link to="/garage" className="text-raptor-accent hover:underline">My Garage</Link>, then remove this one.
+            <Link to="/garage" className="text-raptor-link underline underline-offset-2 hover:no-underline">My Garage</Link>, then remove this one.
           </p>
           <button type="button" onClick={removeSample} disabled={removingSample} className="btn-secondary text-sm disabled:opacity-50">
             {removingSample ? 'Removing…' : 'Remove sample truck'}
@@ -134,7 +134,7 @@ export default function Dashboard() {
                 </p>
               </div>
               <Link to="/mods/new" className="btn-primary text-sm flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
                 Add Mod
@@ -197,7 +197,7 @@ export default function Dashboard() {
                       ? 'bg-raptor-elevated border-raptor-border'
                       : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-900/40'
                 }`}>
-                  <svg className={`w-4 h-4 mt-0.5 flex-shrink-0 ${critical ? 'text-red-500' : info ? 'text-raptor-muted' : 'text-yellow-600 dark:text-yellow-500'}`}
+                  <svg aria-hidden="true" className={`w-4 h-4 mt-0.5 flex-shrink-0 ${critical ? 'text-red-700 dark:text-red-400' : info ? 'text-raptor-muted' : 'text-yellow-800 dark:text-yellow-500'}`}
                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={CATEGORY_ICON[a.category] || CATEGORY_ICON.service} />
                   </svg>
@@ -208,7 +208,7 @@ export default function Dashboard() {
                     {a.detail && <div className="text-xs text-raptor-secondary mt-0.5">{a.detail}</div>}
                     {a.recall && (
                       <button onClick={e => { e.preventDefault(); trackRecall(a.recall) }}
-                        className="text-xs text-raptor-accent hover:underline mt-1">+ Log the repair</button>
+                        className="text-xs text-raptor-link underline underline-offset-2 hover:no-underline mt-1">+ Log the repair</button>
                     )}
                   </div>
                 </div>
@@ -218,7 +218,7 @@ export default function Dashboard() {
                 : <div key={i}>{body}</div>
             })}
             {allAttention.length > shownAttention.length && (
-              <button onClick={() => setShowAllAttention(true)} className="text-xs text-raptor-accent hover:underline">
+              <button onClick={() => setShowAllAttention(true)} className="text-xs text-raptor-link underline underline-offset-2 hover:no-underline">
                 Show {allAttention.length - shownAttention.length} more →
               </button>
             )}
@@ -231,7 +231,7 @@ export default function Dashboard() {
         <div className="card p-4">
           <div className="flex items-center gap-2 mb-3">
             <span className="section-title">Coming Up</span>
-            <Link to="/maintenance" className="ml-auto text-xs text-raptor-accent hover:underline">Full forecast →</Link>
+            <Link to="/maintenance" className="ml-auto text-xs text-raptor-link underline underline-offset-2 hover:no-underline">Full forecast →</Link>
           </div>
           <div className="space-y-1.5">
             {upcoming.map(item => (
@@ -278,11 +278,11 @@ export default function Dashboard() {
       <div className="card p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="section-title">Recent Mods</div>
-          <Link to="/mods" className="text-xs text-raptor-accent hover:underline">View all →</Link>
+          <Link to="/mods" className="text-xs text-raptor-link underline underline-offset-2 hover:no-underline">View all →</Link>
         </div>
         {!overview.recentMods?.length ? (
           <p className="text-raptor-secondary text-sm">
-            No mods yet — <Link to="/mods/new" className="text-raptor-accent hover:underline">add your first one</Link>.
+            No mods yet — <Link to="/mods/new" className="text-raptor-link underline underline-offset-2 hover:no-underline">add your first one</Link>.
           </p>
         ) : (
           <div className="space-y-2">
@@ -307,7 +307,7 @@ export default function Dashboard() {
         <div className="card p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="section-title">Recent Maintenance</div>
-            <Link to="/maintenance" className="text-xs text-raptor-accent hover:underline">View all →</Link>
+            <Link to="/maintenance" className="text-xs text-raptor-link underline underline-offset-2 hover:no-underline">View all →</Link>
           </div>
           <div className="space-y-2">
             {overview.recentMaintenance.map(r => (

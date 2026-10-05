@@ -5,7 +5,7 @@ export default function VehicleSelector() {
   const { userVehicles, selectedVehicleId, selectVehicle } = useApp()
 
   if (userVehicles.length === 0) {
-    return <div className="text-xs text-white/40">No vehicles — add one in Garage</div>
+    return <div className="text-xs text-white/70">No vehicles — add one in Garage</div>
   }
 
   if (userVehicles.length === 1) {
@@ -13,13 +13,14 @@ export default function VehicleSelector() {
     return (
       <div className="text-xs">
         <div className="text-white font-semibold truncate">{v.nickname}</div>
-        <div className="text-white/50">{v.model_year} {v.model}</div>
+        <div className="text-white/70">{v.model_year} {v.model}</div>
       </div>
     )
   }
 
   return (
     <select
+      aria-label="Vehicle"
       value={selectedVehicleId || ''}
       onChange={e => selectVehicle(parseInt(e.target.value))}
       className="w-full bg-white/10 border border-white/20 text-white text-xs rounded-md px-2 py-1.5 focus:outline-none focus:border-white/50"

@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext'
 import { currentUnits } from '../lib/units'
 import ConfirmModal from '../components/ConfirmModal'
 import DocumentVault from '../components/DocumentVault'
+import Dialog from '../components/Dialog'
 import { localDate } from '../lib/dates'
 
 // Valid VIN: 17 chars, no I O Q
@@ -22,7 +23,7 @@ const EMPTY_FORM = {
 
 function SearchIcon({ className = 'w-4 h-4' }) {
   return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg aria-hidden="true" className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
         d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
     </svg>
@@ -31,7 +32,7 @@ function SearchIcon({ className = 'w-4 h-4' }) {
 
 function SpinIcon({ className = 'w-4 h-4' }) {
   return (
-    <svg className={`animate-spin ${className}`} fill="none" viewBox="0 0 24 24">
+    <svg aria-hidden="true" className={`animate-spin ${className}`} fill="none" viewBox="0 0 24 24">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
     </svg>
@@ -40,7 +41,7 @@ function SpinIcon({ className = 'w-4 h-4' }) {
 
 function FileIcon({ className = 'w-4 h-4' }) {
   return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg aria-hidden="true" className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
         d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
     </svg>
@@ -49,7 +50,7 @@ function FileIcon({ className = 'w-4 h-4' }) {
 
 function CheckCircleIcon({ className = 'w-4 h-4' }) {
   return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg aria-hidden="true" className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
         d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
@@ -104,15 +105,15 @@ function VehiclePhotoModal({ vehicle, onClose, onRefresh }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="bg-raptor-card border border-raptor-border rounded-xl shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+      <Dialog onClose={onClose} label={`${vehicle.nickname} photos`} className="bg-raptor-card border border-raptor-border rounded-xl shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-raptor-border flex-shrink-0">
           <div>
             <div className="font-display font-bold text-raptor-primary">{vehicle.nickname}</div>
             <div className="text-xs text-raptor-muted mt-0.5">Vehicle Photos · {photos.length} {photos.length === 1 ? 'photo' : 'photos'}</div>
           </div>
-          <button onClick={onClose} className="text-raptor-muted hover:text-raptor-primary transition-colors">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button onClick={onClose} aria-label="Close" className="text-raptor-muted hover:text-raptor-primary transition-colors">
+            <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -132,10 +133,10 @@ function VehiclePhotoModal({ vehicle, onClose, onRefresh }) {
           <button
             onClick={() => { inputRef.current.value = ''; inputRef.current.click() }}
             disabled={uploading}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 border-dashed border-raptor-border text-sm text-raptor-secondary hover:border-raptor-accent hover:text-raptor-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 border-dashed border-raptor-border text-sm text-raptor-secondary hover:border-raptor-accent hover:text-raptor-link transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {uploading ? <SpinIcon className="w-4 h-4" /> : (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
               </svg>
             )}
@@ -143,7 +144,7 @@ function VehiclePhotoModal({ vehicle, onClose, onRefresh }) {
             {!uploading && <span className="text-raptor-muted text-xs">JPEG, PNG, WEBP, TIFF, HEIC</span>}
           </button>
 
-          {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+          {error && <p className="text-sm text-red-700 dark:text-red-400">{error}</p>}
 
           {/* Photo grid */}
           {photos.length === 0 ? (
@@ -164,8 +165,8 @@ function VehiclePhotoModal({ vehicle, onClose, onRefresh }) {
                     <img src={photoPath} alt="" className="w-full aspect-video object-cover bg-raptor-elevated" />
                     {/* Profile badge */}
                     {isProfile && (
-                      <div className="absolute top-1.5 left-1.5 bg-raptor-accent text-white text-xs font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <div className="absolute top-1.5 left-1.5 bg-raptor-accent text-raptor-on-accent text-xs font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <svg aria-hidden="true" className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                         </svg>
                         Profile
@@ -178,7 +179,7 @@ function VehiclePhotoModal({ vehicle, onClose, onRefresh }) {
                           onClick={() => handleSetProfile(photoPath)}
                           className="w-full flex items-center justify-center gap-1.5 text-xs font-medium bg-white/20 hover:bg-white/30 text-white border border-white/25 rounded-md py-1.5 transition-colors"
                         >
-                          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                          <svg aria-hidden="true" className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                           </svg>
                           Set as Profile
@@ -188,7 +189,7 @@ function VehiclePhotoModal({ vehicle, onClose, onRefresh }) {
                         onClick={() => handleRemove(photoPath)}
                         className="w-full flex items-center justify-center gap-1.5 text-xs font-medium bg-red-500/80 hover:bg-red-600/90 text-white border border-red-400/30 rounded-md py-1.5 transition-colors"
                       >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg aria-hidden="true" className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                             d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
@@ -201,7 +202,7 @@ function VehiclePhotoModal({ vehicle, onClose, onRefresh }) {
             </div>
           )}
         </div>
-      </div>
+      </Dialog>
     </div>
   )
 }
@@ -227,7 +228,7 @@ function VinResultCard({ result, autoFilled }) {
           )}
         </div>
         {result.generation && (
-          <span className="bg-ford-navy/10 dark:bg-raptor-orange/15 text-raptor-accent text-xs font-semibold px-2 py-0.5 rounded whitespace-nowrap flex-shrink-0">
+          <span className="bg-ford-navy/10 dark:bg-raptor-orange/15 text-raptor-link text-xs font-semibold px-2 py-0.5 rounded whitespace-nowrap flex-shrink-0">
             {result.generation}
           </span>
         )}
@@ -243,7 +244,7 @@ function VinResultCard({ result, autoFilled }) {
 
       {/* Auto-fill confirmation */}
       {autoFilled.length > 0 && (
-        <div className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
+        <div className="flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400">
           <CheckCircleIcon className="w-3.5 h-3.5 flex-shrink-0" />
           Auto-filled: {autoFilled.join(', ')}
         </div>
@@ -256,19 +257,19 @@ function VinResultCard({ result, autoFilled }) {
             href={result.windowStickerUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-xs text-raptor-accent hover:underline font-medium"
+            className="flex items-center gap-1.5 text-xs text-raptor-link underline underline-offset-2 hover:no-underline font-medium"
           >
             <FileIcon className="w-3.5 h-3.5" />
             View Window Sticker PDF
           </a>
         )}
         {!result.nhtsaAvailable && (
-          <span className="text-xs text-amber-600 dark:text-amber-400">
+          <span className="text-xs text-amber-700 dark:text-amber-400">
             ⚠ NHTSA lookup unavailable — year decoded from VIN only
           </span>
         )}
         {result.errorText && (
-          <span className="text-xs text-amber-600 dark:text-amber-400">
+          <span className="text-xs text-amber-700 dark:text-amber-400">
             ⚠ {result.errorText}
           </span>
         )}
@@ -289,8 +290,8 @@ function ComplianceRow({ label, date }) {
   const days = Math.floor((new Date(date + 'T12:00:00') - new Date()) / 86400000)
   let cls = 'text-raptor-secondary'
   let tag = null
-  if (days < 0) { cls = 'text-red-500 dark:text-red-400 font-medium'; tag = 'expired' }
-  else if (days <= 30) { cls = 'text-yellow-600 dark:text-yellow-500 font-medium'; tag = `${days}d` }
+  if (days < 0) { cls = 'text-red-700 dark:text-red-400 font-medium'; tag = 'expired' }
+  else if (days <= 30) { cls = 'text-yellow-800 dark:text-yellow-500 font-medium'; tag = `${days}d` }
   return (
     <div className="flex gap-1.5 text-xs">
       <span className="text-raptor-muted w-24 flex-shrink-0">{label}</span>
@@ -614,13 +615,13 @@ export default function Garage() {
               {importing ? (
                 <SpinIcon className="w-4 h-4" />
               ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                     d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                 </svg>
               )}
               {importing ? 'Importing…' : 'Import / Export'}
-              <svg className={`w-3.5 h-3.5 transition-transform ${transferMenuOpen ? 'rotate-180' : ''}`}
+              <svg aria-hidden="true" className={`w-3.5 h-3.5 transition-transform ${transferMenuOpen ? 'rotate-180' : ''}`}
                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
@@ -634,7 +635,7 @@ export default function Garage() {
                   onClick={handleImportClick}
                   className="w-full text-left px-4 py-2 text-sm text-raptor-secondary hover:bg-raptor-elevated transition-colors flex items-center gap-2"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                       d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                   </svg>
@@ -651,7 +652,7 @@ export default function Garage() {
                         onClick={() => { setTransferMenuOpen(false); handleExportVehicle(v.id, v.nickname) }}
                         className="w-full text-left px-4 py-2 text-sm text-raptor-secondary hover:bg-raptor-elevated transition-colors flex items-center gap-2"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                             d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
@@ -665,7 +666,7 @@ export default function Garage() {
           </div>
 
           <button onClick={() => setShowForm(!showForm)} className="btn-primary text-sm flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             Add Vehicle
@@ -686,7 +687,7 @@ export default function Garage() {
       {importResult && (
         <div className={`flex items-start justify-between gap-3 px-4 py-3 rounded-lg text-sm ${
           importResult.error
-            ? 'bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400'
+            ? 'bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-400'
             : 'bg-green-500/10 border border-green-500/30 text-green-700 dark:text-green-400'
         }`}>
           <span>
@@ -695,8 +696,8 @@ export default function Garage() {
               : `"${importResult.nickname}" imported — ${importResult.modsImported} mod${importResult.modsImported !== 1 ? 's' : ''}, ${importResult.maintImported} maintenance record${importResult.maintImported !== 1 ? 's' : ''}.`
             }
           </span>
-          <button onClick={() => setImportResult(null)} className="flex-shrink-0 opacity-60 hover:opacity-100 transition-opacity">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button onClick={() => setImportResult(null)} aria-label="Dismiss" className="flex-shrink-0 opacity-60 hover:opacity-100 transition-opacity">
+            <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -710,10 +711,10 @@ export default function Garage() {
 
             {/* ── VIN field (full width, first) ───────────────────────────── */}
             <div>
-              <label className="label">VIN</label>
+              <label htmlFor="garage-vin" className="label">VIN</label>
               <div className="flex gap-2 items-start">
                 <div className="relative flex-1">
-                  <input
+                  <input id="garage-vin"
                     type="text"
                     value={form.vin}
                     onChange={e => handleVinChange(e.target.value)}
@@ -732,7 +733,7 @@ export default function Garage() {
                   {/* Character count / status */}
                   <span className={[
                     'absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium select-none',
-                    vinValid ? 'text-green-600 dark:text-green-400' : 'text-raptor-muted'
+                    vinValid ? 'text-green-700 dark:text-green-400' : 'text-raptor-muted'
                   ].join(' ')}>
                     {vinValid ? '✓ valid' : `${form.vin.length}/17`}
                   </span>
@@ -759,7 +760,7 @@ export default function Garage() {
                 </p>
               )}
               {vinError && (
-                <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">{vinError}</p>
+                <p className="mt-1.5 text-xs text-red-700 dark:text-red-400">{vinError}</p>
               )}
 
               {/* Decode result card */}
@@ -772,8 +773,8 @@ export default function Garage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
               <div>
-                <label className="label">Vehicle Model {!editId && '*'}</label>
-                <select
+                <label htmlFor="garage-vehicle-id" className="label">Vehicle Model {!editId && '*'}</label>
+                <select id="garage-vehicle-id"
                   value={form.vehicle_id}
                   onChange={e => setForm(f => ({ ...f, vehicle_id: e.target.value }))}
                   className={`input-field ${editId ? 'opacity-60 cursor-not-allowed' : ''}`}
@@ -791,8 +792,8 @@ export default function Garage() {
               </div>
 
               <div>
-                <label className="label">Nickname *</label>
-                <input
+                <label htmlFor="garage-nickname" className="label">Nickname *</label>
+                <input id="garage-nickname"
                   type="text"
                   value={form.nickname}
                   onChange={e => setForm(f => ({ ...f, nickname: e.target.value }))}
@@ -803,8 +804,8 @@ export default function Garage() {
               </div>
 
               <div>
-                <label className="label">Model Year {!editId && '*'}</label>
-                <input
+                <label htmlFor="garage-model-year" className="label">Model Year {!editId && '*'}</label>
+                <input id="garage-model-year"
                   type="number"
                   value={form.model_year}
                   onChange={e => setForm(f => ({ ...f, model_year: e.target.value }))}
@@ -818,8 +819,8 @@ export default function Garage() {
               </div>
 
               <div>
-                <label className="label">Color</label>
-                <input
+                <label htmlFor="garage-color" className="label">Color</label>
+                <input id="garage-color"
                   type="text"
                   value={form.color}
                   onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
@@ -829,8 +830,8 @@ export default function Garage() {
               </div>
 
               <div>
-                <label className="label">Odometer at Purchase ({currentUnits().dist})</label>
-                <input
+                <label htmlFor="garage-mileage-at-purchase" className="label">Odometer at Purchase ({currentUnits().dist})</label>
+                <input id="garage-mileage-at-purchase"
                   type="number"
                   value={form.mileage_at_purchase}
                   onChange={e => setForm(f => ({ ...f, mileage_at_purchase: e.target.value }))}
@@ -840,8 +841,8 @@ export default function Garage() {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="label">Package / Options</label>
-                <input
+                <label htmlFor="garage-package-options" className="label">Package / Options</label>
+                <input id="garage-package-options"
                   type="text"
                   value={form.package_options}
                   onChange={e => setForm(f => ({ ...f, package_options: e.target.value }))}
@@ -851,8 +852,8 @@ export default function Garage() {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="label">Notes</label>
-                <textarea
+                <label htmlFor="garage-notes" className="label">Notes</label>
+                <textarea id="garage-notes"
                   value={form.notes}
                   onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                   className="input-field"
@@ -865,8 +866,8 @@ export default function Garage() {
                 <div className="text-xs font-semibold text-raptor-muted uppercase tracking-wide mb-3">Purchase & Seller</div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="label">Purchase Price ({currentUnits().symbol})</label>
-                    <input
+                    <label htmlFor="garage-purchase-price" className="label">Purchase Price ({currentUnits().symbol})</label>
+                    <input id="garage-purchase-price"
                       type="number"
                       value={form.purchase_price}
                       onChange={e => setForm(f => ({ ...f, purchase_price: e.target.value }))}
@@ -878,8 +879,8 @@ export default function Garage() {
                   </div>
 
                   <div>
-                    <label className="label">Purchase Date</label>
-                    <input
+                    <label htmlFor="garage-purchase-date" className="label">Purchase Date</label>
+                    <input id="garage-purchase-date"
                       type="date"
                       value={form.purchase_date}
                       onChange={e => setForm(f => ({ ...f, purchase_date: e.target.value }))}
@@ -888,8 +889,8 @@ export default function Garage() {
                   </div>
 
                   <div>
-                    <label className="label">Seller Name</label>
-                    <input
+                    <label htmlFor="garage-seller-name" className="label">Seller Name</label>
+                    <input id="garage-seller-name"
                       type="text"
                       value={form.seller_name}
                       onChange={e => setForm(f => ({ ...f, seller_name: e.target.value }))}
@@ -899,8 +900,8 @@ export default function Garage() {
                   </div>
 
                   <div>
-                    <label className="label">Seller Contact</label>
-                    <input
+                    <label htmlFor="garage-seller-contact" className="label">Seller Contact</label>
+                    <input id="garage-seller-contact"
                       type="text"
                       value={form.seller_contact}
                       onChange={e => setForm(f => ({ ...f, seller_contact: e.target.value }))}
@@ -916,8 +917,8 @@ export default function Garage() {
                 <div className="text-xs font-semibold text-raptor-muted uppercase tracking-wide mb-3">Service Dealership</div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="label">Dealership Name</label>
-                    <input
+                    <label htmlFor="garage-service-dealership" className="label">Dealership Name</label>
+                    <input id="garage-service-dealership"
                       type="text"
                       value={form.service_dealership}
                       onChange={e => setForm(f => ({ ...f, service_dealership: e.target.value }))}
@@ -927,8 +928,8 @@ export default function Garage() {
                   </div>
 
                   <div>
-                    <label className="label">Dealership Contact</label>
-                    <input
+                    <label htmlFor="garage-service-dealership-contact" className="label">Dealership Contact</label>
+                    <input id="garage-service-dealership-contact"
                       type="text"
                       value={form.service_dealership_contact}
                       onChange={e => setForm(f => ({ ...f, service_dealership_contact: e.target.value }))}
@@ -945,38 +946,38 @@ export default function Garage() {
                 <p className="text-xs text-raptor-muted mb-3">Expiration dates here feed the email reminders on the Notifications page.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="label">Registration Expires</label>
-                    <input type="date" value={form.registration_expiry}
+                    <label htmlFor="garage-registration-expiry" className="label">Registration Expires</label>
+                    <input id="garage-registration-expiry" type="date" value={form.registration_expiry}
                       onChange={e => setForm(f => ({ ...f, registration_expiry: e.target.value }))}
                       className="input-field" />
                   </div>
                   <div>
-                    <label className="label">Inspection / Emissions Expires</label>
-                    <input type="date" value={form.inspection_expiry}
+                    <label htmlFor="garage-inspection-expiry" className="label">Inspection / Emissions Expires</label>
+                    <input id="garage-inspection-expiry" type="date" value={form.inspection_expiry}
                       onChange={e => setForm(f => ({ ...f, inspection_expiry: e.target.value }))}
                       className="input-field" />
                   </div>
                   <div>
-                    <label className="label">Insurance Provider</label>
-                    <input type="text" value={form.insurance_provider}
+                    <label htmlFor="garage-insurance-provider" className="label">Insurance Provider</label>
+                    <input id="garage-insurance-provider" type="text" value={form.insurance_provider}
                       onChange={e => setForm(f => ({ ...f, insurance_provider: e.target.value }))}
                       className="input-field" placeholder="e.g. State Farm" />
                   </div>
                   <div>
-                    <label className="label">Policy Number</label>
-                    <input type="text" value={form.insurance_policy}
+                    <label htmlFor="garage-insurance-policy" className="label">Policy Number</label>
+                    <input id="garage-insurance-policy" type="text" value={form.insurance_policy}
                       onChange={e => setForm(f => ({ ...f, insurance_policy: e.target.value }))}
                       className="input-field" />
                   </div>
                   <div>
-                    <label className="label">Insurance Phone</label>
-                    <input type="tel" value={form.insurance_phone}
+                    <label htmlFor="garage-insurance-phone" className="label">Insurance Phone</label>
+                    <input id="garage-insurance-phone" type="tel" value={form.insurance_phone}
                       onChange={e => setForm(f => ({ ...f, insurance_phone: e.target.value }))}
                       className="input-field" placeholder="Claims / agent number" />
                   </div>
                   <div>
-                    <label className="label">Insurance Expires / Renews</label>
-                    <input type="date" value={form.insurance_expiry}
+                    <label htmlFor="garage-insurance-expiry" className="label">Insurance Expires / Renews</label>
+                    <input id="garage-insurance-expiry" type="date" value={form.insurance_expiry}
                       onChange={e => setForm(f => ({ ...f, insurance_expiry: e.target.value }))}
                       className="input-field" />
                   </div>
@@ -984,7 +985,7 @@ export default function Garage() {
               </div>
 
               {error && (
-                <div className="sm:col-span-2 text-red-600 dark:text-red-400 text-sm">{error}</div>
+                <div className="sm:col-span-2 text-red-700 dark:text-red-400 text-sm">{error}</div>
               )}
 
               <div className="sm:col-span-2 flex gap-3">
@@ -1011,7 +1012,7 @@ export default function Garage() {
       />
 
       {stickerError && (
-        <div className="text-sm text-red-600 dark:text-red-400">{stickerError}</div>
+        <div className="text-sm text-red-700 dark:text-red-400">{stickerError}</div>
       )}
 
       {/* ── Vehicle cards ───────────────────────────────────────────────── */}
@@ -1028,8 +1029,12 @@ export default function Garage() {
             <div key={v.id} className="card overflow-hidden flex flex-col">
               {/* ── Profile photo header ─────────────────────────────────── */}
               <div
+                role="button"
+                tabIndex={0}
+                aria-label={`Manage photos of ${v.nickname}`}
                 className="relative h-44 bg-raptor-elevated flex-shrink-0 cursor-pointer group"
                 onClick={() => setPhotoModalVehicle(v)}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPhotoModalVehicle(v) } }}
                 title="Manage vehicle photos"
               >
                 {v.profile_photo ? (
@@ -1040,7 +1045,7 @@ export default function Garage() {
                   />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-raptor-muted/40">
-                    <svg className="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg aria-hidden="true" className="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1}
                         d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
@@ -1060,7 +1065,7 @@ export default function Garage() {
                 {/* Camera icon on hover */}
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
                   <div className="bg-black/60 text-white rounded-full p-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                         d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -1081,7 +1086,7 @@ export default function Garage() {
               </div>
               <div className="flex gap-4 text-sm flex-wrap">
                 <div>
-                  <span className="text-raptor-accent font-bold">{v.mod_count}</span>
+                  <span className="text-raptor-link font-bold">{v.mod_count}</span>
                   <span className="text-raptor-muted ml-1">mods</span>
                 </div>
                 <div>
@@ -1170,7 +1175,7 @@ export default function Garage() {
                     </button>
                     <button
                       onClick={() => handleStickerRemove(v.id)}
-                      className="btn-secondary text-xs px-3 text-red-500"
+                      className="btn-secondary text-xs px-3 text-red-700 dark:text-red-400"
                       title="Remove window sticker"
                     >
                       Remove
@@ -1185,7 +1190,7 @@ export default function Garage() {
                     {stickerUploading === v.id ? (
                       <SpinIcon className="w-3.5 h-3.5" />
                     ) : (
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg aria-hidden="true" className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                           d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                       </svg>
@@ -1199,32 +1204,32 @@ export default function Garage() {
                 <Link to={`/mods?vehicle_id=${v.id}`} className="btn-primary text-xs flex-1 text-center">
                   View Mods
                 </Link>
-                <button
+                <button aria-label="Documents"
                   onClick={() => setDocsVehicle(v)}
                   className="btn-secondary text-xs px-3"
                   title="Documents"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                       d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </button>
-                <button
+                <button aria-label="Edit vehicle"
                   onClick={() => handleEdit(v)}
                   className="btn-secondary text-xs px-3"
                   title="Edit vehicle"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                       d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
                 </button>
-                <button
+                <button aria-label="Remove vehicle"
                   onClick={() => setDeleteTarget(v.id)}
                   className="btn-secondary text-xs px-3"
                   title="Remove vehicle"
                 >
-                  <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg aria-hidden="true" className="w-4 h-4 text-red-700 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                       d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>

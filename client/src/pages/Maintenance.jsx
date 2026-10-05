@@ -157,7 +157,7 @@ function ServiceIntervals({ vehicleId }) {
         className="w-full flex items-center justify-between px-5 py-4 hover:bg-raptor-elevated transition-colors text-left"
       >
         <div className="flex items-center gap-3">
-          <svg className="w-4 h-4 text-raptor-accent flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" className="w-4 h-4 text-raptor-link flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
           </svg>
@@ -168,7 +168,7 @@ function ServiceIntervals({ vehicleId }) {
             </span>
           )}
         </div>
-        <svg className={`w-4 h-4 text-raptor-muted transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg aria-hidden="true" className={`w-4 h-4 text-raptor-muted transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
@@ -195,7 +195,7 @@ function ServiceIntervals({ vehicleId }) {
               ) : (
                 <button
                   onClick={() => { setMileageVal(currentMileage ?? ''); setMileageEdit(true) }}
-                  className="text-xs font-semibold text-raptor-accent hover:underline"
+                  className="text-xs font-semibold text-raptor-link underline underline-offset-2 hover:no-underline"
                 >
                   {currentMileage ? u.fmtDist(currentMileage) : 'Set mileage'}
                 </button>
@@ -208,7 +208,7 @@ function ServiceIntervals({ vehicleId }) {
                 disabled={loadingFactory}
                 className="btn-secondary text-xs flex items-center gap-1.5"
               >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg aria-hidden="true" className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 {loadingFactory ? 'Loading…' : 'Load Ford Factory Defaults'}
@@ -217,7 +217,7 @@ function ServiceIntervals({ vehicleId }) {
                 onClick={() => openEdit({})}
                 className="btn-primary text-xs flex items-center gap-1.5"
               >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg aria-hidden="true" className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
                 Add Custom
@@ -233,20 +233,20 @@ function ServiceIntervals({ vehicleId }) {
               </div>
               <form onSubmit={handleSaveInterval} className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="col-span-2">
-                  <label className="label">Service Type *</label>
-                  <input type="text" value={form.service_type} onChange={e => setForm(f => ({ ...f, service_type: e.target.value }))} className="input-field" required placeholder="e.g. Diff Fluid" />
+                  <label htmlFor="maintenance-service-type" className="label">Service Type *</label>
+                  <input id="maintenance-service-type" type="text" value={form.service_type} onChange={e => setForm(f => ({ ...f, service_type: e.target.value }))} className="input-field" required placeholder="e.g. Diff Fluid" />
                 </div>
                 <div>
-                  <label className="label">Every ({u.distLong})</label>
-                  <input type="number" value={form.interval_miles} onChange={e => setForm(f => ({ ...f, interval_miles: e.target.value }))} className="input-field" placeholder="e.g. 10000" />
+                  <label htmlFor="maintenance-interval-miles" className="label">Every ({u.distLong})</label>
+                  <input id="maintenance-interval-miles" type="number" value={form.interval_miles} onChange={e => setForm(f => ({ ...f, interval_miles: e.target.value }))} className="input-field" placeholder="e.g. 10000" />
                 </div>
                 <div>
-                  <label className="label">Every (months)</label>
-                  <input type="number" value={form.interval_months} onChange={e => setForm(f => ({ ...f, interval_months: e.target.value }))} className="input-field" placeholder="e.g. 12" />
+                  <label htmlFor="maintenance-interval-months" className="label">Every (months)</label>
+                  <input id="maintenance-interval-months" type="number" value={form.interval_months} onChange={e => setForm(f => ({ ...f, interval_months: e.target.value }))} className="input-field" placeholder="e.g. 12" />
                 </div>
                 <div className="col-span-2 sm:col-span-4">
-                  <label className="label">Notes</label>
-                  <input type="text" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className="input-field" placeholder="Optional notes or product recommendation" />
+                  <label htmlFor="maintenance-notes" className="label">Notes</label>
+                  <input id="maintenance-notes" type="text" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className="input-field" placeholder="Optional notes or product recommendation" />
                 </div>
                 <div className="col-span-2 sm:col-span-4 flex gap-2">
                   <button type="submit" disabled={saving} className="btn-primary text-xs">{saving ? 'Saving…' : editItem?.id ? 'Save' : 'Add'}</button>
@@ -303,13 +303,13 @@ function ServiceIntervals({ vehicleId }) {
                         </td>
                         <td className="px-3 py-3">
                           <div className="flex gap-1 justify-end">
-                            <button onClick={() => openEdit(item)} className="text-raptor-muted hover:text-raptor-primary p-1.5 rounded hover:bg-raptor-elevated transition-colors" title="Edit">
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <button aria-label="Edit" onClick={() => openEdit(item)} className="text-raptor-muted hover:text-raptor-primary p-1.5 rounded hover:bg-raptor-elevated transition-colors" title="Edit">
+                              <svg aria-hidden="true" className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                               </svg>
                             </button>
-                            <button onClick={() => setDeleteTarget(item.id)} className="text-raptor-muted hover:text-red-500 p-1.5 rounded hover:bg-raptor-elevated transition-colors" title="Delete">
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <button aria-label="Delete" onClick={() => setDeleteTarget(item.id)} className="text-raptor-muted hover:text-red-500 p-1.5 rounded hover:bg-raptor-elevated transition-colors" title="Delete">
+                              <svg aria-hidden="true" className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                               </svg>
                             </button>
@@ -366,7 +366,7 @@ function ServiceForecast({ vehicleId }) {
         className="w-full flex items-center justify-between px-5 py-4 hover:bg-raptor-elevated transition-colors text-left"
       >
         <div className="flex items-center gap-3 flex-wrap">
-          <svg className="w-4 h-4 text-raptor-accent flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" className="w-4 h-4 text-raptor-link flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
           <span className="section-title">Service Forecast</span>
@@ -380,7 +380,7 @@ function ServiceForecast({ vehicleId }) {
             {data.summary.forecastCost > 0 && ` · ~${money(data.summary.forecastCost)}`}
           </span>
         </div>
-        <svg className={`w-4 h-4 text-raptor-muted transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg aria-hidden="true" className={`w-4 h-4 text-raptor-muted transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
@@ -416,7 +416,7 @@ function ServiceForecast({ vehicleId }) {
                 <span className="text-xs text-raptor-secondary flex-shrink-0">~{money(item.estimatedCost)}</span>
               )}
               <span className={`text-xs font-medium flex-shrink-0 w-20 text-right ${
-                item.overdue ? 'text-red-500' : item.projectedDate ? 'text-raptor-secondary' : 'text-raptor-muted'
+                item.overdue ? 'text-red-700 dark:text-red-400' : item.projectedDate ? 'text-raptor-secondary' : 'text-raptor-muted'
               }`}>
                 {fmtDate(item.projectedDate)}
               </span>
@@ -425,7 +425,7 @@ function ServiceForecast({ vehicleId }) {
         </div>
 
         {!expanded && data.items.length > shown.length && (
-          <button onClick={() => setExpanded(true)} className="w-full px-5 py-2 text-xs text-raptor-accent hover:underline text-left">
+          <button onClick={() => setExpanded(true)} className="w-full px-5 py-2 text-xs text-raptor-link underline underline-offset-2 hover:no-underline text-left">
             Show all {data.items.length} intervals →
           </button>
         )}
@@ -478,10 +478,10 @@ function AttachmentThumb({ src, onRemove }) {
           href={src}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex flex-col items-center justify-center w-20 h-20 gap-1 text-raptor-muted hover:text-raptor-accent transition-colors p-1"
+          className="flex flex-col items-center justify-center w-20 h-20 gap-1 text-raptor-muted hover:text-raptor-link transition-colors p-1"
           title={filename}
         >
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
@@ -670,7 +670,7 @@ export default function Maintenance() {
       <div className="flex items-center justify-between">
         <h1 className="page-title">Maintenance Log</h1>
         <button onClick={openNew} className="btn-primary text-sm flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           Add Entry
@@ -682,8 +682,8 @@ export default function Maintenance() {
           <div className="section-title mb-4">{editId ? 'Edit Entry' : 'New Entry'}</div>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="label">Service Type *</label>
-              <select
+              <label htmlFor="maintenance-service-type-2" className="label">Service Type *</label>
+              <select id="maintenance-service-type-2"
                 value={form.service_type}
                 onChange={e => setForm(f => ({ ...f, service_type: e.target.value }))}
                 className="input-field"
@@ -695,8 +695,8 @@ export default function Maintenance() {
             </div>
             {form.service_type === 'Custom' && (
               <div>
-                <label className="label">Custom Service Name *</label>
-                <input
+                <label htmlFor="maintenance-custom-type" className="label">Custom Service Name *</label>
+                <input id="maintenance-custom-type"
                   type="text"
                   value={form.custom_type}
                   onChange={e => setForm(f => ({ ...f, custom_type: e.target.value }))}
@@ -706,8 +706,8 @@ export default function Maintenance() {
               </div>
             )}
             <div>
-              <label className="label">Date *</label>
-              <input
+              <label htmlFor="maintenance-date-performed" className="label">Date *</label>
+              <input id="maintenance-date-performed"
                 type="date"
                 value={form.date_performed}
                 onChange={e => setForm(f => ({ ...f, date_performed: e.target.value }))}
@@ -716,8 +716,8 @@ export default function Maintenance() {
               />
             </div>
             <div>
-              <label className="label">Mileage</label>
-              <input
+              <label htmlFor="maintenance-mileage" className="label">Mileage</label>
+              <input id="maintenance-mileage"
                 type="number"
                 value={form.mileage}
                 onChange={e => setForm(f => ({ ...f, mileage: e.target.value }))}
@@ -726,8 +726,8 @@ export default function Maintenance() {
               />
             </div>
             <div>
-              <label className="label">Cost (USD)</label>
-              <input
+              <label htmlFor="maintenance-cost" className="label">Cost (USD)</label>
+              <input id="maintenance-cost"
                 type="number"
                 value={form.cost}
                 onChange={e => setForm(f => ({ ...f, cost: e.target.value }))}
@@ -737,8 +737,8 @@ export default function Maintenance() {
               />
             </div>
             <div>
-              <label className="label">Serviced By</label>
-              <select
+              <label htmlFor="maintenance-service-provider-type" className="label">Serviced By</label>
+              <select id="maintenance-service-provider-type"
                 value={form.service_provider_type}
                 onChange={e => setForm(f => ({ ...f, service_provider_type: e.target.value }))}
                 className="input-field"
@@ -747,8 +747,8 @@ export default function Maintenance() {
               </select>
             </div>
             <div>
-              <label className="label">Vendor / Shop</label>
-              <input
+              <label htmlFor="maintenance-vendor" className="label">Vendor / Shop</label>
+              <input id="maintenance-vendor"
                 type="text"
                 value={form.vendor}
                 onChange={e => setForm(f => ({ ...f, vendor: e.target.value }))}
@@ -757,15 +757,15 @@ export default function Maintenance() {
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="label">Notes</label>
-              <textarea
+              <label htmlFor="maintenance-notes-2" className="label">Notes</label>
+              <textarea id="maintenance-notes-2"
                 value={form.notes}
                 onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                 className="input-field"
                 rows={2}
               />
             </div>
-            {error && <div className="sm:col-span-2 text-red-600 dark:text-red-400 text-sm">{error}</div>}
+            {error && <div className="sm:col-span-2 text-red-700 dark:text-red-400 text-sm">{error}</div>}
             <div className="sm:col-span-2 flex gap-3">
               <button type="submit" disabled={saving} className="btn-primary text-sm">
                 {saving ? 'Saving…' : editId ? 'Save' : 'Add'}
@@ -779,7 +779,7 @@ export default function Maintenance() {
       )}
 
       {attachError && (
-        <div className="text-sm text-red-600 dark:text-red-400">{attachError}</div>
+        <div className="text-sm text-red-700 dark:text-red-400">{attachError}</div>
       )}
 
       {loading ? (
@@ -809,7 +809,7 @@ export default function Maintenance() {
                           <span className="text-xs text-raptor-muted">{u.fmtDist(r.mileage)}</span>
                         )}
                         {r.cost != null && (
-                          <span className="text-sm text-raptor-accent font-semibold">
+                          <span className="text-sm text-raptor-link font-semibold">
                             {u.money(r.cost)}
                           </span>
                         )}
@@ -832,37 +832,37 @@ export default function Maintenance() {
                       <button
                         onClick={() => handleAttachClick(r.id)}
                         disabled={uploading === r.id}
-                        className="text-raptor-muted hover:text-raptor-accent p-1.5 rounded-lg hover:bg-raptor-elevated transition-colors"
+                        className="text-raptor-muted hover:text-raptor-link p-1.5 rounded-lg hover:bg-raptor-elevated transition-colors"
                         title="Attach invoice or photo"
                       >
                         {uploading === r.id ? (
-                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <svg aria-hidden="true" className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                           </svg>
                         ) : (
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                               d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                           </svg>
                         )}
                       </button>
-                      <button
+                      <button aria-label="Edit"
                         onClick={() => openEdit(r)}
                         className="text-raptor-muted hover:text-raptor-primary p-1.5 rounded-lg hover:bg-raptor-elevated transition-colors"
                         title="Edit"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                             d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                       </button>
-                      <button
+                      <button aria-label="Delete"
                         onClick={() => setDeleteTarget(r.id)}
                         className="text-raptor-muted hover:text-red-500 p-1.5 rounded-lg hover:bg-raptor-elevated transition-colors"
                         title="Delete"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                             d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
@@ -883,10 +883,10 @@ export default function Maintenance() {
                                 href={src}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex flex-col items-center justify-center w-20 h-20 rounded-lg border border-raptor-border bg-raptor-elevated text-raptor-muted hover:text-raptor-accent hover:border-raptor-accent transition-colors gap-1 p-1"
+                                className="flex flex-col items-center justify-center w-20 h-20 rounded-lg border border-raptor-border bg-raptor-elevated text-raptor-muted hover:text-raptor-link hover:border-raptor-accent transition-colors gap-1 p-1"
                                 title={filename}
                               >
-                                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg aria-hidden="true" className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                                     d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
@@ -896,6 +896,7 @@ export default function Maintenance() {
                               <button
                                 type="button"
                                 onClick={() => openLightbox(attachments, i)}
+                                aria-label={`View attachment ${i + 1}`}
                                 className="w-20 h-20 rounded-lg border border-raptor-border overflow-hidden hover:border-raptor-accent transition-colors"
                               >
                                 <img src={src} alt="" className="w-full h-full object-cover" />

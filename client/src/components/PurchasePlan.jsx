@@ -7,8 +7,8 @@ const fmtMonth = (d) =>
   d ? new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—'
 
 const PRIORITY_CLS = {
-  high: 'bg-red-500/15 text-red-500',
-  medium: 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-500',
+  high: 'bg-red-500/15 text-red-700 dark:text-red-300',
+  medium: 'bg-yellow-500/15 text-yellow-800 dark:text-yellow-500',
   low: 'bg-raptor-elevated text-raptor-muted',
 }
 
@@ -83,8 +83,8 @@ export default function PurchasePlan({ vehicleId, refreshKey }) {
       {/* Budget entry */}
       <div className="flex flex-wrap items-end gap-3 pt-1">
         <div>
-          <label className="label">Monthly vehicle budget ({currentUnits().symbol})</label>
-          <input
+          <label htmlFor="purchase-plan-budgetinput" className="label">Monthly vehicle budget ({currentUnits().symbol})</label>
+          <input id="purchase-plan-budgetinput"
             type="number" min="0" step="10"
             value={budgetInput}
             onChange={e => setBudgetInput(e.target.value)}
@@ -96,7 +96,7 @@ export default function PurchasePlan({ vehicleId, refreshKey }) {
         {monthlyBudget != null && (
           <div className="pb-2">
             <span className="text-sm text-raptor-secondary">Leaves </span>
-            <span className={`text-lg font-semibold ${available > 0 ? 'text-raptor-accent' : 'text-red-500'}`}>{money(available)}</span>
+            <span className={`text-lg font-semibold ${available > 0 ? 'text-raptor-link' : 'text-red-700 dark:text-red-400'}`}>{money(available)}</span>
             <span className="text-sm text-raptor-secondary"> / month for mods</span>
           </div>
         )}
@@ -111,7 +111,7 @@ export default function PurchasePlan({ vehicleId, refreshKey }) {
       )}
 
       {noRoom && (
-        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-500 dark:text-red-400">
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-400">
           Committed costs already meet or exceed that budget, so there's nothing left for mods.
           Raise the budget or reduce recurring costs to see a timeline.
         </div>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { currentUnits } from '../lib/units'
+import Dialog from './Dialog'
 
 const cap = (s) => (s ? s[0].toUpperCase() + s.slice(1) : 'Unspecified terrain')
 
@@ -15,12 +16,6 @@ export default function AirDownCard({ setId, onClose }) {
     fetch(`/api/tires/${setId}/air-down`).then(r => (r.ok ? r.json() : null)).then(setData).catch(() => setData(null))
   }, [setId])
 
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
-
   const print = () => {
     document.body.classList.add('print-card-only')
     const done = () => { document.body.classList.remove('print-card-only'); window.removeEventListener('afterprint', done) }
@@ -31,16 +26,16 @@ export default function AirDownCard({ setId, onClose }) {
   const pair = (f, r) => (f == null && r == null ? '—' : `${u.pressureNum(f)} / ${u.pressureNum(r)}`)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="airdown-title">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 no-print" onClick={onClose} />
-      <div className="relative card w-full max-w-md p-0 overflow-hidden">
+      <Dialog onClose={onClose} labelledBy="airdown-title" label="Air-down card" className="relative card w-full max-w-md p-0 overflow-hidden">
         {!data ? (
           <div className="p-6 text-sm text-raptor-muted animate-pulse">Loading…</div>
         ) : (
           <>
             <div className="print-card p-5 space-y-4">
               <div>
-                <div className="text-xs font-semibold uppercase tracking-wide text-raptor-accent">Air-down card</div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-raptor-link">Air-down card</div>
                 <h2 id="airdown-title" className="text-lg font-bold text-raptor-primary">{data.set.name}</h2>
                 <div className="text-xs text-raptor-muted">
                   {[data.set.tire_brand, data.set.tire_model, data.set.tire_size, data.set.wheel_size && `on ${data.set.wheel_size}`].filter(Boolean).join(' ')}
@@ -92,7 +87,7 @@ export default function AirDownCard({ setId, onClose }) {
             </div>
           </>
         )}
-      </div>
+      </Dialog>
     </div>
   )
 }

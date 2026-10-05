@@ -31,7 +31,7 @@ export default function Vehicles() {
               <div>
                 <div className="flex items-center gap-3 flex-wrap">
                   <span className="text-raptor-primary font-bold">{v.make} {v.model}</span>
-                  <span className="bg-ford-navy/10 dark:bg-raptor-orange/15 text-raptor-accent text-xs font-medium px-2 py-0.5 rounded">{v.generation}</span>
+                  <span className="bg-ford-navy/10 dark:bg-raptor-orange/15 text-raptor-link text-xs font-medium px-2 py-0.5 rounded">{v.generation}</span>
                   {v.variant && <span className="text-raptor-secondary text-sm">{v.variant}</span>}
                 </div>
                 <div className="text-raptor-muted text-sm mt-0.5">
@@ -40,7 +40,7 @@ export default function Vehicles() {
                   {v.torque && <span className="ml-2">/ {v.torque} lb-ft</span>}
                 </div>
               </div>
-              <svg
+              <svg aria-hidden="true"
                 className={`w-5 h-5 text-raptor-muted transition-transform ${expanded === v.id ? 'rotate-180' : ''}`}
                 fill="none" stroke="currentColor" viewBox="0 0 24 24"
               >
@@ -96,11 +96,11 @@ export default function Vehicles() {
                           <span className="text-raptor-muted text-xs font-mono w-28 flex-shrink-0">
                             AUX {slot.switch_number} — {slot.fuse_amps}A
                           </span>
-                          <span className={`text-sm ${slot.factory_used ? 'text-amber-600 dark:text-amber-400' : 'text-raptor-primary'}`}>
+                          <span className={`text-sm ${slot.factory_used ? 'text-amber-700 dark:text-amber-400' : 'text-raptor-primary'}`}>
                             {slot.default_label}
                           </span>
                           {slot.warning_note && (
-                            <span className="text-xs text-amber-600 dark:text-amber-500 ml-1">⚠ Reclaim required</span>
+                            <span className="text-xs text-amber-700 dark:text-amber-500 ml-1">⚠ Reclaim required</span>
                           )}
                         </div>
                       ))}

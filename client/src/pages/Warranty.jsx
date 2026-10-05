@@ -26,12 +26,12 @@ function expiryStatus(expiryDateStr) {
   const exp = new Date(expiryDateStr + 'T12:00:00')
   const days = Math.floor((exp - today) / 86400000)
   if (days < 0) {
-    return { label: 'Expired', colorCls: 'bg-red-500/15 text-red-400 border-red-500/30', daysLeft: days }
+    return { label: 'Expired', colorCls: 'bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30', daysLeft: days }
   }
   if (days <= 90) {
-    return { label: `Expires in ${days}d`, colorCls: 'bg-yellow-500/15 text-yellow-500 border-yellow-500/30', daysLeft: days }
+    return { label: `Expires in ${days}d`, colorCls: 'bg-yellow-500/15 text-yellow-800 dark:text-yellow-300 border-yellow-500/30', daysLeft: days }
   }
-  return { label: `${days}d left`, colorCls: 'bg-green-500/15 text-green-500 border-green-500/30', daysLeft: days }
+  return { label: `${days}d left`, colorCls: 'bg-green-500/15 text-green-800 dark:text-green-400 border-green-500/30', daysLeft: days }
 }
 
 // Compute mod expiry date from start_date + warranty_months
@@ -278,7 +278,7 @@ export default function Warranty() {
   if (!selectedVehicleId) {
     return (
       <div className="flex flex-col items-center justify-center min-h-64 gap-4 text-center">
-        <svg className="w-12 h-12 text-raptor-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg aria-hidden="true" className="w-12 h-12 text-raptor-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
             d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
         </svg>
@@ -297,7 +297,7 @@ export default function Warranty() {
       <div className="flex items-center justify-between">
         <h1 className="page-title">Warranty</h1>
         <button onClick={openNewVW} className="btn-primary text-sm flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           Add Warranty
@@ -305,7 +305,7 @@ export default function Warranty() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-400">
           {error}
         </div>
       )}
@@ -321,8 +321,8 @@ export default function Warranty() {
 
             {/* Warranty Name */}
             <div>
-              <label className="label">Warranty Name *</label>
-              <input
+              <label htmlFor="warranty-warranty-name" className="label">Warranty Name *</label>
+              <input id="warranty-warranty-name"
                 type="text"
                 value={vwForm.warranty_name}
                 onChange={e => setVwField('warranty_name', e.target.value)}
@@ -334,8 +334,8 @@ export default function Warranty() {
 
             {/* Provider */}
             <div>
-              <label className="label">Provider *</label>
-              <input
+              <label htmlFor="warranty-provider" className="label">Provider *</label>
+              <input id="warranty-provider"
                 type="text"
                 value={vwForm.provider}
                 onChange={e => setVwField('provider', e.target.value)}
@@ -347,8 +347,8 @@ export default function Warranty() {
 
             {/* Provider URL */}
             <div>
-              <label className="label">Provider Website</label>
-              <input
+              <label htmlFor="warranty-provider-url" className="label">Provider Website</label>
+              <input id="warranty-provider-url"
                 type="url"
                 value={vwForm.provider_url}
                 onChange={e => setVwField('provider_url', e.target.value)}
@@ -359,8 +359,8 @@ export default function Warranty() {
 
             {/* Claims Phone */}
             <div>
-              <label className="label">Claims Phone</label>
-              <input
+              <label htmlFor="warranty-claims-phone" className="label">Claims Phone</label>
+              <input id="warranty-claims-phone"
                 type="tel"
                 value={vwForm.claims_phone}
                 onChange={e => setVwField('claims_phone', e.target.value)}
@@ -371,8 +371,8 @@ export default function Warranty() {
 
             {/* Contract Number */}
             <div>
-              <label className="label">Contract / Policy Number</label>
-              <input
+              <label htmlFor="warranty-contract-number" className="label">Contract / Policy Number</label>
+              <input id="warranty-contract-number"
                 type="text"
                 value={vwForm.contract_number}
                 onChange={e => setVwField('contract_number', e.target.value)}
@@ -383,8 +383,8 @@ export default function Warranty() {
 
             {/* Purchase Date */}
             <div>
-              <label className="label">Purchase Date</label>
-              <input
+              <label htmlFor="warranty-purchase-date" className="label">Purchase Date</label>
+              <input id="warranty-purchase-date"
                 type="date"
                 value={vwForm.purchase_date}
                 onChange={e => setVwField('purchase_date', e.target.value)}
@@ -394,8 +394,8 @@ export default function Warranty() {
 
             {/* Start Date */}
             <div>
-              <label className="label">Coverage Start Date</label>
-              <input
+              <label htmlFor="warranty-start-date" className="label">Coverage Start Date</label>
+              <input id="warranty-start-date"
                 type="date"
                 value={vwForm.start_date}
                 onChange={e => setVwField('start_date', e.target.value)}
@@ -405,8 +405,8 @@ export default function Warranty() {
 
             {/* Term Years */}
             <div>
-              <label className="label">Term (years)</label>
-              <input
+              <label htmlFor="warranty-term-years" className="label">Term (years)</label>
+              <input id="warranty-term-years"
                 type="number"
                 value={vwForm.term_years}
                 onChange={e => setVwField('term_years', e.target.value)}
@@ -419,8 +419,8 @@ export default function Warranty() {
 
             {/* Term Miles */}
             <div>
-              <label className="label">Term ({currentUnits().distLong})</label>
-              <input
+              <label htmlFor="warranty-term-miles" className="label">Term ({currentUnits().distLong})</label>
+              <input id="warranty-term-miles"
                 type="number"
                 value={vwForm.term_miles}
                 onChange={e => setVwField('term_miles', e.target.value)}
@@ -433,11 +433,11 @@ export default function Warranty() {
 
             {/* Expiration Date */}
             <div>
-              <label className="label">
+              <label htmlFor="warranty-expiration-date" className="label">
                 Expiration Date
                 <span className="ml-1 font-normal text-raptor-muted">(auto-calculated if blank)</span>
               </label>
-              <input
+              <input id="warranty-expiration-date"
                 type="date"
                 value={vwForm.expiration_date}
                 onChange={e => setVwField('expiration_date', e.target.value)}
@@ -447,8 +447,8 @@ export default function Warranty() {
 
             {/* Cost */}
             <div>
-              <label className="label">Cost Paid</label>
-              <input
+              <label htmlFor="warranty-cost" className="label">Cost Paid</label>
+              <input id="warranty-cost"
                 type="number"
                 value={vwForm.cost}
                 onChange={e => setVwField('cost', e.target.value)}
@@ -461,8 +461,8 @@ export default function Warranty() {
 
             {/* Deductible */}
             <div>
-              <label className="label">Deductible</label>
-              <input
+              <label htmlFor="warranty-deductible" className="label">Deductible</label>
+              <input id="warranty-deductible"
                 type="number"
                 value={vwForm.deductible}
                 onChange={e => setVwField('deductible', e.target.value)}
@@ -475,8 +475,8 @@ export default function Warranty() {
 
             {/* Notes */}
             <div className="sm:col-span-2">
-              <label className="label">Notes</label>
-              <textarea
+              <label htmlFor="warranty-notes" className="label">Notes</label>
+              <textarea id="warranty-notes"
                 value={vwForm.notes}
                 onChange={e => setVwField('notes', e.target.value)}
                 className="input-field"
@@ -486,7 +486,7 @@ export default function Warranty() {
             </div>
 
             {vwError && (
-              <div className="sm:col-span-2 text-sm text-red-500 dark:text-red-400">{vwError}</div>
+              <div className="sm:col-span-2 text-sm text-red-700 dark:text-red-400">{vwError}</div>
             )}
 
             <div className="sm:col-span-2 flex gap-3">
@@ -509,7 +509,7 @@ export default function Warranty() {
           <div className="text-raptor-muted animate-pulse text-sm">Loading…</div>
         ) : vehicleWarranties.length === 0 ? (
           <div className="card p-8 text-center space-y-3">
-            <svg className="w-10 h-10 text-raptor-muted mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" className="w-10 h-10 text-raptor-muted mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
@@ -542,7 +542,7 @@ export default function Warranty() {
         ) : modWarranties.length === 0 ? (
           <div className="card p-6 text-center text-sm text-raptor-secondary">
             No installed mods found.{' '}
-            <Link to="/mods" className="text-raptor-accent hover:underline">Add mods</Link> to track their warranties here.
+            <Link to="/mods" className="text-raptor-link underline underline-offset-2 hover:no-underline">Add mods</Link> to track their warranties here.
           </div>
         ) : (
           <div className="space-y-3">
@@ -612,7 +612,7 @@ function VehicleWarrantyCard({ warranty: w, onEdit, onDelete }) {
                 href={w.provider_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-raptor-accent hover:underline"
+                className="text-raptor-link underline underline-offset-2 hover:no-underline"
               >
                 {w.provider}
               </a>
@@ -655,7 +655,7 @@ function VehicleWarrantyCard({ warranty: w, onEdit, onDelete }) {
               {w.claims_phone && (
                 <span>
                   Claims:{' '}
-                  <a href={`tel:${w.claims_phone}`} className="text-raptor-accent hover:underline">
+                  <a href={`tel:${w.claims_phone}`} className="text-raptor-link underline underline-offset-2 hover:no-underline">
                     {w.claims_phone}
                   </a>
                 </span>
@@ -671,22 +671,22 @@ function VehicleWarrantyCard({ warranty: w, onEdit, onDelete }) {
 
         {/* Actions */}
         <div className="flex gap-1 flex-shrink-0">
-          <button
+          <button aria-label="Edit"
             onClick={onEdit}
             className="text-raptor-muted hover:text-raptor-primary p-1.5 rounded-lg hover:bg-raptor-elevated transition-colors"
             title="Edit"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
           </button>
-          <button
+          <button aria-label="Delete"
             onClick={onDelete}
             className="text-raptor-muted hover:text-red-500 p-1.5 rounded-lg hover:bg-raptor-elevated transition-colors"
             title="Delete"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
@@ -711,8 +711,8 @@ function ModWarrantyRow({ mod, isEditing, modForm, modError, modSaving, onEdit, 
           <div className="font-semibold text-raptor-primary text-sm mb-1">{mod.part_name}</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="label">Provider</label>
-              <input
+              <label htmlFor="warranty-warranty-provider" className="label">Provider</label>
+              <input id="warranty-warranty-provider"
                 type="text"
                 value={modForm.warranty_provider}
                 onChange={e => setModField('warranty_provider', e.target.value)}
@@ -721,8 +721,8 @@ function ModWarrantyRow({ mod, isEditing, modForm, modError, modSaving, onEdit, 
               />
             </div>
             <div>
-              <label className="label">Start Date</label>
-              <input
+              <label htmlFor="warranty-warranty-start-date" className="label">Start Date</label>
+              <input id="warranty-warranty-start-date"
                 type="date"
                 value={modForm.warranty_start_date}
                 onChange={e => setModField('warranty_start_date', e.target.value)}
@@ -730,8 +730,8 @@ function ModWarrantyRow({ mod, isEditing, modForm, modError, modSaving, onEdit, 
               />
             </div>
             <div>
-              <label className="label">Term (months)</label>
-              <input
+              <label htmlFor="warranty-warranty-months" className="label">Term (months)</label>
+              <input id="warranty-warranty-months"
                 type="number"
                 value={modForm.warranty_months}
                 onChange={e => setModField('warranty_months', e.target.value)}
@@ -742,8 +742,8 @@ function ModWarrantyRow({ mod, isEditing, modForm, modError, modSaving, onEdit, 
               />
             </div>
             <div>
-              <label className="label">Notes</label>
-              <input
+              <label htmlFor="warranty-warranty-notes" className="label">Notes</label>
+              <input id="warranty-warranty-notes"
                 type="text"
                 value={modForm.warranty_notes}
                 onChange={e => setModField('warranty_notes', e.target.value)}
@@ -752,7 +752,7 @@ function ModWarrantyRow({ mod, isEditing, modForm, modError, modSaving, onEdit, 
               />
             </div>
           </div>
-          {modError && <div className="text-sm text-red-500">{modError}</div>}
+          {modError && <div className="text-sm text-red-700 dark:text-red-400">{modError}</div>}
           <div className="flex gap-2">
             <button type="submit" disabled={modSaving} className="btn-primary text-sm">
               {modSaving ? 'Saving…' : 'Save'}
@@ -795,12 +795,12 @@ function ModWarrantyRow({ mod, isEditing, modForm, modError, modSaving, onEdit, 
             )}
           </div>
 
-          <button
+          <button aria-label="Set warranty"
             onClick={onEdit}
             className="text-raptor-muted hover:text-raptor-primary p-1.5 rounded-lg hover:bg-raptor-elevated transition-colors flex-shrink-0"
             title="Set warranty"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>

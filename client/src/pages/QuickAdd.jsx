@@ -205,8 +205,8 @@ export default function QuickAdd() {
 
       {msg && (
         <div className={`rounded-lg px-4 py-3 text-sm ${msg.type === 'ok'
-          ? 'border border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400'
-          : 'border border-red-500/30 bg-red-500/10 text-red-500 dark:text-red-400'}`}>
+          ? 'border border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400'
+          : 'border border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300'}`}>
           {msg.text}
         </div>
       )}
@@ -214,31 +214,31 @@ export default function QuickAdd() {
       {tab === 'fuel' && (
         <form onSubmit={submitFuel} className="card p-4 space-y-3">
           <div>
-            <label className="label">Odometer ({currentUnits().dist}) *</label>
-            <input type="number" inputMode="numeric" value={fuel.odometer} onChange={e => setFuel(f => ({ ...f, odometer: e.target.value }))} className={field} placeholder={odoHint} required />
+            <label htmlFor="quick-add-odometer" className="label">Odometer ({currentUnits().dist}) *</label>
+            <input id="quick-add-odometer" type="number" inputMode="numeric" value={fuel.odometer} onChange={e => setFuel(f => ({ ...f, odometer: e.target.value }))} className={field} placeholder={odoHint} required />
           </div>
           <div>
-            <label className="label">{currentUnits().volLong[0].toUpperCase() + currentUnits().volLong.slice(1)} *</label>
-            <input type="number" inputMode="decimal" step="0.001" value={fuel.gallons} onChange={e => setFuel(f => ({ ...f, gallons: e.target.value }))} className={field} placeholder={currentUnits().vol === 'L' ? 'e.g. 99.2' : 'e.g. 26.2'} required />
+            <label htmlFor="quick-add-gallons" className="label">{currentUnits().volLong[0].toUpperCase() + currentUnits().volLong.slice(1)} *</label>
+            <input id="quick-add-gallons" type="number" inputMode="decimal" step="0.001" value={fuel.gallons} onChange={e => setFuel(f => ({ ...f, gallons: e.target.value }))} className={field} placeholder={currentUnits().vol === 'L' ? 'e.g. 99.2' : 'e.g. 26.2'} required />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label">{currentUnits().perVol}</label>
-              <input type="number" inputMode="decimal" step="0.001" value={fuel.price_per_gallon} onChange={e => setFuel(f => ({ ...f, price_per_gallon: e.target.value }))} className={field} placeholder={currentUnits().vol === 'L' ? 'e.g. 1.899' : 'e.g. 3.459'} />
+              <label htmlFor="quick-add-price-per-gallon" className="label">{currentUnits().perVol}</label>
+              <input id="quick-add-price-per-gallon" type="number" inputMode="decimal" step="0.001" value={fuel.price_per_gallon} onChange={e => setFuel(f => ({ ...f, price_per_gallon: e.target.value }))} className={field} placeholder={currentUnits().vol === 'L' ? 'e.g. 1.899' : 'e.g. 3.459'} />
             </div>
             <div>
-              <label className="label">Total ({currentUnits().symbol})</label>
-              <input type="number" inputMode="decimal" step="0.01" value={fuel.total_cost} onChange={e => setFuel(f => ({ ...f, total_cost: e.target.value }))} className={field} placeholder="Calculated" />
+              <label htmlFor="quick-add-total-cost" className="label">Total ({currentUnits().symbol})</label>
+              <input id="quick-add-total-cost" type="number" inputMode="decimal" step="0.01" value={fuel.total_cost} onChange={e => setFuel(f => ({ ...f, total_cost: e.target.value }))} className={field} placeholder="Calculated" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label">Date</label>
-              <input type="date" value={fuel.date} onChange={e => setFuel(f => ({ ...f, date: e.target.value }))} className={field} required />
+              <label htmlFor="quick-add-date" className="label">Date</label>
+              <input id="quick-add-date" type="date" value={fuel.date} onChange={e => setFuel(f => ({ ...f, date: e.target.value }))} className={field} required />
             </div>
             <div>
-              <label className="label">Station</label>
-              <input type="text" value={fuel.station} onChange={e => setFuel(f => ({ ...f, station: e.target.value }))} className={field} placeholder="e.g. Costco" />
+              <label htmlFor="quick-add-station" className="label">Station</label>
+              <input id="quick-add-station" type="text" value={fuel.station} onChange={e => setFuel(f => ({ ...f, station: e.target.value }))} className={field} placeholder="e.g. Costco" />
             </div>
           </div>
           <label className="flex items-start gap-3 py-1 cursor-pointer">
@@ -262,16 +262,16 @@ export default function QuickAdd() {
       {tab === 'odometer' && (
         <form onSubmit={submitOdo} className="card p-4 space-y-3">
           <div>
-            <label className="label">Odometer ({currentUnits().dist}) *</label>
-            <input type="number" inputMode="numeric" value={odo.odometer} onChange={e => setOdo(o => ({ ...o, odometer: e.target.value }))} className={field} placeholder={odoHint} required />
+            <label htmlFor="quick-add-odometer-2" className="label">Odometer ({currentUnits().dist}) *</label>
+            <input id="quick-add-odometer-2" type="number" inputMode="numeric" value={odo.odometer} onChange={e => setOdo(o => ({ ...o, odometer: e.target.value }))} className={field} placeholder={odoHint} required />
           </div>
           <div>
-            <label className="label">Date</label>
-            <input type="date" value={odo.date} onChange={e => setOdo(o => ({ ...o, date: e.target.value }))} className={field} required />
+            <label htmlFor="quick-add-date-2" className="label">Date</label>
+            <input id="quick-add-date-2" type="date" value={odo.date} onChange={e => setOdo(o => ({ ...o, date: e.target.value }))} className={field} required />
           </div>
           <div>
-            <label className="label">Note</label>
-            <input type="text" value={odo.note} onChange={e => setOdo(o => ({ ...o, note: e.target.value }))} className={field} placeholder="Optional" />
+            <label htmlFor="quick-add-note" className="label">Note</label>
+            <input id="quick-add-note" type="text" value={odo.note} onChange={e => setOdo(o => ({ ...o, note: e.target.value }))} className={field} placeholder="Optional" />
           </div>
           <button type="submit" disabled={saving} className="btn-primary w-full py-3 text-base disabled:opacity-50">
             {saving ? 'Saving…' : 'Log Odometer'}
@@ -282,30 +282,30 @@ export default function QuickAdd() {
       {tab === 'service' && (
         <form onSubmit={submitSvc} className="card p-4 space-y-3">
           <div>
-            <label className="label">Service *</label>
-            <select value={svc.service_type} onChange={e => setSvc(s => ({ ...s, service_type: e.target.value }))} className={field} required>
+            <label htmlFor="quick-add-service-type" className="label">Service *</label>
+            <select id="quick-add-service-type" value={svc.service_type} onChange={e => setSvc(s => ({ ...s, service_type: e.target.value }))} className={field} required>
               <option value="">Select…</option>
               {SERVICE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label">Date</label>
-              <input type="date" value={svc.date_performed} onChange={e => setSvc(s => ({ ...s, date_performed: e.target.value }))} className={field} required />
+              <label htmlFor="quick-add-date-performed" className="label">Date</label>
+              <input id="quick-add-date-performed" type="date" value={svc.date_performed} onChange={e => setSvc(s => ({ ...s, date_performed: e.target.value }))} className={field} required />
             </div>
             <div>
-              <label className="label">Odometer ({currentUnits().dist})</label>
-              <input type="number" inputMode="numeric" value={svc.mileage} onChange={e => setSvc(s => ({ ...s, mileage: e.target.value }))} className={field} placeholder={odoHint} />
+              <label htmlFor="quick-add-mileage" className="label">Odometer ({currentUnits().dist})</label>
+              <input id="quick-add-mileage" type="number" inputMode="numeric" value={svc.mileage} onChange={e => setSvc(s => ({ ...s, mileage: e.target.value }))} className={field} placeholder={odoHint} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label">Cost</label>
-              <input type="number" inputMode="decimal" step="0.01" value={svc.cost} onChange={e => setSvc(s => ({ ...s, cost: e.target.value }))} className={field} placeholder="e.g. 89.99" />
+              <label htmlFor="quick-add-cost" className="label">Cost</label>
+              <input id="quick-add-cost" type="number" inputMode="decimal" step="0.01" value={svc.cost} onChange={e => setSvc(s => ({ ...s, cost: e.target.value }))} className={field} placeholder="e.g. 89.99" />
             </div>
             <div>
-              <label className="label">Serviced by</label>
-              <select value={svc.service_provider_type} onChange={e => setSvc(s => ({ ...s, service_provider_type: e.target.value }))} className={field}>
+              <label htmlFor="quick-add-service-provider-type" className="label">Serviced by</label>
+              <select id="quick-add-service-provider-type" value={svc.service_provider_type} onChange={e => setSvc(s => ({ ...s, service_provider_type: e.target.value }))} className={field}>
                 <option value="">—</option>
                 <option value="dealership">Dealership</option>
                 <option value="independent">Independent</option>
@@ -335,14 +335,14 @@ export default function QuickAdd() {
               )}
               <div className="flex items-center gap-2 p-2 border-t border-raptor-border">
                 <span className="text-xs text-raptor-muted flex-1 truncate">{cap.file.name}</span>
-                <button type="button" onClick={clearCapture} className="text-xs text-raptor-accent hover:underline">Retake</button>
+                <button type="button" onClick={clearCapture} className="text-xs text-raptor-link underline underline-offset-2 hover:no-underline">Retake</button>
               </div>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
               <button type="button" onClick={() => cameraRef.current?.click()}
                 className="btn-primary py-4 text-base flex items-center justify-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                     d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -362,8 +362,8 @@ export default function QuickAdd() {
 
           {/* Destination */}
           <div>
-            <label className="label">File it under</label>
-            <select value={cap.dest} onChange={e => { setCapField('dest', e.target.value); setCapField('targetId', '') }} className={field}>
+            <label htmlFor="quick-add-dest" className="label">File it under</label>
+            <select id="quick-add-dest" value={cap.dest} onChange={e => { setCapField('dest', e.target.value); setCapField('targetId', '') }} className={field}>
               <option value="document">Vehicle documents</option>
               <option value="service">A service record</option>
               <option value="mod">A mod</option>
@@ -373,12 +373,12 @@ export default function QuickAdd() {
           {cap.dest === 'document' && (
             <>
               <div>
-                <label className="label">Name</label>
-                <input value={cap.name} onChange={e => setCapField('name', e.target.value)} className={field} placeholder="e.g. Oil change receipt" />
+                <label htmlFor="quick-add-name" className="label">Name</label>
+                <input id="quick-add-name" value={cap.name} onChange={e => setCapField('name', e.target.value)} className={field} placeholder="e.g. Oil change receipt" />
               </div>
               <div>
-                <label className="label">Type</label>
-                <select value={cap.docType} onChange={e => setCapField('docType', e.target.value)} className={field}>
+                <label htmlFor="quick-add-doctype" className="label">Type</label>
+                <select id="quick-add-doctype" value={cap.docType} onChange={e => setCapField('docType', e.target.value)} className={field}>
                   {DOC_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
                 </select>
               </div>
@@ -387,8 +387,8 @@ export default function QuickAdd() {
 
           {cap.dest === 'service' && (
             <div>
-              <label className="label">Which service?</label>
-              <select value={cap.targetId} onChange={e => setCapField('targetId', e.target.value)} className={field}>
+              <label htmlFor="quick-add-targetid" className="label">Which service?</label>
+              <select id="quick-add-targetid" value={cap.targetId} onChange={e => setCapField('targetId', e.target.value)} className={field}>
                 <option value="">Select a record…</option>
                 {destOptions.services.map(sv => (
                   <option key={sv.id} value={sv.id}>{sv.service_type} — {sv.date_performed}</option>
@@ -402,8 +402,8 @@ export default function QuickAdd() {
 
           {cap.dest === 'mod' && (
             <div>
-              <label className="label">Which mod?</label>
-              <select value={cap.targetId} onChange={e => setCapField('targetId', e.target.value)} className={field}>
+              <label htmlFor="quick-add-targetid-2" className="label">Which mod?</label>
+              <select id="quick-add-targetid-2" value={cap.targetId} onChange={e => setCapField('targetId', e.target.value)} className={field}>
                 <option value="">Select a mod…</option>
                 {destOptions.mods.map(m => (
                   <option key={m.id} value={m.id}>{m.part_name}{m.brand ? ` — ${m.brand}` : ''}</option>
@@ -422,8 +422,8 @@ export default function QuickAdd() {
       )}
 
       <p className="text-xs text-raptor-muted text-center">
-        Need more fields? Open the full <Link to="/fuel" className="text-raptor-accent hover:underline">Fuel Log</Link> or{' '}
-        <Link to="/maintenance" className="text-raptor-accent hover:underline">Maintenance</Link> page.
+        Need more fields? Open the full <Link to="/fuel" className="text-raptor-link underline underline-offset-2 hover:no-underline">Fuel Log</Link> or{' '}
+        <Link to="/maintenance" className="text-raptor-link underline underline-offset-2 hover:no-underline">Maintenance</Link> page.
       </p>
     </div>
   )

@@ -32,7 +32,7 @@ export default function UnitsForm({ value, onChange, idPrefix = 'units' }) {
             onClick={() => onChange({ ...value, ...p.units })}
             className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
               preset === p.key
-                ? 'bg-raptor-accent text-white border-raptor-accent'
+                ? 'bg-raptor-accent text-raptor-on-accent border-raptor-accent'
                 : 'border-raptor-border text-raptor-secondary hover:text-raptor-primary'}`}
           >
             {p.label}

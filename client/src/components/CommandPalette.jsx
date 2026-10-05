@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { internalPath } from '../lib/links'
+import Dialog from './Dialog'
 
 // Pages reachable by name, so the palette doubles as a nav jump-list
 const PAGES = [
@@ -91,9 +92,9 @@ export default function CommandPalette({ open, onClose }) {
       className="fixed inset-0 z-50 bg-black/50 flex items-start justify-center pt-[12vh] px-4"
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="w-full max-w-xl bg-raptor-card border border-raptor-border rounded-xl shadow-2xl overflow-hidden">
+      <Dialog onClose={onClose} label="Search" initialFocus="input" className="w-full max-w-xl bg-raptor-card border border-raptor-border rounded-xl shadow-2xl overflow-hidden">
         <div className="flex items-center gap-2 px-4 py-3 border-b border-raptor-border">
-          <svg className="w-4 h-4 text-raptor-muted flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" className="w-4 h-4 text-raptor-muted flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
           </svg>
           <input
@@ -131,7 +132,7 @@ export default function CommandPalette({ open, onClose }) {
             ))
           )}
         </div>
-      </div>
+      </Dialog>
     </div>
   )
 }

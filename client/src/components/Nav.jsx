@@ -95,8 +95,8 @@ export default function Nav({ onClose, onSearch }) {
       <div className="px-4 py-5 border-b border-white/10">
         <div className="flex items-center justify-between">
           <span className="font-display font-bold text-xl text-white tracking-wide">RaptorTracker</span>
-          <button onClick={onClose} className="lg:hidden text-white/60 hover:text-white">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button onClick={onClose} aria-label="Close menu" className="lg:hidden text-white/75 hover:text-white">
+            <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -112,9 +112,9 @@ export default function Nav({ onClose, onSearch }) {
       <div className="px-2 pt-3">
         <button
           onClick={onSearch}
-          className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-white/50 hover:text-white hover:bg-white/10 border border-white/10 transition-colors"
+          className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/10 border border-white/10 transition-colors"
         >
-          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
           </svg>
           <span className="flex-1 text-left">Search…</span>
@@ -123,11 +123,11 @@ export default function Nav({ onClose, onSearch }) {
       </div>
 
       {/* Nav links */}
-      <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+      <nav aria-label="Main" className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
         {navGroups.map(({ group, items }) => (
           <div key={group || 'main'} className={group ? 'pt-3' : ''}>
             {group && (
-              <div className="px-3 pb-1 text-[0.65rem] font-semibold uppercase tracking-wider text-white/35">
+              <div className="px-3 pb-1 text-[0.65rem] font-semibold uppercase tracking-wider text-white/70">
                 {group}
               </div>
             )}
@@ -141,12 +141,12 @@ export default function Nav({ onClose, onSearch }) {
                   `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-100 ${
                     isActive
                       ? 'text-white'
-                      : 'text-white/60 hover:text-white hover:bg-white/10'
+                      : 'text-white/75 hover:text-white hover:bg-white/10'
                   }`
                 }
                 style={({ isActive }) => isActive ? { backgroundColor: 'var(--rl-sidebar-active-bg)' } : {}}
               >
-                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg aria-hidden="true" className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
                 </svg>
                 {label}
@@ -173,13 +173,13 @@ export default function Nav({ onClose, onSearch }) {
         {/* Theme picker toggle */}
         <button
           onClick={() => setThemeOpen(o => !o)}
-          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-white/75 hover:text-white hover:bg-white/10 transition-colors"
         >
-          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
           </svg>
           <span className="flex-1 text-left">Theme</span>
-          <svg className={`w-3 h-3 transition-transform ${themeOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" className={`w-3 h-3 transition-transform ${themeOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </button>
@@ -196,11 +196,11 @@ export default function Nav({ onClose, onSearch }) {
                   className="w-3.5 h-3.5 rounded-full flex-shrink-0 border border-white/20"
                   style={{ background: darkMode ? t.swatchDark : t.swatch }}
                 />
-                <span className={theme === t.id ? 'text-white font-medium' : 'text-white/60'}>
+                <span className={theme === t.id ? 'text-white font-medium' : 'text-white/75'}>
                   {t.label}
                 </span>
                 {theme === t.id && (
-                  <svg className="w-3.5 h-3.5 text-white ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg aria-hidden="true" className="w-3.5 h-3.5 text-white ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                   </svg>
                 )}
@@ -213,15 +213,15 @@ export default function Nav({ onClose, onSearch }) {
         {canToggleDark && (
           <button
             onClick={toggleDark}
-            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-white/75 hover:text-white hover:bg-white/10 transition-colors"
             title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {darkMode ? (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
             ) : (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
               </svg>
             )}
@@ -231,9 +231,9 @@ export default function Nav({ onClose, onSearch }) {
 
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-white/75 hover:text-white hover:bg-white/10 transition-colors"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
           Sign Out

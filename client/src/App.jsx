@@ -37,7 +37,7 @@ function AppRoutes() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-raptor-base flex items-center justify-center">
-        <div className="font-display font-bold text-2xl text-raptor-accent animate-pulse tracking-wide">
+        <div className="font-display font-bold text-2xl text-raptor-link animate-pulse tracking-wide">
           RaptorTracker
         </div>
       </div>

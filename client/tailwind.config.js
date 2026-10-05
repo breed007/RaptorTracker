@@ -20,6 +20,9 @@ export default {
           secondary:    'var(--rl-text-secondary)',
           muted:        'var(--rl-text-muted)',
           accent:       'var(--rl-accent)',
+          // Accent used as text or a link: tuned per theme to stay readable on its surfaces.
+          link:         'var(--rl-accent-text)',
+          'on-accent':  'var(--rl-on-accent)',
           sidebar:      'var(--rl-sidebar-bg)',
         },
         ford: {

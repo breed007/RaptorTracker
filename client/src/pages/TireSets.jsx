@@ -98,7 +98,7 @@ export default function TireSets() {
       <div className="flex items-center justify-between">
         <h1 className="page-title">Tire &amp; Wheel Sets</h1>
         <button onClick={openNew} className="btn-primary text-sm flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           Add Set
@@ -110,21 +110,21 @@ export default function TireSets() {
           <div className="section-title mb-4">{editId ? 'Edit Set' : 'New Tire / Wheel Set'}</div>
           <form onSubmit={submit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
-              <label className="label">Set Name *</label>
-              <input value={form.name} onChange={e => set('name', e.target.value)} className="input-field" placeholder="e.g. Street 35s, Baja 37s" required />
+              <label htmlFor="tire-sets-name" className="label">Set Name *</label>
+              <input id="tire-sets-name" value={form.name} onChange={e => set('name', e.target.value)} className="input-field" placeholder="e.g. Street 35s, Baja 37s" required />
             </div>
-            <div><label className="label">Tire Brand</label><input value={form.tire_brand} onChange={e => set('tire_brand', e.target.value)} className="input-field" placeholder="e.g. BFGoodrich" /></div>
-            <div><label className="label">Tire Model</label><input value={form.tire_model} onChange={e => set('tire_model', e.target.value)} className="input-field" placeholder="e.g. KO3" /></div>
-            <div><label className="label">Tire Size</label><input value={form.tire_size} onChange={e => set('tire_size', e.target.value)} className="input-field" placeholder='e.g. 37x12.50R17' /></div>
-            <div><label className="label">Quantity</label><input type="number" value={form.quantity} onChange={e => set('quantity', e.target.value)} className="input-field" placeholder="4" /></div>
-            <div><label className="label">Wheel Brand</label><input value={form.wheel_brand} onChange={e => set('wheel_brand', e.target.value)} className="input-field" placeholder="e.g. Method" /></div>
-            <div><label className="label">Wheel Size</label><input value={form.wheel_size} onChange={e => set('wheel_size', e.target.value)} className="input-field" placeholder='e.g. 17x8.5' /></div>
-            <div><label className="label">Cost for the set ({currentUnits().symbol})</label><input type="number" step="0.01" value={form.cost} onChange={e => set('cost', e.target.value)} className="input-field" placeholder="0.00" /></div>
-            <div><label className="label">Purchase Date</label><input type="date" value={form.purchase_date} onChange={e => set('purchase_date', e.target.value)} className="input-field" /></div>
-            <div><label className="label">Installed Date</label><input type="date" value={form.install_date} onChange={e => set('install_date', e.target.value)} className="input-field" /></div>
-            <div><label className="label">Removed Date</label><input type="date" value={form.removed_date} onChange={e => set('removed_date', e.target.value)} className="input-field" /></div>
-            <div><label className="label">Odometer at Install ({currentUnits().dist})</label><input type="number" value={form.odometer_installed} onChange={e => set('odometer_installed', e.target.value)} className="input-field" placeholder="e.g. 8000" /></div>
-            <div><label className="label">Odometer at Removal ({currentUnits().dist})</label><input type="number" value={form.odometer_removed} onChange={e => set('odometer_removed', e.target.value)} className="input-field" placeholder="leave blank if still on" /></div>
+            <div><label htmlFor="tire-sets-tire-brand" className="label">Tire Brand</label><input id="tire-sets-tire-brand" value={form.tire_brand} onChange={e => set('tire_brand', e.target.value)} className="input-field" placeholder="e.g. BFGoodrich" /></div>
+            <div><label htmlFor="tire-sets-tire-model" className="label">Tire Model</label><input id="tire-sets-tire-model" value={form.tire_model} onChange={e => set('tire_model', e.target.value)} className="input-field" placeholder="e.g. KO3" /></div>
+            <div><label htmlFor="tire-sets-tire-size" className="label">Tire Size</label><input id="tire-sets-tire-size" value={form.tire_size} onChange={e => set('tire_size', e.target.value)} className="input-field" placeholder='e.g. 37x12.50R17' /></div>
+            <div><label htmlFor="tire-sets-quantity" className="label">Quantity</label><input id="tire-sets-quantity" type="number" value={form.quantity} onChange={e => set('quantity', e.target.value)} className="input-field" placeholder="4" /></div>
+            <div><label htmlFor="tire-sets-wheel-brand" className="label">Wheel Brand</label><input id="tire-sets-wheel-brand" value={form.wheel_brand} onChange={e => set('wheel_brand', e.target.value)} className="input-field" placeholder="e.g. Method" /></div>
+            <div><label htmlFor="tire-sets-wheel-size" className="label">Wheel Size</label><input id="tire-sets-wheel-size" value={form.wheel_size} onChange={e => set('wheel_size', e.target.value)} className="input-field" placeholder='e.g. 17x8.5' /></div>
+            <div><label htmlFor="tire-sets-cost" className="label">Cost for the set ({currentUnits().symbol})</label><input id="tire-sets-cost" type="number" step="0.01" value={form.cost} onChange={e => set('cost', e.target.value)} className="input-field" placeholder="0.00" /></div>
+            <div><label htmlFor="tire-sets-purchase-date" className="label">Purchase Date</label><input id="tire-sets-purchase-date" type="date" value={form.purchase_date} onChange={e => set('purchase_date', e.target.value)} className="input-field" /></div>
+            <div><label htmlFor="tire-sets-install-date" className="label">Installed Date</label><input id="tire-sets-install-date" type="date" value={form.install_date} onChange={e => set('install_date', e.target.value)} className="input-field" /></div>
+            <div><label htmlFor="tire-sets-removed-date" className="label">Removed Date</label><input id="tire-sets-removed-date" type="date" value={form.removed_date} onChange={e => set('removed_date', e.target.value)} className="input-field" /></div>
+            <div><label htmlFor="tire-sets-odometer-installed" className="label">Odometer at Install ({currentUnits().dist})</label><input id="tire-sets-odometer-installed" type="number" value={form.odometer_installed} onChange={e => set('odometer_installed', e.target.value)} className="input-field" placeholder="e.g. 8000" /></div>
+            <div><label htmlFor="tire-sets-odometer-removed" className="label">Odometer at Removal ({currentUnits().dist})</label><input id="tire-sets-odometer-removed" type="number" value={form.odometer_removed} onChange={e => set('odometer_removed', e.target.value)} className="input-field" placeholder="leave blank if still on" /></div>
             <div><label className="label" htmlFor="street-psi-front">Street pressure, front ({currentUnits().pressure})</label><input id="street-psi-front" type="number" step="0.1" value={form.street_psi_front} onChange={e => set('street_psi_front', e.target.value)} className="input-field" placeholder="door-jamb sticker" /></div>
             <div><label className="label" htmlFor="street-psi-rear">Street pressure, rear ({currentUnits().pressure})</label><input id="street-psi-rear" type="number" step="0.1" value={form.street_psi_rear} onChange={e => set('street_psi_rear', e.target.value)} className="input-field" placeholder="door-jamb sticker" /></div>
             <div className="flex items-center gap-3 pt-6">
@@ -132,10 +132,10 @@ export default function TireSets() {
               <label htmlFor="is_active" className="label mb-0 cursor-pointer">Currently on the truck</label>
             </div>
             <div className="sm:col-span-2">
-              <label className="label">Notes</label>
-              <textarea value={form.notes} onChange={e => set('notes', e.target.value)} className="input-field" rows={2} placeholder="Tread depth, rotation history, storage location…" />
+              <label htmlFor="tire-sets-notes" className="label">Notes</label>
+              <textarea id="tire-sets-notes" value={form.notes} onChange={e => set('notes', e.target.value)} className="input-field" rows={2} placeholder="Tread depth, rotation history, storage location…" />
             </div>
-            {error && <div className="sm:col-span-2 text-sm text-red-500">{error}</div>}
+            {error && <div className="sm:col-span-2 text-sm text-red-700 dark:text-red-400">{error}</div>}
             <div className="sm:col-span-2 flex gap-3">
               <button type="submit" disabled={saving} className="btn-primary text-sm">{saving ? 'Saving…' : editId ? 'Save Changes' : 'Add Set'}</button>
               <button type="button" onClick={() => { setShowForm(false); setEditId(null) }} className="btn-secondary text-sm">Cancel</button>
@@ -160,7 +160,7 @@ export default function TireSets() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-raptor-primary">{s.name}</span>
                     {s.is_active
-                      ? <span className="text-xs px-2 py-0.5 rounded bg-green-500/15 text-green-500 font-semibold">On truck</span>
+                      ? <span className="text-xs px-2 py-0.5 rounded bg-green-500/15 text-green-800 dark:text-green-400 font-semibold">On truck</span>
                       : <span className="text-xs px-2 py-0.5 rounded bg-raptor-elevated border border-raptor-border text-raptor-muted">Stored</span>}
                   </div>
                   <div className="text-sm text-raptor-secondary">
@@ -179,16 +179,16 @@ export default function TireSets() {
                     {s.removed_date && <span>Removed {fmtDate(s.removed_date)}</span>}
                   </div>
                   {s.notes && <div className="text-sm text-raptor-secondary whitespace-pre-wrap pt-1">{s.notes}</div>}
-                  <button type="button" onClick={() => setCardFor(s.id)} className="text-xs font-medium text-raptor-accent hover:underline pt-1">
+                  <button type="button" onClick={() => setCardFor(s.id)} className="text-xs font-medium text-raptor-link underline underline-offset-2 hover:no-underline pt-1">
                     Air-down card
                   </button>
                 </div>
                 <div className="flex gap-1 flex-shrink-0">
-                  <button onClick={() => openEdit(s)} className="text-raptor-muted hover:text-raptor-primary p-1.5 rounded-lg hover:bg-raptor-elevated transition-colors" title="Edit">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                  <button aria-label="Edit" onClick={() => openEdit(s)} className="text-raptor-muted hover:text-raptor-primary p-1.5 rounded-lg hover:bg-raptor-elevated transition-colors" title="Edit">
+                    <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                   </button>
-                  <button onClick={() => setDeleteTarget(s.id)} className="text-raptor-muted hover:text-red-500 p-1.5 rounded-lg hover:bg-raptor-elevated transition-colors" title="Delete">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  <button aria-label="Delete" onClick={() => setDeleteTarget(s.id)} className="text-raptor-muted hover:text-red-500 p-1.5 rounded-lg hover:bg-raptor-elevated transition-colors" title="Delete">
+                    <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                   </button>
                 </div>
               </div>

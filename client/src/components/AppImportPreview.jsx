@@ -51,13 +51,13 @@ export default function AppImportPreview({ preview: p, busy, opts, onChange, onI
       )}
 
       <div className="flex flex-wrap gap-x-4 gap-y-1">
-        <span className="text-green-600 dark:text-green-400">New fill-ups: <b>{p.fuelCount}</b></span>
-        <span className="text-green-600 dark:text-green-400">New services: <b>{p.maintenanceCount}</b></span>
+        <span className="text-green-700 dark:text-green-400">New fill-ups: <b>{p.fuelCount}</b></span>
+        <span className="text-green-700 dark:text-green-400">New services: <b>{p.maintenanceCount}</b></span>
         {(p.duplicates.fuel + p.duplicates.maintenance) > 0 && (
           <span className="text-raptor-muted">Already here, skipped: {p.duplicates.fuel + p.duplicates.maintenance}</span>
         )}
         {p.skipped?.expenses > 0 && <span className="text-raptor-muted">Other expenses, not imported: {p.skipped.expenses}</span>}
-        {p.errorCount > 0 && <span className="text-red-500 dark:text-red-400">Unreadable: {p.errorCount}</span>}
+        {p.errorCount > 0 && <span className="text-red-700 dark:text-red-400">Unreadable: {p.errorCount}</span>}
       </div>
 
       {p.errors?.length > 0 && (

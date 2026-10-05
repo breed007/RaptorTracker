@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
+import Dialog from './Dialog'
 
 const DOC_TYPES = [
   { id: 'title', label: 'Title' },
@@ -18,8 +19,8 @@ const fmtDate = (d) => d ? new Date(d + 'T12:00:00').toLocaleDateString('en-US',
 function expiryState(d) {
   if (!d) return null
   const days = Math.floor((new Date(d + 'T12:00:00') - new Date()) / 86400000)
-  if (days < 0) return { cls: 'text-red-500 dark:text-red-400', tag: 'expired' }
-  if (days <= 30) return { cls: 'text-yellow-600 dark:text-yellow-500', tag: `${days}d` }
+  if (days < 0) return { cls: 'text-red-700 dark:text-red-400', tag: 'expired' }
+  if (days <= 30) return { cls: 'text-yellow-800 dark:text-yellow-500', tag: `${days}d` }
   return { cls: 'text-raptor-secondary', tag: null }
 }
 
@@ -82,14 +83,14 @@ export default function DocumentVault({ vehicle, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
       onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="bg-raptor-card border border-raptor-border rounded-xl shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+      <Dialog onClose={onClose} label={`${vehicle.nickname} documents`} className="bg-raptor-card border border-raptor-border rounded-xl shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-raptor-border flex-shrink-0">
           <div>
             <div className="font-display font-bold text-raptor-primary">{vehicle.nickname}</div>
             <div className="text-xs text-raptor-muted mt-0.5">Documents · {docs.length} on file</div>
           </div>
-          <button onClick={onClose} className="text-raptor-muted hover:text-raptor-primary transition-colors">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button onClick={onClose} aria-label="Close" className="text-raptor-muted hover:text-raptor-primary transition-colors">
+            <svg aria-hidden="true" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -101,23 +102,23 @@ export default function DocumentVault({ vehicle, onClose }) {
             <div className="text-xs font-semibold text-raptor-muted uppercase tracking-wide">Add a document</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="label">Name</label>
-                <input type="text" value={form.name} onChange={e => set('name', e.target.value)}
+                <label htmlFor="document-vault-name" className="label">Name</label>
+                <input id="document-vault-name" type="text" value={form.name} onChange={e => set('name', e.target.value)}
                   className="input-field" placeholder="Defaults to the file name" />
               </div>
               <div>
-                <label className="label">Type</label>
-                <select value={form.doc_type} onChange={e => set('doc_type', e.target.value)} className="input-field">
+                <label htmlFor="document-vault-doc-type" className="label">Type</label>
+                <select id="document-vault-doc-type" value={form.doc_type} onChange={e => set('doc_type', e.target.value)} className="input-field">
                   {DOC_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
                 </select>
               </div>
               <div>
-                <label className="label">Expires <span className="font-normal text-raptor-muted">(optional)</span></label>
-                <input type="date" value={form.expires_on} onChange={e => set('expires_on', e.target.value)} className="input-field" />
+                <label htmlFor="document-vault-expires-on" className="label">Expires <span className="font-normal text-raptor-muted">(optional)</span></label>
+                <input id="document-vault-expires-on" type="date" value={form.expires_on} onChange={e => set('expires_on', e.target.value)} className="input-field" />
               </div>
               <div>
-                <label className="label">Notes</label>
-                <input type="text" value={form.notes} onChange={e => set('notes', e.target.value)} className="input-field" placeholder="Optional" />
+                <label htmlFor="document-vault-notes" className="label">Notes</label>
+                <input id="document-vault-notes" type="text" value={form.notes} onChange={e => set('notes', e.target.value)} className="input-field" placeholder="Optional" />
               </div>
             </div>
             <input ref={fileRef} type="file" accept=".jpg,.jpeg,.png,.webp,.tiff,.tif,.pdf,.heic" className="hidden" onChange={handleFile} />
@@ -126,7 +127,7 @@ export default function DocumentVault({ vehicle, onClose }) {
             <div className="flex flex-wrap gap-2">
               <button onClick={() => camRef.current?.click()} disabled={uploading}
                 className="btn-primary text-sm disabled:opacity-50 flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                     d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -138,7 +139,7 @@ export default function DocumentVault({ vehicle, onClose }) {
                 Choose File
               </button>
             </div>
-            {error && <p className="text-sm text-red-500">{error}</p>}
+            {error && <p className="text-sm text-red-700 dark:text-red-400">{error}</p>}
           </div>
 
           {/* List */}
@@ -156,7 +157,7 @@ export default function DocumentVault({ vehicle, onClose }) {
                   <div key={d.id} className="flex items-center gap-3 rounded-lg border border-raptor-border p-3">
                     <div className="w-10 h-10 rounded flex items-center justify-center bg-raptor-elevated flex-shrink-0 overflow-hidden">
                       {isPdf(d.file_path) ? (
-                        <svg className="w-5 h-5 text-raptor-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg aria-hidden="true" className="w-5 h-5 text-raptor-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
@@ -182,10 +183,10 @@ export default function DocumentVault({ vehicle, onClose }) {
                       </div>
                     </div>
                     <a href={d.file_path} target="_blank" rel="noopener noreferrer"
-                      className="text-xs text-raptor-accent hover:underline flex-shrink-0">Open</a>
-                    <button onClick={() => remove(d.id)}
+                      className="text-xs text-raptor-link underline underline-offset-2 hover:no-underline flex-shrink-0">Open</a>
+                    <button aria-label="Delete" onClick={() => remove(d.id)}
                       className="text-raptor-muted hover:text-red-500 flex-shrink-0" title="Delete">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                           d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
@@ -196,7 +197,7 @@ export default function DocumentVault({ vehicle, onClose }) {
             </div>
           )}
         </div>
-      </div>
+      </Dialog>
     </div>
   )
 }
