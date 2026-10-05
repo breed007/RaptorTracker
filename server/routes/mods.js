@@ -7,6 +7,7 @@ const { getDb } = require('../db');
 const { jsonList } = require('../lib/json');
 const { detachUpload } = require('../services/uploads');
 const { afterWrite } = require('../services/odometer');
+const trash = require('../services/trash');
 const router = express.Router();
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
@@ -165,19 +166,13 @@ router.put('/:id', (req, res) => {
 
 router.delete('/:id', (req, res) => {
   const db = getDb();
-  const existing = db.prepare('SELECT id, user_vehicle_id, photos, attachments FROM mods WHERE id = ?').get(req.params.id);
+  const existing = db.prepare('SELECT id, user_vehicle_id, part_name FROM mods WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
-
-  // Remove the mod's files so deleting a mod doesn't orphan uploads on disk
-  for (const key of ['photos', 'attachments']) {
-    let list = [];
-    try { list = jsonList(existing[key]); } catch (_) { list = []; }
-    for (const p of list) fs.unlink(path.join(UPLOAD_DIR, path.basename(p)), () => {});
-  }
-
-  db.prepare('DELETE FROM mods WHERE id = ?').run(req.params.id);
+  // Photos and receipts stay on disk while the mod is in the trash; emptying
+  // the trash removes them.
+  const trashed = trash.moveToTrash(db, 'mods', existing.id, { kind: 'Mod', title: existing.part_name });
   afterWrite(db, existing.user_vehicle_id);
-  res.json({ ok: true });
+  res.json({ ok: true, trashed });
 });
 
 // ── Receipts / documents ──────────────────────────────────────────────────────

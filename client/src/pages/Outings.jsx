@@ -325,7 +325,7 @@ export default function Outings() {
       )}
 
       {deleteTarget && (
-        <ConfirmModal title="Delete Outing" message="Delete this outing and its photos? This cannot be undone."
+        <ConfirmModal title="Delete Outing" message="Delete this outing and its photos? You can restore it from Settings → Trash for 30 days."
           danger onConfirm={remove} onCancel={() => setDeleteTarget(null)} />
       )}
     </div>

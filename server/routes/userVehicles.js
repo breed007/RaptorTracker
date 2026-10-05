@@ -4,10 +4,10 @@ const path = require('path');
 const fs = require('fs');
 const { randomUUID: uuidv4 } = require('crypto');
 const { getDb } = require('../db');
+const trash = require('../services/trash');
 const { jsonList, jsonObject } = require('../lib/json');
 const { detachUpload } = require('../services/uploads');
 const { refreshCurrentMileage } = require('../services/odometer');
-const { referencedFiles, removeUnreferenced } = require('../services/uploadRefs');
 const { effectiveLayout, MIN_AMPS, MAX_AMPS } = require('../services/auxLayout');
 const router = express.Router();
 
@@ -172,14 +172,13 @@ router.put('/:id', (req, res) => {
 
 router.delete('/:id', (req, res) => {
   const db = getDb();
-  const existing = db.prepare('SELECT id FROM user_vehicles WHERE id = ?').get(req.params.id);
+  const existing = db.prepare('SELECT id, nickname FROM user_vehicles WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
-  // Note the vehicle's files first; the delete cascades through its records,
-  // then whatever nothing else still points at is removed from disk.
-  const files = referencedFiles(db, existing.id);
-  db.prepare('DELETE FROM user_vehicles WHERE id = ?').run(req.params.id);
-  const filesRemoved = removeUnreferenced(db, UPLOAD_DIR, files);
-  res.json({ ok: true, filesRemoved });
+  // The vehicle and every record under it go to the trash together. Its files
+  // (registration and insurance scans included) are removed from disk when
+  // the trash is emptied, or after 30 days.
+  const trashed = trash.moveToTrash(db, 'user_vehicles', existing.id, { kind: 'Vehicle', title: existing.nickname });
+  res.json({ ok: true, trashed });
 });
 
 router.post('/:id/window-sticker', stickerUpload.single('sticker'), (req, res) => {

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
 const { afterWrite, checkReading } = require('../services/odometer');
+const trash = require('../services/trash');
 
 const COLS = [
   'name', 'tire_brand', 'tire_model', 'tire_size', 'wheel_brand', 'wheel_size',
@@ -90,11 +91,11 @@ router.put('/:id', (req, res) => {
 
 router.delete('/:id', (req, res) => {
   const db = getDb();
-  const existing = db.prepare('SELECT id, user_vehicle_id FROM tire_sets WHERE id = ?').get(req.params.id);
+  const existing = db.prepare('SELECT id, user_vehicle_id, name FROM tire_sets WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
-  db.prepare('DELETE FROM tire_sets WHERE id = ?').run(req.params.id);
+  const trashed = trash.moveToTrash(db, 'tire_sets', existing.id, { kind: 'Tire set', title: existing.name });
   afterWrite(db, existing.user_vehicle_id);
-  res.json({ ok: true });
+  res.json({ ok: true, trashed });
 });
 
 module.exports = router;

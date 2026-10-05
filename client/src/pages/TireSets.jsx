@@ -189,7 +189,7 @@ export default function TireSets() {
       )}
 
       {deleteTarget && (
-        <ConfirmModal title="Delete Set" message="Delete this tire/wheel set? This cannot be undone." danger
+        <ConfirmModal title="Delete Set" message="Delete this tire/wheel set? You can restore it from Settings → Trash for 30 days." danger
           onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} />
       )}
     </div>

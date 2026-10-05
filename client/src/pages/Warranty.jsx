@@ -568,7 +568,7 @@ export default function Warranty() {
       {deleteTarget && (
         <ConfirmModal
           title="Delete Warranty"
-          message="Delete this warranty record? This cannot be undone."
+          message="Delete this warranty record? You can restore it from Settings → Trash for 30 days."
           danger
           onConfirm={handleDeleteVW}
           onCancel={() => setDeleteTarget(null)}

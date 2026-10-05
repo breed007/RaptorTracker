@@ -28,6 +28,7 @@ const PAGES = [
   { title: 'Import & export CSV', link: '/settings/data' },
   { title: 'Settings — units & currency', link: '/settings' },
   { title: 'Account & password', link: '/settings/account' },
+  { title: 'Trash — restore deleted records', link: '/settings/trash' },
   { title: 'Quick Add', link: '/quick' },
 ]
 

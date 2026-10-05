@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
 const { afterWrite } = require('../services/odometer');
+const trash = require('../services/trash');
 const { toInt } = require('../lib/parse');
 const { localDate } = require('../lib/dates');
 
@@ -132,8 +133,11 @@ router.put('/:id', (req, res) => {
 
 // DELETE /api/intervals/:id
 router.delete('/:id', (req, res) => {
-  getDb().prepare('DELETE FROM service_intervals WHERE id = ?').run(req.params.id);
-  res.json({ ok: true });
+  const db = getDb();
+  const existing = db.prepare('SELECT id, service_type FROM service_intervals WHERE id = ?').get(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'Not found' });
+  const trashed = trash.moveToTrash(db, 'service_intervals', existing.id, { kind: 'Service interval', title: existing.service_type });
+  res.json({ ok: true, trashed });
 });
 
 // POST /api/intervals/load-factory  — seeds Ford factory intervals for a vehicle

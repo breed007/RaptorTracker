@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const { randomUUID: uuidv4 } = require('crypto');
 const { getDb } = require('../db');
+const trash = require('../services/trash');
 
 const router = express.Router();
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
@@ -75,13 +76,10 @@ router.put('/:id', (req, res) => {
 // DELETE /api/documents/:id — removes the row and the file
 router.delete('/:id', (req, res) => {
   const db = getDb();
-  const existing = db.prepare('SELECT id, file_path FROM documents WHERE id = ?').get(req.params.id);
+  const existing = db.prepare('SELECT id, name FROM documents WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
-  if (existing.file_path) {
-    fs.unlink(path.join(UPLOAD_DIR, path.basename(existing.file_path)), () => {});
-  }
-  db.prepare('DELETE FROM documents WHERE id = ?').run(req.params.id);
-  res.json({ ok: true });
+  const trashed = trash.moveToTrash(db, 'documents', existing.id, { kind: 'Document', title: existing.name });
+  res.json({ ok: true, trashed });
 });
 
 router.use((err, req, res, next) => {

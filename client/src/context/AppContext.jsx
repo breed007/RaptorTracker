@@ -85,6 +85,15 @@ export function AppProvider({ children }) {
     refreshUpdate()
   }, [user])
 
+  // Undo from the trash: remount the current page so it refetches, and reload
+  // the garage in case a whole vehicle came back.
+  const [pageKey, setPageKey] = useState(0)
+  useEffect(() => {
+    const onRestored = () => { setPageKey(k => k + 1); refreshVehicles() }
+    window.addEventListener('raptortracker:restored', onRestored)
+    return () => window.removeEventListener('raptortracker:restored', onRestored)
+  }, [])
+
   // The newest release the server has seen on GitHub (Settings -> General).
   const [updateInfo, setUpdateInfo] = useState(null)
   const refreshUpdate = async () => {
@@ -123,7 +132,7 @@ export function AppProvider({ children }) {
     <AppContext.Provider value={{
       user, setUser, authLoading, refreshUser,
       units, refreshUnits,
-      updateInfo, setUpdateInfo,
+      updateInfo, setUpdateInfo, pageKey,
       userVehicles, setUserVehicles, vehiclesLoaded, refreshVehicles,
       selectedVehicleId, selectedVehicle,
       selectVehicle, logout,

@@ -23,9 +23,13 @@ export default function Welcome() {
   // starting point comes from the browser's locale.
   const [units, setUnits] = useState(null)
   const [unitsOpen, setUnitsOpen] = useState(false)
+  // A garage emptied by deleting the last truck isn't a new install: offer
+  // the trashed vehicles back before asking for a new one.
+  const [trashed, setTrashed] = useState([])
 
   useEffect(() => {
     fetch('/api/vehicles').then(r => r.json()).then(setRefVehicles).catch(() => {})
+    fetch('/api/trash').then(r => r.json()).then(d => setTrashed((d.items || []).filter(i => i.table_name === 'user_vehicles'))).catch(() => {})
     fetch('/api/settings/units').then(r => r.json()).then(async (d) => {
       if (d.chosen) return
       const locale = navigator.language || 'en-US'
@@ -87,6 +91,15 @@ export default function Welcome() {
     } finally { setSaving(false) }
   }
 
+  const restoreVehicle = async (t) => {
+    setError('')
+    const res = await fetch(`/api/trash/${t.id}/restore`, { method: 'POST' })
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) { setError(body.error || 'Could not restore it.'); return }
+    await refreshVehicles()
+    if (body.restored?.id) selectVehicle(body.restored.id)
+  }
+
   const vinValid = VIN_RE.test(form.vin)
 
   return (
@@ -98,6 +111,18 @@ export default function Welcome() {
             Let's add your truck. Everything else — mods, service, fuel, costs — hangs off this.
           </p>
         </div>
+
+        {trashed.length > 0 && (
+          <div className="card p-4 space-y-2">
+            <div className="text-sm text-raptor-secondary">Deleted recently:</div>
+            {trashed.map(t => (
+              <div key={t.id} className="flex items-center gap-3">
+                <span className="flex-1 text-sm font-medium text-raptor-primary">{t.title}</span>
+                <button type="button" onClick={() => restoreVehicle(t)} className="btn-secondary text-xs px-3 py-1.5">Restore</button>
+              </div>
+            ))}
+          </div>
+        )}
 
         <form onSubmit={submit} className="card p-6 space-y-4">
           <div>

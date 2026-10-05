@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
+const trash = require('../services/trash');
 
 // GET /api/wishlist?vehicle_id=X
 router.get('/', (req, res) => {
@@ -55,8 +56,11 @@ router.put('/:id', (req, res) => {
 
 // DELETE /api/wishlist/:id
 router.delete('/:id', (req, res) => {
-  getDb().prepare('DELETE FROM wishlist WHERE id = ?').run(req.params.id);
-  res.json({ ok: true });
+  const db = getDb();
+  const existing = db.prepare('SELECT id, part_name FROM wishlist WHERE id = ?').get(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'Not found' });
+  const trashed = trash.moveToTrash(db, 'wishlist', existing.id, { kind: 'Wishlist item', title: existing.part_name });
+  res.json({ ok: true, trashed });
 });
 
 // POST /api/wishlist/:id/promote — move to mods as status "Ordered"

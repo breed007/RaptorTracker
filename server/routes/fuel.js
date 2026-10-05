@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
 const { afterWrite } = require('../services/odometer');
+const trash = require('../services/trash');
 
 // Forms send booleans, numbers, or strings. Only an explicit 'no' is a partial
 // fill; anything else (including the field being absent) is a full tank.
@@ -120,11 +121,11 @@ router.put('/:id', (req, res) => {
 // DELETE /api/fuel/:id
 router.delete('/:id', (req, res) => {
   const db = getDb();
-  const existing = db.prepare('SELECT user_vehicle_id FROM fuel_log WHERE id = ?').get(req.params.id);
+  const existing = db.prepare('SELECT id, user_vehicle_id, date FROM fuel_log WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
-  db.prepare('DELETE FROM fuel_log WHERE id = ?').run(req.params.id);
+  const trashed = trash.moveToTrash(db, 'fuel_log', existing.id, { kind: 'Fill-up', title: `Fill-up on ${existing.date}` });
   afterWrite(db, existing.user_vehicle_id);
-  res.json({ ok: true });
+  res.json({ ok: true, trashed });
 });
 
 module.exports = router;

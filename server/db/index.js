@@ -312,6 +312,8 @@ function runMigrations(db) {
   // user_vehicles and are untouched.
   require('../reference/auxLayouts').syncReferenceAux(db);
 
+  require('../services/trash').ensureTable(db);
+
   carryOverTypedMileage(db);
 }
 

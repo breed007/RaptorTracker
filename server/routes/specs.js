@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
+const trash = require('../services/trash');
 
 const CATEGORIES = ['fluids', 'capacities', 'torque', 'electrical', 'tires', 'dimensions', 'other'];
 
@@ -80,10 +81,10 @@ router.put('/:id', (req, res) => {
 // DELETE /api/specs/:id
 router.delete('/:id', (req, res) => {
   const db = getDb();
-  const existing = db.prepare('SELECT id FROM vehicle_specs WHERE id = ?').get(req.params.id);
+  const existing = db.prepare('SELECT id, name FROM vehicle_specs WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
-  db.prepare('DELETE FROM vehicle_specs WHERE id = ?').run(req.params.id);
-  res.json({ ok: true });
+  const trashed = trash.moveToTrash(db, 'vehicle_specs', existing.id, { kind: 'Spec', title: existing.name });
+  res.json({ ok: true, trashed });
 });
 
 module.exports = router;

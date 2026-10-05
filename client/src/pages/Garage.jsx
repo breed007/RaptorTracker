@@ -1239,7 +1239,7 @@ export default function Garage() {
       {deleteTarget && (
         <ConfirmModal
           title="Remove Vehicle"
-          message="This will permanently delete this vehicle and all its mods and maintenance records. This cannot be undone."
+          message="Delete this vehicle along with all its mods, records, and files? Everything goes to the trash together, and you can restore it from Settings → Trash for 30 days."
           danger
           onConfirm={handleDelete}
           onCancel={() => setDeleteTarget(null)}

@@ -933,7 +933,7 @@ export default function Maintenance() {
       {deleteTarget && (
         <ConfirmModal
           title="Delete Entry"
-          message="Delete this maintenance record and all its attachments? This cannot be undone."
+          message="Delete this maintenance record and its attachments? You can restore it from Settings → Trash for 30 days."
           danger
           onConfirm={handleDelete}
           onCancel={() => setDeleteTarget(null)}

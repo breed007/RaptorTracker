@@ -428,7 +428,7 @@ export default function ModDetail({ isNew }) {
       {showDelete && (
         <ConfirmModal
           title="Delete Mod"
-          message={`Delete "${form.part_name}"? This cannot be undone.`}
+          message={`Delete "${form.part_name}"? You can restore it from Settings → Trash for 30 days.`}
           danger
           onConfirm={handleDelete}
           onCancel={() => setShowDelete(false)}

@@ -371,6 +371,12 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
       await req('POST', '/api/fuel', { user_vehicle_id: vid, date: '2024-06-23', odometer: 26200, gallons: 20, price_per_gallon: 3.8, full_tank: true });
       const before = snap();
 
+      // A fill-up sitting in the trash during the switch must come back converted.
+      r = await req('POST', '/api/fuel', { user_vehicle_id: vid, date: '2024-06-24', odometer: 26300, gallons: 10, price_per_gallon: 4, full_tank: true });
+      const trashedFuelId = r.body.id;
+      r = await req('DELETE', `/api/fuel/${trashedFuelId}`);
+      const fuelTrash = r.body.trashed?.id;
+
       r = await req('PUT', '/api/settings/units', { distance: 'km', volume: 'l', pressure: 'kpa', economy: 'l100km', currency: 'CAD' });
       check('switching to metric converts stored values', () => {
         eq(r.status, 200, `status ${JSON.stringify(r.body)}`);
@@ -384,6 +390,17 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
         if (before.ppg != null) near(after.ppg, before.ppg / 3.785411784, 0.00005, 'price per liter');
         eq(after.mileage, Math.round(after.mileage * 10) / 10, 'odometer rounded to 0.1 km');
       });
+
+      await req('POST', `/api/trash/${fuelTrash}/restore`);
+      {
+        const db = new Database(path.join(tmp, 'raptortracker.db'), { readonly: true });
+        const f = db.prepare('SELECT odometer, gallons FROM fuel_log WHERE id = ?').get(trashedFuelId);
+        db.close();
+        check('a record restored after a unit switch is in the new units', () => {
+          truthy(f, 'restored'); eq(f.odometer, Math.round(26300 * 1.609344 * 10) / 10, 'odometer in km'); eq(f.gallons, 37.854, 'liters');
+        });
+      }
+      await req('DELETE', `/api/fuel/${trashedFuelId}`);
 
       r = await req('GET', `/api/export/csv/fuel/${vid}`);
       check('a metric CSV export names the volume column liters', () => {
@@ -497,7 +514,7 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
       const Database = require('better-sqlite3');
       const db = new Database(path.join(tmp, 'raptortracker.db'), { readonly: true });
       const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(t => t.name)
-        .filter(t => t !== 'sent_reminders' && db.prepare(`PRAGMA table_info(${t})`).all().some(c => c.name === 'user_vehicle_id'));
+        .filter(t => !['sent_reminders', 'trash'].includes(t) && db.prepare(`PRAGMA table_info(${t})`).all().some(c => c.name === 'user_vehicle_id'));
       check('every per-vehicle table arrives with the same number of rows', () => {
         const diffs = tables.map(t => {
           const n = (id) => db.prepare(`SELECT COUNT(*) n FROM ${t} WHERE user_vehicle_id = ?`).get(id).n;
@@ -526,11 +543,63 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
       db.close();
     }
 
-    r = await req('DELETE', `/api/user-vehicles/${newVid}`);
-    check("deleting the copy removes its files but leaves the original's", () => {
-      truthy(r.body.filesRemoved >= 1, 'files removed');
-      truthy(fs.existsSync(path.join(process.env.UPLOAD_DIR, 'transfer-photo.jpg')), "original vehicle's photo kept");
-    });
+    // --- Trash: delete, undo, and delete for good ---------------------------
+    {
+      const Database = require('better-sqlite3');
+      const ro = () => new Database(path.join(tmp, 'raptortracker.db'), { readonly: true });
+      let db = ro();
+      const perTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(t => t.name)
+        .filter(t => !['sent_reminders', 'trash'].includes(t) && db.prepare(`PRAGMA table_info(${t})`).all().some(c => c.name === 'user_vehicle_id'));
+      const counts = (d, id) => perTable.map(t => `${t}=${d.prepare(`SELECT COUNT(*) n FROM ${t} WHERE user_vehicle_id = ?`).get(id).n}`).join(',');
+      const before = counts(db, newVid);
+      const copyPhoto = path.basename(JSON.parse(db.prepare("SELECT photos FROM mods WHERE user_vehicle_id = ? AND part_name = 'Transfer Mod'").get(newVid).photos)[0]);
+      const outing = db.prepare("SELECT id, tire_set_id FROM outings WHERE user_vehicle_id = ? AND name = 'Transfer Outing'").get(newVid);
+      db.close();
+
+      r = await req('DELETE', `/api/user-vehicles/${newVid}`);
+      const trashId = r.body.trashed?.id;
+      check('deleting a vehicle moves it, and everything under it, to the trash', () => {
+        eq(r.status, 200, 'status'); truthy(trashId, 'trash id');
+        truthy(r.body.trashed.count > 5, `records captured: ${r.body.trashed.count}`);
+        truthy(fs.existsSync(path.join(process.env.UPLOAD_DIR, copyPhoto)), 'files kept while in the trash');
+      });
+      r = await req('GET', '/api/storage');
+      check("a trashed vehicle's files aren't offered for cleanup", () => {
+        truthy(!r.body.orphans.files.some(f => f.name === copyPhoto), 'trashed photo not an orphan');
+      });
+
+      r = await req('POST', `/api/trash/${trashId}/restore`);
+      check('restoring brings the vehicle back with every record, under the same id', () => {
+        eq(r.status, 200, `status ${JSON.stringify(r.body)}`);
+        eq(r.body.restored.id, newVid, 'vehicle id');
+        db = ro(); const after = counts(db, newVid); db.close();
+        eq(after, before, 'per-table counts');
+      });
+
+      // A tire set's outings lose their link on delete (SET NULL) and get it back on restore.
+      r = await req('DELETE', `/api/tires/${outing.tire_set_id}`);
+      const tireTrash = r.body.trashed?.id;
+      db = ro(); const unlinked = db.prepare('SELECT tire_set_id FROM outings WHERE id = ?').get(outing.id).tire_set_id; db.close();
+      await req('POST', `/api/trash/${tireTrash}/restore`);
+      db = ro(); const relinked = db.prepare('SELECT tire_set_id FROM outings WHERE id = ?').get(outing.id).tire_set_id; db.close();
+      check('restoring a tire set re-links the outings that used it', () => {
+        eq(unlinked, null, 'unlinked while trashed'); eq(relinked, outing.tire_set_id, 'relinked');
+      });
+
+      r = await req('DELETE', `/api/user-vehicles/${newVid}`);
+      const again = r.body.trashed?.id;
+      r = await req('DELETE', `/api/trash/${again}`);
+      check("deleting for good removes the copy's files but leaves the original's", () => {
+        eq(r.status, 200, 'status');
+        truthy(r.body.filesRemoved >= 1, 'files removed');
+        truthy(!fs.existsSync(path.join(process.env.UPLOAD_DIR, copyPhoto)), 'copy photo gone');
+        truthy(fs.existsSync(path.join(process.env.UPLOAD_DIR, 'transfer-photo.jpg')), "original vehicle's photo kept");
+      });
+      r = await req('GET', '/api/trash');
+      check('the trash is empty afterwards', () => eq(r.body.items.filter(i => i.id === again).length, 0, 'entry gone'));
+      r = await req('POST', `/api/trash/${again}/restore`);
+      check('restoring something already gone says so', () => eq(r.status, 409, 'status'));
+    }
 
     r = await req('GET', `/api/aux-capacity?vehicle_id=${vid}`);
     check('a planned part bigger than any switch is flagged, with no switch offered', () => {

@@ -94,6 +94,37 @@ function convertStored(db, from, to) {
   scale(COLUMNS.volume, vf, DECIMALS.volume);
   scale(COLUMNS.perVolume, vf === 1 ? 1 : 1 / vf, DECIMALS.perVolume);
   scale(COLUMNS.pressure, factor('pressure', from.pressure, to.pressure), DECIMALS.pressure[to.pressure]);
+  changed += convertTrash(db, from, to);
+  return changed;
+}
+
+// Records in the trash are JSON copies of their rows; convert them too, or a
+// restore after a switch would bring back values in the old units.
+function convertTrash(db, from, to) {
+  if (!db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'trash'").get()) return 0;
+  const vf = factor('volume', from.volume, to.volume);
+  const rules = [
+    [COLUMNS.distance, factor('distance', from.distance, to.distance), DECIMALS.distance],
+    [COLUMNS.volume, vf, DECIMALS.volume],
+    [COLUMNS.perVolume, vf === 1 ? 1 : 1 / vf, DECIMALS.perVolume],
+    [COLUMNS.pressure, factor('pressure', from.pressure, to.pressure), DECIMALS.pressure[to.pressure]],
+  ].filter(([, f]) => f !== 1);
+  if (!rules.length) return 0;
+  const round = (v, d) => Math.round(v * 10 ** d) / 10 ** d;
+  let changed = 0;
+  const update = db.prepare('UPDATE trash SET payload = ? WHERE id = ?');
+  for (const t of db.prepare('SELECT id, payload FROM trash').all()) {
+    let payload;
+    try { payload = JSON.parse(t.payload); } catch (_) { continue; }
+    for (const { table, row } of payload.rows || []) {
+      for (const [pairs, f, d] of rules) {
+        for (const [tbl, col] of pairs) {
+          if (tbl === table && typeof row[col] === 'number') { row[col] = round(row[col] * f, d); changed++; }
+        }
+      }
+    }
+    update.run(JSON.stringify(payload), t.id);
+  }
   return changed;
 }
 

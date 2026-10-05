@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const { randomUUID: uuidv4 } = require('crypto');
 const { getDb } = require('../db');
+const trash = require('../services/trash');
 const { jsonList } = require('../lib/json');
 const { checkReading, refreshCurrentMileage } = require('../services/odometer');
 const { detachUpload } = require('../services/uploads');
@@ -144,13 +145,11 @@ router.put('/:id', (req, res) => {
 // DELETE /api/outings/:id
 router.delete('/:id', (req, res) => {
   const db = getDb();
-  const existing = db.prepare('SELECT id, photos FROM outings WHERE id = ?').get(req.params.id);
+  const existing = db.prepare('SELECT id, user_vehicle_id, name FROM outings WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
-  let list = [];
-  try { list = jsonList(existing.photos); } catch (_) { list = []; }
-  for (const p of list) fs.unlink(path.join(UPLOAD_DIR, path.basename(p)), () => {});
-  db.prepare('DELETE FROM outings WHERE id = ?').run(req.params.id);
-  res.json({ ok: true });
+  const trashed = trash.moveToTrash(db, 'outings', existing.id, { kind: 'Outing', title: existing.name });
+  refreshCurrentMileage(db, existing.user_vehicle_id);
+  res.json({ ok: true, trashed });
 });
 
 // ── Photos ────────────────────────────────────────────────────────────────────

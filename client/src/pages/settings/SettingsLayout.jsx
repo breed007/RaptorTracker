@@ -7,6 +7,7 @@ export const SETTINGS_TABS = [
   { to: '/settings/data', label: 'Import & Export' },
   { to: '/settings/notifications', label: 'Notifications' },
   { to: '/settings/account', label: 'Account' },
+  { to: '/settings/trash', label: 'Trash' },
 ]
 
 /** One home for everything that configures the install rather than the truck. */

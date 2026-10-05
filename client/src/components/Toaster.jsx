@@ -30,6 +30,15 @@ export default function Toaster() {
           className={`pointer-events-auto card shadow-lg px-4 py-3 flex items-start gap-3 border ${TONES[item.tone] || TONES.info}`}
         >
           <p className="flex-1 text-sm text-raptor-primary">{item.message}</p>
+          {item.action && (
+            <button
+              type="button"
+              onClick={() => { dismiss(item.id); item.action.onClick() }}
+              className="text-sm font-semibold text-raptor-accent hover:underline -my-0.5 px-1"
+            >
+              {item.action.label}
+            </button>
+          )}
           <button
             onClick={() => dismiss(item.id)}
             aria-label="Dismiss notification"

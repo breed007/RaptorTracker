@@ -27,11 +27,12 @@ import BackupSettings from './pages/settings/BackupSettings'
 import DataSettings from './pages/settings/DataSettings'
 import NotificationsSettings from './pages/settings/NotificationsSettings'
 import AccountSettings from './pages/settings/AccountSettings'
+import TrashSettings from './pages/settings/TrashSettings'
 import ShareBuild from './pages/ShareBuild'
 import Recalls from './pages/Recalls'
 
 function AppRoutes() {
-  const { user, authLoading, userVehicles, vehiclesLoaded } = useApp()
+  const { user, authLoading, userVehicles, vehiclesLoaded, pageKey } = useApp()
 
   if (authLoading) {
     return (
@@ -51,7 +52,7 @@ function AppRoutes() {
 
   return (
     <Layout>
-      <Routes>
+      <Routes key={pageKey}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/garage" element={<Garage />} />
         <Route path="/vehicles" element={<Vehicles />} />
@@ -78,6 +79,7 @@ function AppRoutes() {
           <Route path="data" element={<DataSettings />} />
           <Route path="notifications" element={<NotificationsSettings />} />
           <Route path="account" element={<AccountSettings />} />
+          <Route path="trash" element={<TrashSettings />} />
         </Route>
         {/* Pre-1.0 addresses, kept so bookmarks still land somewhere sensible */}
         <Route path="/notifications" element={<Navigate to="/settings/notifications" replace />} />

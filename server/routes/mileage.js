@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
 const { afterWrite } = require('../services/odometer');
+const trash = require('../services/trash');
 const { toInt } = require('../lib/parse');
 
 // GET /api/mileage?vehicle_id=X — manual odometer readings, newest first
@@ -37,11 +38,11 @@ router.post('/', (req, res) => {
 // DELETE /api/mileage/:id
 router.delete('/:id', (req, res) => {
   const db = getDb();
-  const existing = db.prepare('SELECT id, user_vehicle_id FROM mileage_log WHERE id = ?').get(req.params.id);
+  const existing = db.prepare('SELECT id, user_vehicle_id, date FROM mileage_log WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
-  db.prepare('DELETE FROM mileage_log WHERE id = ?').run(req.params.id);
+  const trashed = trash.moveToTrash(db, 'mileage_log', existing.id, { kind: 'Odometer reading', title: `Odometer reading on ${existing.date}` });
   const current_mileage = afterWrite(db, existing.user_vehicle_id).current_mileage;
-  res.json({ ok: true, current_mileage });
+  res.json({ ok: true, current_mileage, trashed });
 });
 
 module.exports = router;

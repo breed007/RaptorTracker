@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
+const trash = require('../services/trash');
 
 // ── Vehicle Extended Warranties ───────────────────────────────────────────────
 
@@ -90,8 +91,11 @@ router.put('/vehicle/:id', (req, res) => {
 
 // DELETE /api/warranty/vehicle/:id
 router.delete('/vehicle/:id', (req, res) => {
-  getDb().prepare('DELETE FROM vehicle_warranties WHERE id = ?').run(req.params.id);
-  res.json({ ok: true });
+  const db = getDb();
+  const existing = db.prepare('SELECT id, warranty_name FROM vehicle_warranties WHERE id = ?').get(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'Not found' });
+  const trashed = trash.moveToTrash(db, 'vehicle_warranties', existing.id, { kind: 'Warranty', title: existing.warranty_name });
+  res.json({ ok: true, trashed });
 });
 
 // ── Mod Warranties ────────────────────────────────────────────────────────────

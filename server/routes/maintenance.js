@@ -6,6 +6,7 @@ const { randomUUID: uuidv4 } = require('crypto');
 const { getDb } = require('../db');
 const { jsonList } = require('../lib/json');
 const { afterWrite } = require('../services/odometer');
+const trash = require('../services/trash');
 const { toNum, toInt } = require('../lib/parse');
 const { detachUpload } = require('../services/uploads');
 
@@ -84,16 +85,13 @@ router.put('/:id', (req, res) => {
 
 router.delete('/:id', (req, res) => {
   const db = getDb();
-  const existing = db.prepare('SELECT id, user_vehicle_id, attachments FROM maintenance_log WHERE id = ?').get(req.params.id);
+  const existing = db.prepare('SELECT id, user_vehicle_id, service_type, date_performed FROM maintenance_log WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Not found' });
-  // Clean up attachment files
-  const attachments = jsonList(existing.attachments);
-  for (const p of attachments) {
-    fs.unlink(path.join(UPLOAD_DIR, path.basename(p)), () => {});
-  }
-  db.prepare('DELETE FROM maintenance_log WHERE id = ?').run(req.params.id);
+  // Attachments stay on disk while the record is in the trash.
+  const trashed = trash.moveToTrash(db, 'maintenance_log', existing.id, {
+    kind: 'Service record', title: `${existing.service_type} (${existing.date_performed})` });
   afterWrite(db, existing.user_vehicle_id);
-  res.json({ ok: true });
+  res.json({ ok: true, trashed });
 });
 
 // ── Attachments ───────────────────────────────────────────────────────────────

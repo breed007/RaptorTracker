@@ -70,6 +70,17 @@ function start() {
     .then(s => { if (s?.available) console.log(`[scheduler] RaptorTracker ${s.latest} is available (running ${s.current}).`); })
     .catch(() => {});
   setTimeout(updateTick, 60 * 1000).unref();
+
+  // Trash keeps deleted records for 30 days, then deletes them and their files.
+  cron.schedule('40 4 * * *', () => {
+    try {
+      const { purge, RETENTION_DAYS } = require('./services/trash');
+      const r = purge(getDb(), process.env.UPLOAD_DIR || './data/uploads', { olderThanDays: RETENTION_DAYS });
+      if (r.purged) console.log(`[scheduler] emptied ${r.purged} old trash item(s), ${r.filesRemoved} file(s)`);
+    } catch (err) {
+      console.error('[scheduler] trash purge failed:', err.message);
+    }
+  }, options);
   cron.schedule('17 * * * *', updateTick, options);
 }
 

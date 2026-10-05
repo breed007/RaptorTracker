@@ -640,7 +640,7 @@ export default function FuelLog() {
       {deleteTarget && (
         <ConfirmModal
           title="Delete Fill-up"
-          message="Delete this fuel entry? This cannot be undone."
+          message="Delete this fuel entry? You can restore it from Settings → Trash for 30 days."
           danger
           onConfirm={handleDelete}
           onCancel={() => setDeleteTarget(null)}

@@ -43,6 +43,8 @@ function referencedFiles(db, vehicleId = null) {
       for (const p of list) { const b = baseName(p); if (b) names.add(b); }
     }
   }
+  // Records in the trash still own their files until the trash is emptied.
+  if (vehicleId == null) for (const f of require('./trash').trashedFiles(db)) names.add(f);
   return names;
 }
 
