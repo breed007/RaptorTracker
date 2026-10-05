@@ -4,6 +4,142 @@ All notable changes to RaptorTracker are documented here.
 
 ---
 
+## [v1.0.0] — 2026-10-05
+
+1.0 is a promise about your data: every upgrade keeps your records, nothing leaves your server
+that the README doesn't list, and within 1.x nothing you rely on breaks (see
+[Upgrades and the 1.0 promise](README.md#upgrades-and-the-10-promise)). It is also the first
+release for owners outside the US, and the first that runs on a Raspberry Pi.
+
+### Before you upgrade from 0.x
+
+- Take a backup first: **Settings → Backups → Back Up Now**. Your database migrates forward on
+  the first start. Going back to 0.8 means restoring that backup into 0.8.
+- Node.js 22.12 or newer is required (Node 20 reached end of life in April 2026). The Docker image
+  includes its own Node.
+- Docker Compose no longer ships placeholder credentials. Set `SESSION_SECRET` (32 or more random
+  characters) and `ADMIN_PASSWORD` in `.env`. In production the app now refuses to start with a
+  placeholder or short secret.
+- Installed with `install.sh`? Update from your clone with
+  `git pull && sudo bash install.sh --update`. The README's old advice to `git pull` in
+  `/opt/raptortracker` never worked, because the installer copies the code there without `.git`.
+- Installed from source? Run `npm ci --prefix client` as well as `npm ci`: the client moves to
+  Vite 8 and React Router 7.
+- Uploaded files (photos, receipts, scans) now need a signed-in session. A direct link to one
+  shared outside the app stops working.
+- The generic CSV importer read a `partial` column backwards (1 meant a full tank). It now means
+  a partial fill. Check any CSV you prepared for 0.8 before importing it again.
+- Settings moved under one **Settings** area. Old addresses redirect.
+
+### Security
+
+- **Deleting an attachment could delete any file the app could write, including the database.**
+  The routes that delete a maintenance attachment or a vehicle photo joined the file name from
+  the URL onto the uploads path, and Express decodes `%2F` in a route parameter, so a request for
+  `..%2Fraptortracker.db` removed the database. All four attachment and photo delete routes also
+  deleted the named file before checking that the record listed it, so one record could delete
+  another's upload. A request needed a signed-in session, and the SameSite cookie kept other
+  sites from sending one. Present in every 0.x release. The routes now delete only a file the
+  record lists, by its bare name, and a regression test covers all four.
+- Backup restores and vehicle and mod imports read archives as a stream, with limits on each
+  entry and on the total that actually decompresses. A 600 MB decompression bomb no longer takes
+  the server down. Entries that are symlinks or that climb out of the target folder are refused.
+- Imports accept only images and PDFs, and only those types are served. A crafted export can no
+  longer place an `.svg` or `.html` file on the app's own origin.
+- New security headers: a Content-Security-Policy, frame protection, `nosniff`, same-origin
+  referrers (so vendor links don't reveal a self-hosted address), and HSTS over HTTPS.
+- Changing the password signs out every other session. Sessions are kept in `data/sessions.db`,
+  so a restart or upgrade no longer signs you out, and backups never carry session tokens.
+- Reminder emails escape record text, so a mod name can't inject HTML into an email.
+- Photos resized in the browser lose their EXIF data, including GPS position.
+- The footer and sign-in page no longer show a hardcoded email address.
+- Dependencies: the production audit is clean. Nodemailer 10 fixes SMTP command injection, React
+  Router 7 fixes an open redirect (GHSA-wrjc-x8rr-h8h6), and Vite 8 fixes dev-server path
+  traversal. The remaining findings are build-time only and listed in [SECURITY.md](SECURITY.md).
+
+### New
+
+- **Metric units and currency.** Kilometers, liters, L/100 km or km/L or UK mpg, kPa or bar, and
+  any currency, picked on first run from the browser's language. Switching converts every stored
+  value once, after saving a copy of the database. Vehicle and mod exports record their units and
+  convert on import.
+- **Trash and Undo.** Deletes go to a trash for 30 days, files included, with an Undo button
+  right after. Deleting a vehicle with years of records is no longer permanent.
+- **A sample truck** on first run, with two and a half years of records, so a new owner can look
+  around before typing anything in. One click removes it.
+- **Off-box backups.** Each backup can be copied to a folder (a NAS share or USB drive), a WebDAV
+  server, or S3-compatible storage (AWS, Backblaze B2, Cloudflare R2, Wasabi, MinIO).
+- **Import from Fuelly, Drivvo, and Simply Auto.** Their exports are recognized, previewed, and
+  deduplicated, so importing twice adds nothing.
+- **A vehicle history report for selling the truck:** every service with its odometer reading,
+  what's due, repaired recalls, warranties, tires, and whether the odometer readings line up.
+  Costs, the VIN, trail days, and receipt photos are each your choice.
+- **Recalls you triage.** NHTSA lists recalls by model year, not by truck, so a 2022 Raptor showed
+  24 "urgent" campaigns, many for other vehicles. A new Recalls page lets you mark each one as
+  affecting your truck, not applying, or repaired, and only confirmed ones reach the dashboard.
+- **Air-down card** for each tire set: street pressure and what you've run on each terrain,
+  printable for the glovebox. The outing form suggests last time's pressures.
+- **Fluid capacities and part numbers** for each generation, copied from Ford's owner's manuals
+  with the manual cited.
+- **Editable AUX fuse ratings.** Set your own rating per switch when your truck differs. Ford's
+  figure is shown beside it.
+- **A release check.** Once a day the server asks GitHub whether a newer version is out and
+  shows the upgrade command for how you installed. Turn it off in Settings or with
+  `UPDATE_CHECK=false`.
+- **Raspberry Pi support** on 64-bit Raspberry Pi OS (Pi 3, 4, 5, and Zero 2 W). The installer
+  checks the architecture, adds temporary swap for the build on small boards, and no longer
+  installs a compiler. Photos are resized before upload (2560 px; receipts 3000 px), and the
+  busiest work peaks around 125 MB of memory.
+- **Docker image** for amd64 and arm64 on `ghcr.io/breed007/raptortracker`, with a health check
+  and `GET /api/health`.
+- **Accessibility.** Every page passes axe's WCAG 2.1 AA checks in every theme, light and dark:
+  contrast, labeled fields, named buttons, a visible focus ring, a skip link, and dialogs that
+  keep focus and close with Escape.
+- **Odometer checks.** A reading lower than an earlier one, or implying more than 1,500 miles
+  (or kilometers) a day, is saved with a warning naming the record it conflicts with.
+- **Storage report** under Settings → Backups: where the space goes, removing files nothing uses,
+  and shrinking photos uploaded full-size before 1.0.
+- A user guide, a security policy, and a contributing guide.
+
+### Fixed
+
+- AUX fuse ratings were wrong for every generation: one template had been copied across all of
+  them. They now match Ford's owner's manuals for each model year, with the source shown.
+  The 2024+ F-150 values, which Ford no longer prints, are marked as community-sourced.
+- A truck's mileage is now its highest odometer reading across all records, recalculated on
+  every change. Logging service at a higher mileage used to leave it behind, and deleting a
+  mistyped fill-up left it inflated.
+- Fuel economy ignored partial fills since the last full tank, which overstated it. It now uses
+  all the fuel since the last full tank, the average is weighted by distance, and a "missed the
+  last fill-up" option keeps an incomplete tank out of the figures. Your average is compared with
+  the EPA combined rating, not highway.
+- The build sheet PDF printed mod and service names white on white, showed every AUX switch as
+  available, and printed dates a day early in the Americas.
+- Forms defaulted to tomorrow's date during US evenings, and CSV imports shifted dates back a day
+  east of UTC.
+- Vehicle transfer exported 2 of the 11 per-vehicle tables. It now carries all of them and every
+  file they reference. Mod transfer keeps amp draw, AUX assignments, receipts, and warranty
+  fields, and importing the same mods twice no longer doubles the build.
+- Gen 3 specs showed the Raptor R's horsepower and torque.
+- better-sqlite3 crashed Node 24 intermittently during garbage collection; it moves to 13.x.
+- The Docker image couldn't be built from a fresh clone.
+- Full backups zipped the live database file; they now use a consistent snapshot from SQLite's
+  backup API.
+- One corrupt stored list no longer turns a page into a server error, and unknown API paths
+  return a JSON 404.
+- Chart axes repeated labels and showed `$` whatever the currency.
+
+### For contributors
+
+- Browser tests (Playwright) drive the built app the way an owner would, including an
+  accessibility scan in light and dark mode.
+- The upgrade suite rebuilds a database from every released version and migrates it to the
+  current code. The security suite attacks a running server.
+- CI runs on Node 22 and 24, on x64 and arm64, and builds the Docker image for both.
+- `npm run screenshots` retakes the README screenshots from the sample truck.
+
+---
+
 ## [v0.8.0] — 2026-07-20
 
 **"Show and Tell"** — the first release aimed at people who don't own this app yet.
