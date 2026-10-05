@@ -16,7 +16,8 @@
     "test:api": "node test/api.js",
     "test:upgrade": "node test/upgrade.js",
     "test:security": "node test/security.js",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "screenshots": "npm run build && node scripts/screenshots.js"
   },
   "dependencies": {
     "archiver": "^7.0.1",

@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RaptorTracker — self-hosted build tracker for Ford Raptors</title>
-<meta name="description" content="Track mods, AUX switch capacity, maintenance, fuel economy, and cost of ownership for your Ford Raptor. Self-hosted, MIT licensed, your data stays on your server.">
+<title>RaptorTracker: a self-hosted build tracker for Ford Raptors</title>
+<meta name="description" content="Track mods, AUX switch capacity, maintenance, fuel economy, and cost of ownership for your Ford Raptor. Self-hosted on a server or a Raspberry Pi, MIT licensed, and your records stay on your server.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230f172a'/%3E%3Cpath d='M288 96 160 288h88l-24 128 128-192h-88z' fill='%23FF6B00'/%3E%3C/svg%3E">
 
 <meta property="og:title" content="RaptorTracker">
-<meta property="og:description" content="Self-hosted build tracker for Ford Raptors — mods, AUX switch capacity planning, maintenance forecasting, and cost of ownership.">
+<meta property="og:description" content="A self-hosted build tracker for Ford Raptors: mods, AUX switch capacity, maintenance forecasting, fuel economy, and cost of ownership.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://breed007.github.io/RaptorTracker/">
 <meta property="og:image" content="https://breed007.github.io/RaptorTracker/screenshots/dashboard.png">
@@ -214,21 +214,21 @@
     <span class="eyebrow">Self-hosted · MIT licensed</span>
     <h1>Every part, every service,<br><span class="hl">every switch.</span></h1>
     <p class="sub">
-      A build tracker for Ford Raptors that runs on your own server. Mods, AUX switch
-      capacity, maintenance forecasting, fuel economy, and what the truck has actually
-      cost you — in one place, owned by you.
+      A build tracker for Ford Raptors that runs on your own server or a Raspberry Pi.
+      Mods, AUX switch capacity, what's due for service, fuel economy, and what the truck
+      has actually cost you, kept where you can see it.
     </p>
     <div class="cta">
       <a class="btn btn-primary" href="#install">Install it</a>
       <a class="btn btn-ghost" href="https://github.com/breed007/RaptorTracker">View source</a>
     </div>
     <p class="meta">
-      <span>Gen 1 → Gen 3.5</span><i>·</i><span>Node 22+</span><i>·</i><span>SQLite</span><i>·</i><span>No account, no cloud</span>
+      <span>F-150, Bronco &amp; Ranger Raptor</span><i>·</i><span>Miles or kilometers</span><i>·</i><span>Docker or a Pi</span><i>·</i><span>No account, no cloud</span>
     </p>
 
     <div class="shot">
       <div class="shot-bar"><i class="dot"></i><i class="dot"></i><i class="dot"></i></div>
-      <img src="screenshots/dashboard.png" alt="RaptorTracker dashboard showing vehicle status, items needing attention, and upcoming service" loading="eager" width="1600" height="666">
+      <img src="screenshots/dashboard.png" alt="The dashboard for a sample 2022 F-150 Raptor: what needs attention, what's coming up, and mod spend" loading="eager" width="1920" height="1230">
     </div>
   </div>
 
@@ -249,8 +249,8 @@
             headroom against the fuse rating.
           </p>
           <p>
-            Flagged <b style="color:#eab308">tight</b> past 80% of the fuse and
-            <b style="color:#ef4444">over</b> above it — before you wire it, not after.
+            Flagged <b style="color:#eab308">near limit</b> past 80% of the fuse and
+            <b style="color:#ef4444">over</b> above it, while it's still on the wishlist.
           </p>
         </div>
 
@@ -258,7 +258,7 @@
           <h3><span class="ico"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 3.9M15.4 6.6L8.6 10.5"/></svg></span>Forum-ready build sheets</h3>
           <p>
             Turn your installed mods into a list you can paste straight into a forum post
-            or signature — BBCode, Markdown, or plain text, grouped by category.
+            or signature: BBCode, Markdown, or plain text, grouped by category.
           </p>
           <p>
             Your VIN, purchase price, and insurance details are never included, and prices
@@ -288,12 +288,11 @@
           <h2>Your build, ready to post</h2>
           <p class="lede" style="margin-bottom:22px">
             The list you already maintain by hand in a forum signature, generated from
-            records you were keeping anyway. AUX assignments included — the part nothing
-            else can produce.
+            records you were keeping anyway, with each mod's AUX switch alongside it.
           </p>
-          <a class="btn btn-ghost" href="https://github.com/breed007/RaptorTracker#share-your-build">How it works</a>
+          <a class="btn btn-ghost" href="https://github.com/breed007/RaptorTracker/blob/main/docs/user-guide.md#moving-selling-and-sharing">How it works</a>
         </div>
-        <div class="sample"><span class="h">2021 Ford F-150 Raptor — "Code Orange"</span>
+        <div class="sample"><span class="h">2021 Ford F-150 Raptor: "Code Orange"</span>
 <span class="d">Gen 3 · Code Orange · 34,210 miles</span>
 
 <span class="h">SUSPENSION</span>
@@ -317,20 +316,22 @@
       <h2>What it tracks</h2>
       <p class="lede">Capture what happens to the truck, then get answers back out of it.</p>
       <ul class="flist">
-        <li><b>Modifications</b>Part, brand, vendor, cost, install date and mileage, photos, receipts, and per-switch AUX labels.</li>
-        <li><b>Maintenance</b>Service records with dealership / independent / DIY attribution, invoices attached, and mileage or time-based intervals.</li>
-        <li><b>Forecasting</b>Projects service intervals against how fast you actually drive, so "due in 3,400 mi" becomes a date.</li>
-        <li><b>Fuel &amp; MPG</b>Per-fill economy, trend over time, and your real average against the factory EPA rating.</li>
-        <li><b>Trail log</b>Outings with trail, difficulty, terrain, aired-down PSI, tire set, damage, and photos.</li>
-        <li><b>Cost of ownership</b>Acquisition, financing, mods, maintenance, and fuel unified into cost per mile.</li>
-        <li><b>Wishlist &amp; budget</b>Planned purchases against a monthly budget, with electrical load checked before you buy.</li>
-        <li><b>Tire &amp; wheel sets</b>Multiple sets with specs, cost, and miles run on each.</li>
-        <li><b>Warranty &amp; compliance</b>Factory and extended warranties, registration, inspection, and insurance deadlines.</li>
-        <li><b>Recalls</b>Open NHTSA campaigns for your model year, convertible into a tracked service record.</li>
-        <li><b>Documents</b>The glovebox paperwork — registration, insurance, window sticker — with expiry tracking.</li>
-        <li><b>Reminders</b>A daily digest by email or Discord/Slack webhook. Off by default.</li>
-        <li><b>Import &amp; export</b>CSV in and out, PDF build sheets, and full ZIP backup and restore.</li>
-        <li><b>Works on your phone</b>Installable PWA with a quick-add screen for logging a fill-up at the pump.</li>
+        <li><b>Modifications</b>Part, brand, vendor, cost, install date and mileage, photos, receipts, and wiring notes.</li>
+        <li><b>Maintenance</b>Service records with receipts, who did the work, and intervals from Ford's factory schedule or your own.</li>
+        <li><b>Forecasting</b>Projects each interval against how much you actually drive, so "due in 3,400 mi" becomes a date.</li>
+        <li><b>Fuel economy</b>Measured full tank to full tank, with partial and missed fill-ups handled, against the EPA rating.</li>
+        <li><b>Trail log &amp; air-down card</b>Outings with terrain, tire set, and pressures. Each tire set gets a printable card of what you ran.</li>
+        <li><b>Cost of ownership</b>Purchase, loan or lease, mods, maintenance, and fuel, down to cost per mile.</li>
+        <li><b>Wishlist &amp; budget</b>Planned purchases against a monthly budget, with the electrical load checked before you buy.</li>
+        <li><b>Recalls</b>NHTSA campaigns for your model year. You mark which affect your truck and which are repaired.</li>
+        <li><b>Warranty &amp; paperwork</b>Warranties, registration, inspection, insurance, and the window sticker, with expiry reminders.</li>
+        <li><b>Specs from the manual</b>Fluid capacities, part numbers, and wheel torque for your generation, with Ford's owner's manual cited.</li>
+        <li><b>Reports</b>A build sheet PDF, and a vehicle history for selling the truck with every service and odometer reading.</li>
+        <li><b>Your units</b>Miles or kilometers, gallons or liters, mpg or L/100 km, psi, kPa, or bar, and your currency.</li>
+        <li><b>Import from other apps</b>CSV exports from Fuelly, Drivvo, and Simply Auto are recognized, previewed, and deduplicated.</li>
+        <li><b>Backups off the box</b>Nightly backups, copied to a NAS folder, a WebDAV server, or S3-compatible storage.</li>
+        <li><b>Undo</b>Deletes go to a trash for 30 days, photos and all, with an Undo button right after.</li>
+        <li><b>On your phone</b>Installs to the home screen, with a Quick Add screen for logging a fill-up at the pump.</li>
       </ul>
     </div>
   </section>
@@ -338,15 +339,23 @@
   <section>
     <div class="wrap">
       <h2>A look around</h2>
-      <p class="lede">Three of the themes ship built in, including a dark FordRaptorForum style.</p>
+      <p class="lede">These come from the sample truck that loads on first run, so you can try it before typing anything in.</p>
       <div class="shots">
         <figure>
-          <img src="screenshots/aux-panel.png" alt="AUX switch panel showing per-switch assignments and electrical capacity" loading="lazy">
-          <figcaption>AUX switch panel with capacity planning</figcaption>
+          <img src="screenshots/aux-panel.png" alt="The AUX panel: each upfitter switch with its fuse rating, what it powers, and remaining headroom" loading="lazy" width="1920" height="1230">
+          <figcaption>AUX switches, fuses, and headroom</figcaption>
         </figure>
         <figure>
-          <img src="screenshots/garage.png" alt="My Garage view listing tracked vehicles" loading="lazy">
-          <figcaption>My Garage — one or more trucks, each isolated</figcaption>
+          <img src="screenshots/fuel-log.png" alt="The fuel log: average economy against the EPA rating, and economy over time" loading="lazy" width="1920" height="1230">
+          <figcaption>Fuel economy against the EPA rating</figcaption>
+        </figure>
+        <figure>
+          <img src="screenshots/maintenance.png" alt="The service forecast and maintenance log, with an overdue tire rotation" loading="lazy" width="1920" height="1230">
+          <figcaption>What's due, and when, at the rate you drive</figcaption>
+        </figure>
+        <figure>
+          <img src="screenshots/reports.png" alt="The reports page: a vehicle history for a sale and a build sheet" loading="lazy" width="1920" height="1230">
+          <figcaption>A vehicle history for buyers, and a build sheet</figcaption>
         </figure>
       </div>
     </div>
@@ -356,27 +365,29 @@
     <div class="wrap">
       <h2>Run it yourself</h2>
       <p class="lede">
-        One box, one command. It installs Node, sets up a service, generates a password,
-        and puts nginx in front of it.
+        Docker is the quickest way. The image is built for amd64 and arm64, so the same steps
+        work on a server, a VM, or a Raspberry Pi.
       </p>
 
       <ol class="steps">
-        <li><b>Any 64-bit Linux server</b> — a spare mini PC, a VM, or a Raspberry Pi 3, 4, 5, or Zero 2 W on 64-bit Raspberry Pi OS. Node 22.12 or newer, or the Docker image.</li>
-        <li><b>Clone and run the installer</b> as root. It handles the rest.</li>
-        <li><b>Set a real password</b> under Settings → Account on first sign-in.</li>
+        <li><b>A 64-bit machine:</b> a Linux server or VM, a spare mini PC, or a Raspberry Pi 3, 4, 5, or Zero 2 W on 64-bit Raspberry Pi OS.</li>
+        <li><b>Set two secrets</b> in <code>.env</code>: a session secret and the password for your first sign-in.</li>
+        <li><b>Set a real password</b> under Settings → Account once you're in.</li>
       </ol>
 
-<pre><code><span class="cmt"># Grab the latest release</span>
-git clone https://github.com/breed007/RaptorTracker.git
-<span class="tok">cd</span> RaptorTracker
+<pre><code><span class="tok">mkdir</span> raptortracker &amp;&amp; <span class="tok">cd</span> raptortracker
+curl -fsSLO https://raw.githubusercontent.com/breed007/RaptorTracker/main/docker-compose.yml
+curl -fsSL https://raw.githubusercontent.com/breed007/RaptorTracker/main/.env.example -o .env
 
-<span class="cmt"># Install as a service, behind nginx</span>
-<span class="tok">sudo</span> bash install.sh</code></pre>
+<span class="cmt"># Edit .env: set SESSION_SECRET and ADMIN_PASSWORD</span>
+<span class="tok">docker</span> compose up -d</code></pre>
 
       <p style="color:var(--fg2);font-size:.93rem;margin-top:18px">
-        Prefer containers? There's a <code>Dockerfile</code> and <code>docker-compose.yml</code> in the repo,
-        plus <a href="https://github.com/breed007/RaptorTracker/blob/main/docs/deployment-linux.md">Linux</a> and
-        <a href="https://github.com/breed007/RaptorTracker/blob/main/docs/deployment-docker.md">Docker</a> deployment guides.
+        Without Docker, <code>sudo bash install.sh</code> from a clone sets up Node, a service,
+        and nginx or Apache on Ubuntu, Debian, Raspberry Pi OS, or the RHEL family. See the
+        <a href="https://github.com/breed007/RaptorTracker/blob/main/docs/deployment-docker.md">Docker</a> and
+        <a href="https://github.com/breed007/RaptorTracker/blob/main/docs/deployment-linux.md">Linux</a> guides,
+        and <a href="https://github.com/breed007/RaptorTracker#running-on-a-raspberry-pi">Running on a Raspberry Pi</a>.
       </p>
     </div>
   </section>
@@ -386,10 +397,11 @@ git clone https://github.com/breed007/RaptorTracker.git
       <h2>What this is, plainly</h2>
       <div class="honest">
         <ul>
-          <li><b>Self-hosted and single-owner.</b> One password, your server, your database file. There is no cloud service and no account to create. Your records never leave your server; the only outside calls are NHTSA lookups and a daily check for new releases, which you can turn off.</li>
-          <li><b>Your data is yours.</b> Everything lives in one SQLite file plus an uploads folder. Back it up as a ZIP from inside the app, or just copy the directory. Export any record type to CSV whenever you like.</li>
-          <li><b>It expects you to run a server.</b> If you've never used SSH, this will be a real afternoon. The installer does the heavy lifting, but it's still a machine you have to maintain.</li>
-          <li><b>Not affiliated with Ford.</b> Reference specs come from public sources. Torque values and wiring details are not included, because those live in Ford's copyrighted workshop manual.</li>
+          <li><b>Self-hosted and single-owner.</b> One password, your server, your database file. There is no cloud service and no account to create. Your records stay on your server. On its own it calls out only for NHTSA lookups and a daily check for new releases, which you can turn off; email, webhooks, and off-box backups go where you point them. The README <a href="https://github.com/breed007/RaptorTracker#what-leaves-your-server">lists every request</a>.</li>
+          <li><b>Your data is yours.</b> Everything lives in one SQLite file plus an uploads folder. The app backs both up as a ZIP every night, and any record type exports to CSV.</li>
+          <li><b>It expects you to run a server.</b> If you've never used SSH, this will be a real afternoon. Docker or the installer does the heavy lifting, but it's still a machine you have to maintain.</li>
+          <li><b>Upgrades keep your data.</b> Any earlier release's database, 0.x included, migrates forward on first start, and within 1.x nothing you rely on breaks.</li>
+          <li><b>Not affiliated with Ford.</b> Reference specs come from public sources and Ford's free owner's manuals, with the manual named. Workshop-manual torque values and wiring diagrams are not included.</li>
           <li><b>MIT licensed.</b> Fork it, change it, run it however you want.</li>
         </ul>
       </div>

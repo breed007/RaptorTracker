@@ -1,300 +1,118 @@
 # RaptorTracker
 
-**Ford Raptor Build Tracker** — a self-hosted web app for tracking modifications, maintenance, AUX switch assignments, warranties, fuel economy, and build costs across one or more Ford Raptors.
+A self-hosted build tracker for Ford Raptors: mods, AUX switch capacity, maintenance and what's
+due next, fuel economy, warranties, and the cost of the whole thing. It runs on your own server or
+a Raspberry Pi, and your records stay there.
 
-> Version `0.8.0` · [GitHub](https://github.com/breed007/RaptorTracker) · [Changelog](CHANGELOG.md)
-
----
-
-## Screenshots
+> Version `1.0.0` · [User guide](docs/user-guide.md) · [Changelog](CHANGELOG.md) ·
+> [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md)
 
 <p align="center">
-  <img src="docs/screenshots/dashboard.png" alt="Dashboard view" width="100%" />
+  <img src="docs/screenshots/dashboard.png" alt="The dashboard for a sample 2022 F-150 Raptor: what needs attention, what's coming up, and spend by category" width="100%" />
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/garage.png" alt="My Garage view" width="100%" />
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/aux-panel.png" alt="AUX Switch Panel view" width="100%" />
+  <img src="docs/screenshots/aux-panel.png" alt="The AUX panel: each upfitter switch with its fuse rating, what it powers, and remaining headroom" width="49%" />
+  <img src="docs/screenshots/fuel-log.png" alt="The fuel log: average economy against the EPA rating, and economy over time" width="49%" />
 </p>
 
 ---
 
-## Features
+## What it does
 
-### Modification Tracker
-- Log each mod with part name, brand, part number, vendor, cost, purchase/install date, and install mileage
-- Status tracking: Ordered → In Transit → Installed → Removed
-- Photos per mod with a full-screen lightbox viewer
-- Install notes and wiring notes shown in monospace
-- Slide-out detail panel on the mod list — click any row for a quick view without leaving the page
-- Assign a mod to one or more AUX switches, each with its own label
+**For the build**
+- Track every mod: status from researching to installed, cost, photos, receipts, part numbers,
+  install notes, and wiring notes.
+- Plan the electrical side. The AUX panel knows the factory upfitter switch layout and fuse ratings
+  for each generation (F-150 Raptor Gen 1 through Gen 3.5, Bronco Raptor, Ranger Raptor), shows
+  the draw on each switch, and flags anything, installed or still on the wishlist, that would
+  overload a circuit. Fuse ratings can be edited when your truck differs.
+- Keep a wishlist with a monthly budget, and promote items to mods when you buy them.
+- Share the build as BBCode for forums, Markdown, or plain text, with prices off unless you turn
+  them on.
 
-### AUX Switch Panel
-- Factory-accurate AUX switch layouts for Gen 2, Gen 3, and Gen 3.5
-- Shows which switches are factory-consumed versus available
-- Assign mods to switches with custom per-switch labels
-- Gen 3.5 marks AUX 1 as factory-consumed by the bumper fogs; assign a mod to it directly, or mark it available to use like any other switch (reversible per vehicle)
-- **Capacity planning** — each switch shows its fuse rating, current draw, planned draw from the wishlist, and remaining headroom, flagged *tight* past 80% of the fuse and *over* above it
-- A mod with no recorded amp draw makes its switch report **unknown**, not *fine*. The planner won't imply a circuit is safe when it has no idea.
+**For keeping it running**
+- Service records with receipts, intervals (Ford's factory schedule or your own), and a forecast
+  that turns "due in 3,400 miles" into a date based on how much you drive.
+- A fuel log that measures economy full tank to full tank, handles partial and missed fill-ups, and
+  compares you with the EPA rating.
+- NHTSA recalls for your model year, triaged by you: affects my truck, doesn't apply, or repaired.
+- Warranties, registration, inspection, and insurance with expiry reminders by email or a Discord
+  or Slack webhook.
+- Tire and wheel sets, and a trail log whose pressures build an air-down card for each set.
+- Fluid capacities, part numbers, and wheel torque for your generation, copied from Ford's owner's
+  manuals with the manual cited.
 
-### Maintenance Log & Service Intervals
-- Record service events with type, date, mileage, vendor, cost, and notes
-- Tag who did the work: dealership, independent shop, or owner/DIY
-- Attach invoices and receipts (JPEG, PNG, PDF) per record
-- 20+ service-type presets (oil change, spark plugs, differential service, transmission, tires, battery, and more)
-- Set mileage- or time-based intervals for recurring services (oil every 5,000 mi, diff fluid every 30,000 mi, and so on)
-- The dashboard shows a Due Soon / Overdue card for anything approaching or past its interval, measured against the most recent service of that type
-- **Forecasting** projects mileage-based intervals against how fast you actually drive, turning "due in 3,400 mi" into a date. With too little mileage history to establish a rate, the forecast is withheld rather than guessed.
+**For the money and the paperwork**
+- Total cost of ownership, including the loan or lease, with cost per mile.
+- A document vault for registration, insurance, and the window sticker.
+- PDFs: a build sheet, and a vehicle history for selling the truck that shows buyers every service
+  and its odometer reading.
+- CSV export of everything, and CSV import that recognizes Fuelly, Drivvo, and Simply Auto exports.
 
-### Warranty Tracking
-- Track extended and vehicle warranties: provider, term in years and miles, start and expiration dates, contract number, claims phone, cost, and deductible
-- Expiration auto-calculates from the start date plus term when you leave it blank
-- Per-mod warranty tracking for installed mods
-- Color-coded status: active, expiring within 90 days, or expired
-- The dashboard flags anything expired or expiring soon
+**Around the edges**
+- Miles or kilometers, gallons or liters, mpg or L/100 km, psi, kPa, or bar, and your currency.
+- Installs on a phone's home screen, with a Quick Add screen for logging at the pump.
+- Deletes go to a trash for 30 days, with an Undo right after.
+- Nightly backups, copied off the box to a NAS, WebDAV, or S3-compatible storage.
+- A sample truck on first run, so you can look around before typing anything in.
+- Keyboard and screen-reader friendly, and readable in all three themes (light and dark).
 
-### Fuel Log & MPG
-- Log each fill-up: date, odometer, gallons, price per gallon, and station
-- Measures economy full tank to full tank, counting partial fills in between, and skips a tank
-  that follows a fill-up you forgot to log
-- Plots the trend over time and compares your average against the factory EPA rating
-- Imports your history from Fuelly, Drivvo, or Simply Auto exports (fill-ups and services),
-  converting units and skipping anything already logged
-
-### Trail Log
-- Everything else here tracks what's been done *to* the truck; this records using it
-- Log an outing with trail, location, difficulty, terrain, aired-down PSI, tire set, who came along, and photos
-- Damage notes link straight to logging the repair
-- Outings appear in the unified logbook, and one that ends past your recorded odometer bumps the vehicle's mileage
-- Trip totals report how many outings lack odometer readings rather than counting unknown miles as zero
-
-### Share Your Build
-- Turns your installed mods into a list you can paste straight into a forum post or signature
-- **BBCode** (FordRaptorForum and most vBulletin/XenForo boards), **Markdown** (Reddit, GitHub, Discord), or plain text
-- Grouped by category, with optional part numbers, vendor links, and AUX switch assignments
-- Only mods marked *Installed* appear. Your VIN, purchase price, and insurance details are never included, and **prices are off by default** — a build list is public, what you spent usually isn't
-
-### Wishlist & Budget
-- A separate list for planned purchases, with priority, target budget, vendor links, and notes
-- One button promotes a wishlist item into the active mod tracker once you buy it
-- Compares planned spend against actual spend
-- Set a **monthly mod budget** to see committed spend, remaining runway, and which wishlist items fit inside it
-
-### Documents & Receipts
-- Attach receipts and PDFs to individual mods and service records
-- A vault for the paperwork that lives in the glovebox — registration, insurance, window sticker, warranty contracts — with expiry tracking for the ones that lapse
-
-### My Garage
-- Multiple vehicles per account, each with its own isolated data
-- Vehicle profile photo and window-sticker upload
-
-### Total Cost of Ownership
-- Unifies acquisition/financing, modifications, maintenance, and fuel into one view
-- Cost-per-mile and operating-cost-per-mile, plus a cumulative-spend chart
-- Financing section for owned-outright, loan, or lease — with paid-to-date, remaining balance, and interest
-
-### Reminders (Email + Webhook)
-- Optional daily digest of overdue/due-soon services, expired/expiring warranties, and registration/inspection/insurance deadlines
-- Delivered by **email** (SMTP) and/or a **Discord/Slack webhook** — pick either or both
-- Toggle service, warranty, and compliance alerts independently; configurable look-ahead window
-- De-duplicated so you're not re-notified about the same item daily; off by default
-
-### Logbook & Analytics
-- **Logbook** — a single chronological history of the truck (mods, services, fuel, tires, warranties), filterable by type
-- **Analytics** — mileage-over-time, miles per month, and maintenance cost by provider, plus a manual odometer log
-
-### Backup & Restore
-- One-click full backup (database + all uploads) to a single ZIP, and restore from a backup file
-- Optional nightly automatic backups with configurable retention
-- Off-box copies: each backup is also sent to a mounted folder (NAS or USB drive), a WebDAV server
-  (Nextcloud, Synology), or S3-compatible storage (AWS, Backblaze B2, Cloudflare R2, MinIO), keeping
-  the newest copies there. A failed disk then doesn't take the backups with it.
-- Deletes go to a trash for 30 days, with an Undo right after you delete something
-
-### Install on Your Phone
-- Installable progressive web app — add it to your home screen for a standalone app window
-- **Quick Add** screen for logging a fill-up, odometer reading, or service in a few taps
-
-### Find Anything
-- Grouped sidebar navigation plus a `⌘K` command palette that searches mods, service, wishlist, tires, warranties, and fuel stops
-
-### Registration, Inspection & Insurance
-- Track registration, inspection/emissions, and insurance expiration per vehicle, with provider and policy details
-- Deadlines feed the email reminders and are highlighted on the garage card when expiring
-
-### Recall Lookup
-- Dashboard surfaces open NHTSA recalls for your truck, matched by model and year; dismiss individually, collapse the card, and restore later
-
-### Tire & Wheel Sets
-- Track multiple sets (street vs. off-road) with specs, cost, install/removal mileage, and miles-run per set
-- Tire spend rolls into Total Cost of Ownership
-- Air-down card per set: the street pressure from the door jamb, and what you've actually run on rock,
-  sand, mud, and snow with those tires, from your logged trail days. Prints for the glovebox.
-
-### Dashboard
-- A vehicle home page rather than a wall of alert cards: one **Needs Attention** list and one **Coming Up** list
-- Mod, spend, and maintenance summaries with a spend-by-category chart
-- Loads in a single request that reuses the same reminder and capacity code as the email digest, so the dashboard and your inbox can't disagree
-
-### Reference Library
-Read-only factory specs for the full Ford Raptor lineup:
-- **Gen 1** — 2010–2014 (6.2L V8 / 5.4L V8 SVT)
-- **Gen 2** — 2017–2020 (3.5L EcoBoost)
-- **Gen 3** — 2021–2023 (3.5L EcoBoost High Output)
-- **Gen 3.5** — 2024–present (3.5L EcoBoost HO / Raptor R 5.2L Supercharged V8)
-
-Engine, transmission, suspension, towing, payload, and AUX panel specs per generation.
-- Ford's figures for your generation from the free owner's manual: oil capacity and grade, coolant,
-  axle and transfer case fluids, wheel nut torque, and filter, plug, and battery part numbers, with the
-  manual cited. Copy any line into your own spec sheet to keep or edit it.
-
-### Reports & Exports
-- **Vehicle history for a sale**: a PDF for buyers with every service and its odometer reading, the
-  maintenance schedule and what's due, repaired recalls, warranties, tires, and a check that the
-  odometer readings line up. Costs, the VIN, trail days, and receipt photos are each your choice.
-- PDF build sheet with installed mods and photos, the AUX switch map, and the service history
-  (optionally with the window sticker)
-- CSV export of any record type — mods, maintenance, fuel, warranties, tire sets, wishlist
-- **CSV import** for fuel, maintenance, mods, specs, and wishlist history. Rows whose column count doesn't match the header are rejected with an explanation rather than imported shifted.
-
-### Vehicle Import / Export
-- Export a vehicle to a ZIP archive (metadata, photos, window sticker, mods, maintenance)
-- Import a ZIP onto the same or a different install — useful for backups or moving between servers
-
-### Theme System
-Three built-in themes, saved per browser:
-
-| Theme | Style |
-|---|---|
-| **Ford Racing** (default) | Ford navy / orange, Inter + Barlow Condensed |
-| **FordRaptorForum** | Dark XenForo style, crimson accent, Verdana |
-| **Raptor Assault** | Light/dark, red accent, Roboto |
-
-Each theme has a light/dark toggle, except FordRaptorForum, which is always dark.
+The [user guide](docs/user-guide.md) walks through each of these.
 
 ---
 
-## Security
+## Installing
 
-RaptorTracker is a single-owner app with one password, so a few things matter
-if you put it anywhere the internet can reach:
+You need a 64-bit machine: a Linux server or VM, a Raspberry Pi 3 or newer, or anything that runs
+Docker. Pick one of these.
 
-- **Change the password in the app.** `ADMIN_PASSWORD` in `.env` only bootstraps
-  the first sign-in. Set a real one under **Settings → Account** and it's stored
-  as a bcrypt hash in the database — the `.env` value is then ignored. The app
-  warns on every start until you do.
-- **Sign-in attempts are rate limited** to 10 failures per 15 minutes per IP.
-  Successful sign-ins don't count against the limit.
-- **Set `TRUST_PROXY`** to the number of reverse proxies in front of the app
-  (`install.sh` writes `1`). Without it, the rate limiter sees the proxy's
-  address instead of the real client, and one attacker can lock you out.
-- **Serve it over HTTPS** and set `COOKIE_SECURE=true` so the session cookie
-  isn't sent in the clear.
+### Docker (recommended)
 
-There is no password reset by email. If you lose the password, delete the
-`secret_admin_password_hash` row from the `app_settings` table and the `.env`
-value takes over again.
-
-### What leaves your server
-
-Your data stays in one SQLite file on your server. RaptorTracker makes these
-outside requests, and none of them carry your records:
-
-| Request | When | What's sent |
-|---|---|---|
-| GitHub releases API | Once a day, to see whether a newer version is out | The RaptorTracker version, in the User-Agent |
-| NHTSA vPIC | When you decode a VIN | The VIN |
-| NHTSA recalls API | When you open Recalls or the dashboard | Make, model, and year |
-| Reminder email or webhook | When reminders are on and something is due | The reminder text, to the server and address you configured |
-| Off-box backup copy | After each backup, if you set a destination | The backup file, to the folder, WebDAV server, or bucket you chose |
-
-The release check can be turned off under **Settings → General**, or for the
-whole install with `UPDATE_CHECK=false` in `.env`. Separately, your browser loads
-fonts from Google Fonts when it opens the app.
-
----
-
-## Prerequisites
-
-| Requirement | Version | Notes |
-|---|---|---|
-| **Node.js** | 22.12+ | 24 LTS recommended. Node 20 reached end-of-life in April 2026 and is no longer supported. |
-| **npm** | 10+ | Bundled with Node 22. |
-| **git** | any recent | For cloning and pulling updates. |
-| **OS** | 64-bit Linux, macOS, or Windows | On x86_64 or ARM64. 32-bit systems aren't supported (see [Raspberry Pi](#running-on-a-raspberry-pi)). |
-
-Everything else is a project dependency installed by `npm install`. Key ones:
-
-| Layer | Package | Version |
-|---|---|---|
-| Backend | Express | 4.x |
-| Database | better-sqlite3 (SQLite) | 13.x |
-| Auth | express-session + bcrypt | — |
-| File uploads | Multer | 2.x |
-| PDF generation | PDFKit | 0.15.x |
-| Import/Export | archiver + yauzl | — |
-| Frontend | React | 18.x |
-| Build tool | Vite | 5.x |
-| Routing | react-router-dom | 6.x |
-| Charts | Chart.js + react-chartjs-2 | 4.x / 5.x |
-| Styling | Tailwind CSS | 3.x |
-
----
-
-## Quick Start (Local)
+The image is published for amd64 and arm64.
 
 ```bash
-# 1. Clone
+mkdir raptortracker && cd raptortracker
+curl -fsSLO https://raw.githubusercontent.com/breed007/RaptorTracker/main/docker-compose.yml
+curl -fsSL https://raw.githubusercontent.com/breed007/RaptorTracker/main/.env.example -o .env
+# Edit .env: set SESSION_SECRET and ADMIN_PASSWORD (the file explains how to generate them)
+docker compose up -d
+```
+
+Open `http://<server>:3000`. Data lives in the `raptortracker_data` volume. More detail, including
+running behind a reverse proxy, is in [Docker Deployment](docs/deployment-docker.md).
+
+### Linux server installer
+
+`install.sh` sets up Node.js, PM2, an nginx or Apache reverse proxy, startup at boot, the
+firewall, and the database. It supports Ubuntu, Debian (including Raspberry Pi OS), and the RHEL
+family.
+
+```bash
 git clone https://github.com/breed007/RaptorTracker.git
 cd RaptorTracker
-
-# 2. Install dependencies (server, then client)
-npm install
-npm install --prefix client
-
-# 3. Configure
-cp .env.example .env        # then edit the values
-
-# 4. Seed the database
-npm run db:init
-
-# 5. Run with hot reload (API + Vite dev server)
-npm run dev
+sudo bash install.sh
 ```
 
-The API runs on `http://localhost:3000` and the Vite dev server on `http://localhost:5173`.
+It asks for the install directory, port, domain, admin password, and web server, and prints the
+URL when it's done. See [Linux Deployment](docs/deployment-linux.md) for the details.
 
-To run a production build locally instead of the dev server:
+### From source
+
+For development, or to run it by hand. Needs Node.js 22.12 or newer (24 recommended).
 
 ```bash
-npm run build      # builds the client into dist/
-npm start          # serves the API and the built client on PORT
+git clone https://github.com/breed007/RaptorTracker.git
+cd RaptorTracker
+npm install
+npm install --prefix client
+cp .env.example .env          # set SESSION_SECRET and ADMIN_PASSWORD
+npm run db:init
+npm run build && npm start    # or `npm run dev` for hot reload on :5173
 ```
 
-> If `npm install --prefix client` ever reports a peer-dependency conflict (for example after a major Vite bump), re-run it with `npm install --prefix client --legacy-peer-deps`.
-
-### Environment variables (`.env`)
-
-```
-PORT=3000
-SESSION_SECRET=your-random-secret-here
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=yourpassword
-DATA_DIR=./data
-UPLOAD_DIR=./data/uploads
-NODE_ENV=development
-
-# Optional — email reminders (leave SMTP_HOST blank to disable)
-SMTP_HOST=
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=
-SMTP_PASS=
-SMTP_FROM=
-```
+After installing, sign in with the `.env` credentials and set a real password under
+**Settings → Account**.
 
 ---
 
@@ -335,135 +153,155 @@ under a second, and a backup of a few gigabytes of photos to take a few minutes.
 - Photos are resized in the browser before they upload, so a phone photo takes under 1 MB instead
   of several. Photos uploaded before 1.0 can be shrunk under Settings → Backups → Storage.
 
-### Installing
+### Installing on a Pi
 
 1. Write Raspberry Pi OS Lite (64-bit) to the card or SSD with
    [Raspberry Pi Imager](https://www.raspberrypi.com/software/), turning on SSH in its settings.
-2. Then either:
-   - Docker: install Docker with [Docker's instructions for Debian](https://docs.docker.com/engine/install/debian/),
-     then follow [Docker Deployment](docs/deployment-docker.md). The published image is multi-arch,
-     so the same `docker compose up -d` pulls the ARM64 build.
-   - `install.sh`: follow [Installation (Linux Server)](#installation-linux-server) below.
-     Raspberry Pi OS is based on Debian, which the installer supports.
+2. Then either install Docker with [Docker's instructions for Debian](https://docs.docker.com/engine/install/debian/)
+   and follow [Docker](#docker-recommended) above (the same commands pull the ARM64 image), or use
+   the [Linux server installer](#linux-server-installer).
 
 Set `TZ` (Docker) or the Pi's timezone (`sudo raspi-config`) so reminders and nightly backups run
 at the hour you expect.
 
 ---
 
-## Installation (Linux Server)
+## Upgrades and the 1.0 promise
 
-The included `install.sh` sets up Node.js, PM2, an nginx or Apache reverse proxy, systemd startup, the firewall, and the seeded database.
+1.0 is a promise about your data:
 
-```bash
-git clone https://github.com/breed007/RaptorTracker.git
-cd RaptorTracker
-sudo bash install.sh
-```
+- **Every upgrade keeps your records.** A database from any earlier release, 0.x included, is
+  migrated forward automatically the first time the new version starts. CI rebuilds the database
+  of every released version and migrates it to the current code on every change.
+- **Within 1.x nothing you rely on breaks:** not the database, backups, vehicle exports, `.env`
+  settings, or the install methods. A backup or vehicle export from any 1.x release restores into
+  any later 1.x release. If something has to change, it's announced in the changelog a release
+  ahead, and the old way keeps working until 2.0.
+- **Upgrading is one step back from undoable.** Take a backup first (**Settings → Backups → Back
+  Up Now**). Going back to an older version isn't supported; restoring that backup into the older
+  version is how you would.
 
-The script prompts for:
-- Install directory (default `/opt/raptortracker`)
-- Application port (default `3000`)
-- Service account name (default `raptortracker`)
-- Domain or IP
-- Admin username and password
-- Web server (nginx recommended, Apache supported, or standalone)
-- Firewall configuration
-
-It prints the URL, admin credentials, and PM2 commands when it finishes.
-
-### Updating an existing server
-
-If the install directory is a git clone:
+The app tells you when a new version is out (**Settings → General**), with the command for how it
+was installed:
 
 ```bash
-cd /opt/raptortracker
-git pull origin main
-npm install            # only needed when a release adds dependencies
-npm run build
-pm2 restart raptortracker
+# Docker
+docker compose pull && docker compose up -d
+
+# install.sh: in the folder you cloned and installed from
+git pull && sudo bash install.sh --update
+
+# from source
+git pull && npm ci --omit=dev && npm ci --prefix client && npm run build   # then restart
 ```
 
-### PM2 operations
-
-```bash
-pm2 list
-pm2 logs raptortracker
-pm2 restart raptortracker
-pm2 stop raptortracker
-```
-
-(Prefix with `sudo -u raptortracker` if the app runs under a dedicated service account.)
+`install.sh --update` copies the database to `data/backups/` first, then installs the new
+version's dependencies, rebuilds, and restarts the app, without asking the install questions
+again.
 
 ---
 
-## Project Structure
+## Security
 
-```
-RaptorTracker/
-├── server.js                  # Express entry point
-├── server/
-│   ├── db/
-│   │   ├── index.js           # DB connection + migrations
-│   │   └── init.js            # Schema creation + vehicle seed data
-│   └── routes/
-│       ├── mods.js
-│       ├── maintenance.js
-│       ├── intervals.js
-│       ├── userVehicles.js
-│       ├── vehicles.js
-│       ├── warranty.js
-│       ├── wishlist.js
-│       ├── fuel.js
-│       ├── export.js          # PDF build sheet
-│       ├── vehicleTransfer.js # ZIP import/export
-│       ├── upload.js
-│       ├── summary.js
-│       └── vin.js
-├── client/
-│   ├── src/
-│   │   ├── pages/             # Dashboard, ModList, ModDetail, Maintenance, AuxPanel, Garage, Warranty, Wishlist, FuelLog, …
-│   │   ├── components/        # Nav, Layout, StatsCard, SpendChart, Lightbox, …
-│   │   └── context/
-│   │       └── AppContext.jsx # Auth, vehicle selection, theme
-│   ├── vite.config.js
-│   └── tailwind.config.js
-├── test/
-│   ├── smoke.js               # Schema, migrations, module load
-│   └── api.js                 # Route-level integration tests
-├── install.sh                 # Linux server installer
-├── uninstall.sh
-├── CHANGELOG.md
-└── package.json
-```
+RaptorTracker is a single-owner app with one password, so a few things matter if you put it
+anywhere the internet can reach:
+
+- **Change the password in the app.** `ADMIN_PASSWORD` in `.env` only bootstraps the first
+  sign-in. Set a real one under **Settings → Account** and it's stored as a bcrypt hash in the
+  database; the `.env` value is then ignored. The app warns on every start until you do.
+- **Sign-in attempts are rate limited** to 10 failures per 15 minutes per address. Successful
+  sign-ins don't count against the limit.
+- **Set `TRUST_PROXY`** to the number of reverse proxies in front of the app (`install.sh` writes
+  `1`). Without it, the rate limiter sees the proxy's address instead of the real visitor, and one
+  attacker can lock you out.
+- **Serve it over HTTPS** and set `COOKIE_SECURE=true` so the session cookie isn't sent in the
+  clear.
+
+There is no password reset by email; the [troubleshooting guide](docs/user-guide.md#troubleshooting)
+explains how to reset it on the server. To report a vulnerability, see [SECURITY.md](SECURITY.md).
+
+### What leaves your server
+
+Your data stays in one SQLite file on your server. RaptorTracker makes these outside requests, and
+none of them carry your records:
+
+| Request | When | What's sent |
+|---|---|---|
+| GitHub releases API | Once a day, to see whether a newer version is out | The RaptorTracker version, in the User-Agent |
+| NHTSA vPIC | When you decode a VIN | The VIN |
+| NHTSA recalls API | When you open Recalls or the dashboard | Make, model, and year |
+| Reminder email or webhook | When reminders are on and something is due | The reminder text, to the server and address you configured |
+| Off-box backup copy | After each backup, if you set a destination | The backup file, to the folder, WebDAV server, or bucket you chose |
+
+The release check can be turned off under **Settings → General**, or for the whole install with
+`UPDATE_CHECK=false`. Separately, your browser loads fonts from Google Fonts when it opens the app.
 
 ---
 
-## Tests
+## Configuration
 
-```bash
-npm test              # smoke test: schema, migrations, every module loads
-npm run test:api      # boots the app against a throwaway DB and exercises the routes
-npm run test:upgrade  # rebuilds every released tag's database and migrates it to HEAD
+Settings that belong to the server live in `.env` (or the Compose `.env`). Everything else is set
+in the app under **Settings**.
+
+| Variable | Default | What it does |
+|---|---|---|
+| `SESSION_SECRET` | none | Signs session cookies. Required in production; 32 or more random characters. |
+| `ADMIN_USERNAME` | `admin` | The sign-in name. |
+| `ADMIN_PASSWORD` | none | The first sign-in's password, until you set one in the app. |
+| `PORT` | `3000` | Port the server listens on. |
+| `DATA_DIR` | `./data` | Where the database and backups live. |
+| `UPLOAD_DIR` | `./data/uploads` | Where photos and documents live. |
+| `NODE_ENV` | `development` | Set `production` on a server (the Docker image does). |
+| `TRUST_PROXY` | none | Number of reverse proxies in front of the app. |
+| `COOKIE_SECURE` | `false` | `true` when the app is served over HTTPS. |
+| `TZ` | server time | Timezone, mainly for Docker. |
+| `REMINDER_HOUR` | `8` | Hour of the daily reminder check. |
+| `REMINDER_TZ` | server time | Timezone for that hour, e.g. `America/Denver`. |
+| `UPDATE_CHECK` | on | `false` turns off the daily release check for the whole install. |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | none | Email for reminders. Leave `SMTP_HOST` blank to skip email. |
+
+---
+
+## Development
+
+```
+server.js                 Express entry point
+server/
+  db/                     connection, migrations (run on every start), first-run seed
+  reference/              Ford reference data: vehicles, AUX layouts, fluids (synced on start)
+  routes/                 HTTP routes, kept thin
+  services/               the logic: units, trash, backups, reports, imports, odometer, …
+client/src/
+  pages/                  one file per screen; settings/ for the Settings tabs
+  components/             shared pieces: Dialog, Nav, charts, forms
+  lib/                    units, toasts, photo resizing, dialog behavior
+test/                     smoke, API, upgrade, and security suites
+e2e/                      Playwright browser tests
+docs/                     user guide, deployment guides, landing page
 ```
 
-Both run against a temporary database in your system temp directory and never
-touch `data/`. They need `better-sqlite3` built for your Node version, so use
-one of the versions CI targets (Node 22 or 24).
+```bash
+npm test                 # schema, migrations, reference data, accessibility checks on the JSX
+npm run test:api         # the app's routes over HTTP
+npm run test:upgrade     # every released version's database migrated to this one
+npm run test:security    # path traversal, hostile archives, unauthenticated access
+npm run test:e2e         # the built app in Chromium, with an accessibility scan
+```
+
+The tests use throwaway data and never touch `data/`. [CONTRIBUTING.md](CONTRIBUTING.md) covers
+setup and conventions.
+
+| Layer | Package |
+|---|---|
+| Server | Express 4, better-sqlite3 13, express-session, bcrypt, Multer 2, PDFKit, archiver, yauzl |
+| Client | React 18, React Router 7, Vite 8, Tailwind CSS 3, Chart.js 4 |
 
 ---
 
 ## Versioning
 
-RaptorTracker follows [Semantic Versioning](https://semver.org) (`MAJOR.MINOR.PATCH`). The running version and build date show in the footer of every page. See [CHANGELOG.md](CHANGELOG.md) for release history.
-
-To cut a release, update `"version"` in `package.json`, update the changelog, then rebuild:
-
-```bash
-npm run build
-```
-
----
+RaptorTracker follows [Semantic Versioning](https://semver.org). The running version and build
+date are in the footer of every page, and [CHANGELOG.md](CHANGELOG.md) has the history.
 
 ## Uninstall
 
@@ -471,7 +309,7 @@ npm run build
 sudo bash /opt/raptortracker/uninstall.sh
 ```
 
----
+With Docker, `docker compose down` stops it; add `-v` to delete the data volume too.
 
 ## License
 

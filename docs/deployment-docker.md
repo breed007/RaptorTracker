@@ -1,178 +1,120 @@
-# RaptorTracker — Docker Deployment
+# RaptorTracker: Docker Deployment
 
-Containerized deployment using Docker Compose.
+The published image (`ghcr.io/breed007/raptortracker`) is built for amd64 and arm64, so the same
+steps work on a server, a VM, or a Raspberry Pi 3 or newer with 64-bit Raspberry Pi OS. See
+[Running on a Raspberry Pi](../README.md#running-on-a-raspberry-pi) for Pi specifics.
 
-The published image is built for amd64 and arm64, so it runs on a Raspberry Pi 3, 4, 5, or Zero 2 W
-with 64-bit Raspberry Pi OS. See [Running on a Raspberry Pi](../README.md#running-on-a-raspberry-pi).
+You need Docker Engine 24 or newer with the Compose plugin (`docker compose version` should work).
 
 ---
 
-## Prerequisites
-
-- Docker Engine 24+
-- Docker Compose v2 (included with Docker Desktop and modern Docker Engine)
+## 1. Get the Compose file and settings
 
 ```bash
-docker --version
-docker compose version
+mkdir raptortracker && cd raptortracker
+curl -fsSLO https://raw.githubusercontent.com/breed007/RaptorTracker/main/docker-compose.yml
+curl -fsSL https://raw.githubusercontent.com/breed007/RaptorTracker/main/.env.example -o .env
+```
+
+Or clone the repository; `docker-compose.yml` and `.env.example` are at its top level.
+
+## 2. Set the two secrets
+
+Edit `.env` and set:
+
+- `SESSION_SECRET`: 32 or more random characters. Generate one with `openssl rand -hex 48`.
+- `ADMIN_PASSWORD`: the password for your first sign-in. You'll set a permanent one in the app.
+
+Compose refuses to start until both are set, and the app refuses placeholder values. Keep `.env`
+out of version control. Other settings you might want: `TZ` (for example `America/Denver`) so
+reminders and nightly backups run at your local hour, `PORT` to use a host port other than 3000,
+and the `SMTP_` settings for email reminders. The README's
+[Configuration](../README.md#configuration) table lists them all.
+
+## 3. Start it
+
+```bash
+docker compose up -d
+```
+
+Docker pulls the image for your machine's architecture and starts it. On the first start the app
+creates its database in the `raptortracker_data` volume. Open `http://<server>:3000`, sign in, and
+set a real password under **Settings → Account**.
+
+```bash
+docker compose logs -f raptortracker     # follow the log
+docker compose ps                        # shows "healthy" once it's answering
 ```
 
 ---
 
-## 1. Clone the Repository
+## Updating
+
+The app shows when a new version is out (**Settings → General**). Take a backup first
+(**Settings → Backups → Back Up Now**), then:
 
 ```bash
-git clone <your-repo-url> raptortracker
-cd raptortracker
+docker compose pull
+docker compose up -d
 ```
+
+Your data is in the `raptortracker_data` volume and survives the new container. The new version
+migrates the database on its first start.
+
+To build the image from source instead of pulling it, clone the repository and run
+`docker compose up -d --build`.
 
 ---
 
-## 2. Configure Environment
+## Backups
 
-Edit the environment variables in `docker-compose.yml`:
+Use the app's own backups: **Settings → Backups** takes full backups (database and uploads), runs
+them nightly, and can copy each one to a NAS folder, a WebDAV server, or S3-compatible storage. To
+copy to a folder on the host, mount it into the container and give that path as the off-box
+folder:
 
 ```yaml
-environment:
-  - PORT=3000
-  - SESSION_SECRET=<generate a long random string here>
-  - ADMIN_USERNAME=admin
-  - ADMIN_PASSWORD=<your strong password>
-  - DATA_DIR=/data
-  - UPLOAD_DIR=/data/uploads
+    volumes:
+      - raptortracker_data:/data
+      - /mnt/nas/raptortracker:/offsite      # then use /offsite in Settings → Backups
 ```
 
-**Generate a strong session secret:**
-```bash
-openssl rand -hex 48
-# or
-node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
-```
-
-> **Security note:** Never commit `docker-compose.yml` with real credentials. Consider using a `.env` file and Docker secrets for production.
+The volume itself lives under Docker's data directory
+(`docker volume inspect raptortracker_data` shows where). Copy it only while the container is
+stopped; copying a SQLite database that's in use can give you a damaged copy.
 
 ---
 
-## 3. First Run
+## Behind a reverse proxy
 
-```bash
-docker compose up -d
-```
-
-On first start, the container:
-1. Builds the React frontend
-2. Runs `npm run db:init` to create the SQLite database
-3. Seeds all 6 Raptor vehicle records
-4. Seeds the default "Carbonized Raptor" user vehicle
-5. Starts the Express server on port 3000
-
-Access RaptorTracker at: **http://localhost:3000**
-
----
-
-## 4. View Logs
-
-```bash
-# Follow live logs
-docker compose logs -f raptortracker
-
-# Last 100 lines
-docker compose logs --tail=100 raptortracker
-```
-
----
-
-## 5. Update to New Version
-
-```bash
-git pull
-docker compose down
-docker compose build --no-cache
-docker compose up -d
-```
-
-> Your data is preserved in the `raptortracker_data` Docker volume — it survives container rebuilds.
-
----
-
-## 6. Backup
-
-Find where Docker stores the volume data:
-
-```bash
-docker volume inspect raptortracker_data
-# Look for "Mountpoint" — typically /var/lib/docker/volumes/raptortracker_data/_data
-```
-
-The mountpoint directory contains:
-- `raptortracker.db` — the SQLite database (all mods, maintenance, vehicle data)
-- `uploads/` — all uploaded photos
-
-### Backup the volume
-```bash
-# Get the mountpoint path
-MOUNTPOINT=$(docker volume inspect raptortracker_data --format '{{ .Mountpoint }}')
-
-# Backup to a tar archive
-tar -czf raptortracker-backup-$(date +%Y%m%d).tar.gz -C "$MOUNTPOINT" .
-
-# Or rsync to a remote server
-rsync -az "$MOUNTPOINT/" user@backup-server:/backups/raptortracker/
-```
-
-### Restore from backup
-```bash
-MOUNTPOINT=$(docker volume inspect raptortracker_data --format '{{ .Mountpoint }}')
-tar -xzf raptortracker-backup-YYYYMMDD.tar.gz -C "$MOUNTPOINT"
-docker compose restart raptortracker
-```
-
----
-
-## 7. Full Reset
-
-> **WARNING: This permanently destroys all your data — mods, photos, maintenance records.**
-
-```bash
-docker compose down -v
-```
-
-The `-v` flag removes the named volume. After this, running `docker compose up -d` starts completely fresh.
-
----
-
-## 8. Nginx Reverse Proxy (optional)
-
-If you want to put RaptorTracker behind Nginx on the same Docker host:
+To serve it on a domain with HTTPS, put a reverse proxy in front and keep the app on a private
+port. With nginx on the same host:
 
 ```nginx
 server {
     listen 80;
-    server_name raptortracker.local;
-
+    server_name raptortracker.example.com;
     client_max_body_size 50M;
 
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
 ```
 
-Or using a Docker Compose network with an Nginx container, change the port mapping and use the container name as the upstream.
+Set `TRUST_PROXY=1` (the Compose file's default) so sign-in rate limiting sees each visitor's
+address, and `COOKIE_SECURE=true` once the site is served over HTTPS.
 
 ---
 
-## 9. Port Customization
+## Removing it
 
-To run on a different host port (e.g. 8080):
-
-```yaml
-ports:
-  - "8080:3000"
+```bash
+docker compose down        # stops it and keeps the data volume
+docker compose down -v     # also deletes the data volume: every record and photo
 ```
-
-The container always listens on 3000 internally; only the host-side port changes.

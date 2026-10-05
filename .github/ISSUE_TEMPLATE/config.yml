@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/breed007/RaptorTracker/security/advisories/new
+    about: Please report security problems privately, not as an issue.
+  - name: Questions and setup help
+    url: https://github.com/breed007/RaptorTracker/blob/main/docs/user-guide.md#troubleshooting
+    about: The user guide's troubleshooting section covers the common install and upgrade problems.

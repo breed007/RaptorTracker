@@ -1,0 +1,20 @@
+name: Feature idea
+description: Something RaptorTracker could do for you.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The job or the moment it would help with, for example "at the trailhead I want to know what pressure I ran last time."
+    validations:
+      required: true
+  - type: textarea
+    id: today
+    attributes:
+      label: How do you handle it today?
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help
+      description: Your idea of how it could work. Rough is fine.

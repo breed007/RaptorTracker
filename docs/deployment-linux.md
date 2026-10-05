@@ -1,19 +1,23 @@
-# RaptorTracker — Linux Deployment
+# RaptorTracker: Linux Deployment
 
-Self-hosted deployment guide for Linux servers behind Nginx or Apache.
+Setting RaptorTracker up by hand on a Linux server behind nginx or Apache. Most people should use
+`install.sh` instead, which does all of this (see the README's
+[Linux server installer](../README.md#linux-server-installer)); this guide is for when you want to
+control each step.
 
 ---
 
 ## Prerequisites
 
-- Node.js 20+ and npm
+- A 64-bit Linux system (x86_64 or arm64)
+- Node.js 22.12 or newer (24 recommended) and npm
 - git
 - PM2 (installed globally)
 - Nginx or Apache (for reverse proxy)
 
 ```bash
 # Verify Node version
-node --version   # must be 20+
+node --version   # must be 22.12 or newer
 npm --version
 ```
 
@@ -22,14 +26,15 @@ npm --version
 ## 1. Clone and Install
 
 ```bash
-git clone <your-repo-url> /opt/raptortracker
+git clone https://github.com/breed007/RaptorTracker.git /opt/raptortracker
 cd /opt/raptortracker
 
-# Install server dependencies
-npm install
+# Server dependencies (prebuilt SQLite and bcrypt; nothing compiles)
+npm ci --omit=dev
 
-# Install and build frontend
-cd client && npm install && npm run build && cd ..
+# Build the web app (needs about 450 MB of memory)
+npm ci --prefix client
+npm run build
 ```
 
 ---
@@ -50,7 +55,13 @@ ADMIN_USERNAME=admin
 ADMIN_PASSWORD=<your strong password>
 DATA_DIR=/opt/raptortracker/data
 UPLOAD_DIR=/opt/raptortracker/data/uploads
+NODE_ENV=production
+TRUST_PROXY=1            # one reverse proxy (nginx or Apache) in front
+COOKIE_SECURE=false      # true once the site is served over HTTPS
 ```
+
+In production the server refuses to start with a missing or placeholder `SESSION_SECRET` or
+`ADMIN_PASSWORD`.
 
 Generate a strong session secret:
 ```bash
@@ -88,7 +99,7 @@ chmod 755 /opt/raptortracker/data/uploads
 ```bash
 npm install -g pm2
 
-# Start the app
+# Start the app (server.js reads NODE_ENV and the rest from .env)
 pm2 start server.js --name raptortracker --cwd /opt/raptortracker
 
 # Configure PM2 to start on system boot
@@ -171,33 +182,35 @@ systemctl reload apache2
 
 ## 8. Backup
 
-RaptorTracker stores all data in two locations:
+Use the app's own backups under **Settings → Backups**: full backups of the database and uploads,
+nightly on a schedule, with each one copied to a NAS folder, WebDAV, or S3-compatible storage.
+They're taken with SQLite's online backup, so they're consistent while the app runs.
 
-| What | Path |
-|------|------|
-| Database | `DATA_DIR/raptortracker.db` |
-| Uploaded photos | `UPLOAD_DIR/` (all files) |
-
-### rsync example
-```bash
-# Add to cron or Hyper Backup
-rsync -az /opt/raptortracker/data/ user@backup-server:/backups/raptortracker/
-```
-
-### Simple cron backup
-```bash
-# /etc/cron.d/raptortracker-backup
-0 2 * * * root tar -czf /backups/raptortracker-$(date +\%Y\%m\%d).tar.gz /opt/raptortracker/data/
-```
+If you copy the data directory yourself, stop the app first (`pm2 stop raptortracker`). Copying
+`raptortracker.db` while it's being written can give you a damaged copy.
 
 ---
 
 ## 9. Update
 
+If you installed with `install.sh`, update from the clone you ran it in:
+
+```bash
+cd ~/RaptorTracker        # wherever you cloned it
+git pull
+sudo bash install.sh --update
+```
+
+That copies the database to `data/backups/` first, installs the new dependencies, rebuilds the web
+app, and restarts it, using the settings from the original install.
+
+For a manual install like the one above:
+
 ```bash
 cd /opt/raptortracker
 git pull
-npm install
-cd client && npm install && npm run build && cd ..
+npm ci --omit=dev
+npm ci --prefix client
+npm run build
 pm2 restart raptortracker
 ```
