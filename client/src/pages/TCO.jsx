@@ -110,7 +110,7 @@ export default function TCO() {
     plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => money(c.parsed.y) } } },
     scales: {
       x: { ticks: { color: '#9ca3af', font: { size: 10 } }, grid: { display: false } },
-      y: { ticks: { color: '#9ca3af', font: { size: 10 }, callback: v => currentUnits().money0(v / 1000) + 'k' }, grid: { color: '#ffffff10' } },
+      y: { ticks: { color: '#9ca3af', font: { size: 10 }, callback: v => currentUnits().moneyAxis(v) }, grid: { color: '#ffffff10' } },
     },
   }
 

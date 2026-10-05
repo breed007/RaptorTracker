@@ -237,7 +237,7 @@ export default function Dashboard() {
             {upcoming.map(item => (
               <div key={item.id} className="flex items-center gap-3 text-sm">
                 <span className="flex-1 min-w-0 text-raptor-primary truncate">{item.service_type}</span>
-                {item.estimatedCost != null && <span className="text-xs text-raptor-secondary flex-shrink-0">~{money(item.estimatedCost)}</span>}
+                {item.estimatedCost > 0 && <span className="text-xs text-raptor-secondary flex-shrink-0">~{money(item.estimatedCost)}</span>}
                 <span className="text-xs text-raptor-muted flex-shrink-0 text-right">
                   {formatDue(item.daysOut)}{item.daysOut >= 730 && item.projectedDate ? ` (${monthYear(item.projectedDate)})` : ''}
                 </span>

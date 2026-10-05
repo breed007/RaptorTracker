@@ -26,6 +26,13 @@ export function makeUnits(raw = DEFAULT_UNITS) {
   const money2 = moneyFmt(2)
   const money0 = moneyFmt(0)
   const money3 = moneyFmt(3)
+  // Chart axes: "$1.5K", "€800". Compact notation keeps ticks short and distinct.
+  let moneyAxisFmt
+  try {
+    moneyAxisFmt = new Intl.NumberFormat(undefined, { style: 'currency', currency: u.currency, notation: 'compact', maximumFractionDigits: 1 })
+  } catch (_) {
+    moneyAxisFmt = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1 })
+  }
   const symbol = (money0.formatToParts(0).find(p => p.type === 'currency') || {}).value || '$'
 
   // Stored distance-per-volume -> US mpg -> chosen unit.
@@ -62,6 +69,7 @@ export function makeUnits(raw = DEFAULT_UNITS) {
     money: (n) => (n == null || !Number.isFinite(Number(n)) ? '—' : money2.format(Number(n))),
     money0: (n) => (n == null || !Number.isFinite(Number(n)) ? '—' : money0.format(Number(n))),
     money3: (n) => (n == null || !Number.isFinite(Number(n)) ? '—' : money3.format(Number(n))),
+    moneyAxis: (n) => moneyAxisFmt.format(Number(n) || 0),
     fmtDist: (n) => (n == null || !Number.isFinite(Number(n)) ? '—' : `${num(Math.round(Number(n)))} ${km ? 'km' : 'mi'}`),
     fmtVol: (n, digits = 1) => (n == null || !Number.isFinite(Number(n)) ? '—' : `${num(n, digits)} ${liters ? 'L' : 'gal'}`),
     /** A pressure as a bare number, rounded for the unit (bar keeps two decimals). */

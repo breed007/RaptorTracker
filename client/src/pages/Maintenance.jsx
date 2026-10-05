@@ -413,7 +413,7 @@ function ServiceForecast({ vehicleId }) {
                   <span className="block text-xs text-raptor-muted italic">{item.reason}</span>
                 )}
               </span>
-              {item.estimatedCost != null && (
+              {item.estimatedCost > 0 && (
                 <span className="text-xs text-raptor-secondary flex-shrink-0">~{money(item.estimatedCost)}</span>
               )}
               <span className={`text-xs font-medium flex-shrink-0 w-20 text-right ${

@@ -48,9 +48,12 @@ function fmtDate(dateStr) {
   })
 }
 
-// Chart axis label: "32k mi" / "52k km"
+// Chart axis label: "32.4k mi" / "52k km". Fill-ups are a few hundred miles
+// apart, so whole thousands would repeat the same label several times.
 function fmtOdoShort(val, u) {
-  return (Number(val) / 1000).toFixed(0) + 'k ' + u.dist
+  const n = Number(val)
+  if (n < 1000) return `${Math.round(n)} ${u.dist}`
+  return `${+(n / 1000).toFixed(1)}k ${u.dist}`
 }
 
 // ── MPG Badge ────────────────────────────────────────────────────────────────
@@ -326,7 +329,7 @@ export default function FuelLog() {
         ticks: {
           color: darkMode ? '#9ca3af' : '#6b7280',
           font: { size: 11 },
-          callback: val => `${Number(val).toFixed(0)} ${u.econ}`,
+          callback: val => `${+Number(val).toFixed(1)} ${u.econ}`,
         },
         grid: { color: darkMode ? '#ffffff10' : '#00000010' },
       },

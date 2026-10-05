@@ -61,7 +61,7 @@ export default function SpendChart({ data }) {
         grid: { color: gridColor },
         ticks: {
           color: tickColor,
-          callback: v => `$${v >= 1000 ? (v / 1000).toFixed(1) + 'k' : v}`
+          callback: v => currentUnits().moneyAxis(v)
         },
         border: { color: axisColor }
       },

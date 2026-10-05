@@ -89,7 +89,7 @@ export default function Analytics() {
     plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => currentUnits().fmtDist(c.parsed.y) } } },
     scales: {
       x: { ticks: { color: '#9ca3af', font: { size: 10 }, maxTicksLimit: 8 }, grid: { display: false } },
-      y: { ticks: { color: '#9ca3af', font: { size: 10 }, callback: v => (v / 1000).toFixed(0) + 'k' }, grid: { color: '#ffffff10' } },
+      y: { ticks: { color: '#9ca3af', font: { size: 10 }, callback: v => new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(v) }, grid: { color: '#ffffff10' } },
     },
   }
 

@@ -75,10 +75,12 @@ test('Escape closes a dialog and returns focus to what opened it', async ({ page
   const del = page.getByRole('button', { name: 'Delete fill-up' }).first();
   await del.focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('dialog')).toBeVisible();
+  const cancel = page.getByRole('dialog').getByRole('button', { name: 'Cancel' });
+  // The dialog moves focus to Cancel as it opens; Tab before that lands elsewhere.
+  await expect(cancel).toBeFocused();
   await page.keyboard.press('Tab');
   await page.keyboard.press('Tab');
-  await expect(page.getByRole('dialog').getByRole('button', { name: 'Cancel' })).toBeFocused();
+  await expect(cancel).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(del).toBeFocused();
