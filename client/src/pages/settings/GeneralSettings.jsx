@@ -11,7 +11,13 @@ const listOf = (items) =>
 
 const UPGRADE_STEPS = {
   docker: 'docker compose pull && docker compose up -d',
-  source: 'git pull && npm install && npm run build && pm2 restart raptortracker',
+  // Run in the git clone install.sh was run from.
+  installer: 'git pull && sudo bash install.sh --update',
+  source: 'git pull && npm ci --omit=dev && npm ci --prefix client && npm run build',
+}
+const UPGRADE_NOTE = {
+  installer: 'Run it in the RaptorTracker folder you cloned and installed from.',
+  source: 'Then restart the server.',
 }
 
 const fmtWhen = (iso) => {
@@ -54,6 +60,7 @@ function UpdatesCard() {
           <code className="block text-xs font-mono px-3 py-2 rounded bg-raptor-elevated border border-raptor-border overflow-x-auto whitespace-nowrap select-all">
             {UPGRADE_STEPS[info.install] || UPGRADE_STEPS.source}
           </code>
+          {UPGRADE_NOTE[info.install] && <div className="text-raptor-muted text-xs">{UPGRADE_NOTE[info.install]}</div>}
         </div>
       )}
 

@@ -19,7 +19,12 @@ const envDisabled = () => String(process.env.UPDATE_CHECK || '').toLowerCase() =
 const enabled = () => !envDisabled() && getSetting('update_check') !== 'false';
 
 /** How this copy was installed, so the UI can show the right upgrade steps. */
-const installKind = () => (process.env.RT_INSTALL === 'docker' ? 'docker' : 'source');
+function installKind() {
+  if (process.env.RT_INSTALL === 'docker') return 'docker';
+  // install.sh records its settings here; its installs update with --update.
+  try { if (require('fs').existsSync('/etc/raptortracker-install.conf')) return 'installer'; } catch (_) { /* fall through */ }
+  return 'source';
+}
 
 /**
  * Compare two versions like "1.2.3" or "v1.2.3-beta.1". A prerelease sorts

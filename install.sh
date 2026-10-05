@@ -385,13 +385,17 @@ deploy_app() {
       info "Running in-place from install directory — no copy needed."
     else
       info "Copying source from ${SCRIPT_DIR} → ${INSTALL_DIR}…"
-      rsync -a \
+      # --delete so files a release removed don't linger; the excludes keep the
+      # owner's data, settings, and generated files out of its reach.
+      rsync -a --delete \
         --exclude='node_modules/' \
         --exclude='client/node_modules/' \
         --exclude='data/' \
         --exclude='dist/' \
         --exclude='.git/' \
         --exclude='.env' \
+        --exclude='ecosystem.config.js' \
+        --exclude='.build-swap' \
         "${SCRIPT_DIR}/" "${INSTALL_DIR}/"
       log "Source files copied."
     fi
@@ -1019,7 +1023,7 @@ print_summary() {
 # Main
 ###############################################################################
 main() {
-  clear
+  clear 2>/dev/null || true   # no terminal (TERM unset) is fine
   echo -e "${BOLD}${CYAN}"
   cat <<'BANNER'
   ██████╗  █████╗ ██████╗ ████████╗ ██████╗ ██████╗
@@ -1059,4 +1063,62 @@ BANNER
   print_summary
 }
 
-main "$@"
+###############################################################################
+# Update an existing install:  git pull, then  sudo bash install.sh --update
+###############################################################################
+update_main() {
+  check_root
+  check_arch
+  [[ -f "$STATE_FILE" ]] || die "No existing install found (${STATE_FILE} is missing). Run install.sh without --update to install."
+  # shellcheck disable=SC1090
+  source "$STATE_FILE"
+  if ! [[ -f "${SCRIPT_DIR}/package.json" ]] || ! grep -q '"name": "raptortracker"' "${SCRIPT_DIR}/package.json"; then
+    die "Run this from your RaptorTracker clone, after git pull."
+  fi
+  INSTALL_FROM_LOCAL="true"
+  detect_os
+
+  local before after stamp snapshot
+  before="$(node -p "require('${INSTALL_DIR}/package.json').version" 2>/dev/null || echo unknown)"
+  after="$(node -p "require('${SCRIPT_DIR}/package.json').version")"
+  section "Updating RaptorTracker ${before} → ${after}"
+
+  # A consistent copy of the database first (SQLite's online backup, so a
+  # running app is fine). New versions migrate the database on start; this
+  # copy is the way back.
+  stamp="$(date +%Y%m%d-%H%M%S)"
+  snapshot="${DATA_DIR}/backups/before-update-${before}-${stamp}.db"
+  mkdir -p "${DATA_DIR}/backups"
+  if [[ -f "${DATA_DIR}/raptortracker.db" ]]; then
+    (cd "$INSTALL_DIR" && node -e "
+      const D = require('better-sqlite3');
+      new D(process.argv[1], { readonly: true }).backup(process.argv[2])
+        .then(() => process.exit(0)).catch(e => { console.error(e.message); process.exit(1); });
+    " "${DATA_DIR}/raptortracker.db" "$snapshot") >> "$LOG_FILE" 2>&1 \
+      || die "Could not copy the database before updating; nothing was changed. See $LOG_FILE."
+    log "Database copied to ${snapshot}"
+  fi
+
+  deploy_app
+  install_dependencies
+  verify_npm_packages
+  set_permissions
+
+  local pm2_bin
+  pm2_bin="$(command -v pm2)" || die "pm2 not found — is this an install.sh install?"
+  info "Restarting RaptorTracker…"
+  su -s /bin/bash -l "$APP_USER" -c \
+    "PATH=${PATH}:$(dirname "$pm2_bin") pm2 restart raptortracker --update-env" >> "$LOG_FILE" 2>&1 \
+    || die "PM2 could not restart the app. See $LOG_FILE."
+  health_check
+
+  echo ""
+  log "Updated to ${after}."
+  info "The database from before the update is at ${snapshot}"
+}
+
+if [[ "${1:-}" == "--update" ]]; then
+  update_main
+else
+  main "$@"
+fi

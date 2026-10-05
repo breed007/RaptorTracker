@@ -393,7 +393,7 @@ print_summary() {
 # Main
 ###############################################################################
 main() {
-  clear
+  clear 2>/dev/null || true   # no terminal (TERM unset) is fine
   echo -e "${BOLD}${RED}"
   cat <<'BANNER'
   ██████╗  █████╗ ██████╗ ████████╗ ██████╗ ██████╗

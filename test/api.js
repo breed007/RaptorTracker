@@ -522,6 +522,28 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
       });
     }
 
+    // --- A backup restores what it captured -------------------------------------
+    {
+      const countFuel = async () => (await req('GET', `/api/fuel?vehicle_id=${vid}`)).body.entries.length;
+      const before = await countFuel();
+      const zipRes = await fetch(`${base}/api/backup`, { headers: { Cookie: cookie } });
+      const zip = Buffer.from(await zipRes.arrayBuffer());
+      check('a full backup downloads as a ZIP', () => { eq(zipRes.status, 200, 'status'); eq(zip.subarray(0, 2).toString(), 'PK', 'zip magic'); });
+      await new Promise(res => setTimeout(res, 300)); // the server cleans up as the response finishes
+      check('no database snapshot is left behind', () => {
+        eq(fs.readdirSync(tmp).filter(n => n.startsWith('.backup-snapshot')).length, 0, 'leftover snapshots');
+      });
+      await req('POST', '/api/fuel', { user_vehicle_id: vid, date: '2025-01-01', odometer: 99999, gallons: 10, full_tank: true });
+      eq(await countFuel(), before + 1, 'added after backup');
+      const fd = new FormData(); fd.append('backup', new Blob([zip], { type: 'application/zip' }), 'backup.zip');
+      const rr = await fetch(`${base}/api/backup/restore`, { method: 'POST', body: fd, headers: { Cookie: cookie } });
+      check('restoring the backup succeeds', () => eq(rr.status, 200, 'status'));
+      r = await req('POST', '/api/auth/login', { username: 'testadmin', password: 'testpassword' });
+      if (r.status !== 200) await req('POST', '/api/auth/login', { username: 'testadmin', password: 'correct-horse-battery-staple' });
+      const after = await countFuel();
+      check('after a restore, the records are what the backup captured', () => eq(after, before, 'fill-ups'));
+    }
+
     // --- Shrinking photos uploaded full-size ------------------------------------
     {
       const big = Buffer.concat([Buffer.from([0xFF, 0xD8, 0xFF, 0xE0]), Buffer.alloc(3 * 1024 * 1024, 7)]);

@@ -10,19 +10,33 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
 const BACKUP_DIR = path.join(DATA_DIR, 'backups');
 
 // Stream a full backup (database + uploads) into any writable stream.
-function pipeBackupTo(outStream) {
+//
+// The database goes in as a snapshot taken with SQLite's online backup API,
+// so it's consistent even if the app writes while the ZIP is being built;
+// zipping the live file could catch a write halfway.
+async function pipeBackupTo(outStream) {
+  let snapshot = null;
+  // A crash mid-backup could leave a snapshot behind; clear any over an hour old.
+  for (const n of fs.existsSync(DATA_DIR) ? fs.readdirSync(DATA_DIR) : []) {
+    if (!n.startsWith('.backup-snapshot-')) continue;
+    const p = path.join(DATA_DIR, n);
+    try { if (Date.now() - fs.statSync(p).mtimeMs > 3600 * 1000) fs.rmSync(p, { force: true }); } catch (_) { /* gone */ }
+  }
+  if (fs.existsSync(DB_PATH)) {
+    snapshot = path.join(DATA_DIR, `.backup-snapshot-${process.pid}-${Date.now()}.db`);
+    await getDb().backup(snapshot);
+  }
+  const cleanup = () => { if (snapshot) { try { fs.rmSync(snapshot, { force: true }); } catch (_) { /* gone */ } snapshot = null; } };
   return new Promise((resolve, reject) => {
-    // Flush the WAL into the main db file so the snapshot is consistent
-    try { getDb().pragma('wal_checkpoint(TRUNCATE)'); } catch (_) { /* ignore */ }
-
+    const done = (err) => { cleanup(); if (err) reject(err); else resolve(); };
     const archive = archiver('zip', { zlib: { level: 6 } });
-    archive.on('error', reject);
-    outStream.on('error', reject);
-    outStream.on('close', resolve);
-    outStream.on('finish', resolve);
+    archive.on('error', done);
+    outStream.on('error', done);
+    outStream.on('close', () => done());
+    outStream.on('finish', () => done());
 
     archive.pipe(outStream);
-    if (fs.existsSync(DB_PATH)) archive.file(DB_PATH, { name: 'raptortracker.db' });
+    if (snapshot) archive.file(snapshot, { name: 'raptortracker.db' });
     if (fs.existsSync(UPLOAD_DIR)) archive.directory(UPLOAD_DIR, 'uploads', entry => ({ ...entry, store: storeInZip(entry.name) }));
     archive.append(
       JSON.stringify({ created: new Date().toISOString(), kind: 'raptortracker-backup', version: 1 }, null, 2),
