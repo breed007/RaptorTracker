@@ -23,6 +23,7 @@ import Welcome from './pages/Welcome'
 import QuickAdd from './pages/QuickAdd'
 import Outings from './pages/Outings'
 import Account from './pages/Account'
+import Settings from './pages/Settings'
 import ShareBuild from './pages/ShareBuild'
 import Recalls from './pages/Recalls'
 
@@ -68,6 +69,7 @@ function AppRoutes() {
         <Route path="/logbook" element={<Logbook />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/notifications" element={<Notifications />} />
+        <Route path="/settings" element={<Settings />} />
         <Route path="/account" element={<Account />} />
         <Route path="/export" element={<Export />} />
         <Route path="*" element={<Navigate to="/" replace />} />

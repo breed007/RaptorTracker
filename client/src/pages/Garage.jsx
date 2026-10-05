@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
+import { currentUnits } from '../lib/units'
 import ConfirmModal from '../components/ConfirmModal'
 import DocumentVault from '../components/DocumentVault'
 import { localDate } from '../lib/dates'
@@ -828,7 +829,7 @@ export default function Garage() {
               </div>
 
               <div>
-                <label className="label">Mileage at Purchase</label>
+                <label className="label">Odometer at Purchase ({currentUnits().dist})</label>
                 <input
                   type="number"
                   value={form.mileage_at_purchase}
@@ -864,19 +865,16 @@ export default function Garage() {
                 <div className="text-xs font-semibold text-raptor-muted uppercase tracking-wide mb-3">Purchase & Seller</div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="label">Purchase Price</label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-raptor-muted text-sm">$</span>
-                      <input
-                        type="number"
-                        value={form.purchase_price}
-                        onChange={e => setForm(f => ({ ...f, purchase_price: e.target.value }))}
-                        className="input-field pl-7"
-                        placeholder="0.00"
-                        min="0"
-                        step="0.01"
-                      />
-                    </div>
+                    <label className="label">Purchase Price ({currentUnits().symbol})</label>
+                    <input
+                      type="number"
+                      value={form.purchase_price}
+                      onChange={e => setForm(f => ({ ...f, purchase_price: e.target.value }))}
+                      className="input-field"
+                      placeholder="0.00"
+                      min="0"
+                      step="0.01"
+                    />
                   </div>
 
                   <div>
@@ -1095,7 +1093,7 @@ export default function Garage() {
                 {v.purchase_price != null && (
                   <div>
                     <span className="text-raptor-primary font-semibold">
-                      ${parseFloat(v.purchase_price).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                      {currentUnits().money0(v.purchase_price)}
                     </span>
                     <span className="text-raptor-muted ml-1">paid</span>
                   </div>

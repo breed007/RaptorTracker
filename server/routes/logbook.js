@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
+const units = require('../services/units');
 
-const miles = (n) => (n != null ? `${Number(n).toLocaleString('en-US')} mi` : null);
-const money = (n) => (n != null ? `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : null);
+// Distances and money in the owner's units and currency.
+const miles = (n) => (n != null ? units.formatDistance(n) : null);
+const money = (n) => (n != null ? units.formatMoney(n, undefined, { decimals: 0 }) : null);
 const join = (...parts) => parts.filter(Boolean).join(' · ');
 
 // GET /api/logbook?vehicle_id=X — a unified, date-sorted history of the vehicle
@@ -47,7 +49,7 @@ router.get('/', (req, res) => {
   db.prepare(`SELECT date, odometer, gallons, total_cost FROM fuel_log WHERE user_vehicle_id = ?`).all(vehicle_id).forEach(f => {
     events.push({
       date: f.date, type: 'fuel',
-      title: `Fuel — ${Number(f.gallons).toFixed(1)} gal`,
+      title: `Fuel — ${Number(f.gallons).toFixed(1)} ${units.LABELS.volume[units.getUnits().volume].short}`,
       detail: join(miles(f.odometer), money(f.total_cost)),
       link: '/fuel',
     });

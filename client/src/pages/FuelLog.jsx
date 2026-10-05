@@ -10,7 +10,7 @@ import {
   Filler,
 } from 'chart.js'
 import { Line } from 'react-chartjs-2'
-import { useApp } from '../context/AppContext'
+import { useApp, useUnits } from '../context/AppContext'
 import ConfirmModal from '../components/ConfirmModal'
 import StatsCard from '../components/StatsCard'
 
@@ -47,55 +47,35 @@ function fmtDate(dateStr) {
   })
 }
 
-function fmtOdo(val) {
-  if (val == null) return '—'
-  return Number(val).toLocaleString('en-US') + ' mi'
-}
-
-function fmtMoney(val, decimals = 2) {
-  if (val == null || val === '') return '—'
-  return '$' + Number(val).toLocaleString('en-US', {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  })
-}
-
-function fmtMpg(val) {
-  if (val == null) return null
-  return Number(val).toFixed(1)
-}
-
-function fmtOdoShort(val) {
-  // "XXXk mi" for chart axis
-  const n = Number(val)
-  return (n / 1000).toFixed(0) + 'k mi'
+// Chart axis label: "32k mi" / "52k km"
+function fmtOdoShort(val, u) {
+  return (Number(val) / 1000).toFixed(0) + 'k ' + u.dist
 }
 
 // ── MPG Badge ────────────────────────────────────────────────────────────────
 
-function MpgBadge({ mpg, factoryHwy }) {
-  if (mpg == null) {
+// `dpv` is the stored distance÷volume for one fill. Colors compare against
+// EPA combined on the US-mpg scale, so 'better' means the same thing whether
+// the owner reads mpg or L/100 km (where a smaller number is better).
+function MpgBadge({ dpv, factoryCombinedMpg }) {
+  const u = useUnits()
+  if (dpv == null) {
     return (
       <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-raptor-elevated text-raptor-muted">
-        — mpg
+        — {u.econ}
       </span>
     )
   }
-  const val = Number(mpg)
+  const mpg = u.toMpgUs(Number(dpv))
   let colorCls = 'bg-green-500/15 text-green-500'
-  if (factoryHwy != null) {
-    const fhwy = Number(factoryHwy)
-    if (val >= fhwy) {
-      colorCls = 'bg-green-500/15 text-green-500'
-    } else if (val >= fhwy - 2) {
-      colorCls = 'bg-yellow-500/15 text-yellow-500'
-    } else {
-      colorCls = 'bg-red-500/15 text-red-400'
-    }
+  if (factoryCombinedMpg != null) {
+    if (mpg >= factoryCombinedMpg) colorCls = 'bg-green-500/15 text-green-500'
+    else if (mpg >= factoryCombinedMpg * 0.88) colorCls = 'bg-yellow-500/15 text-yellow-500'
+    else colorCls = 'bg-red-500/15 text-red-400'
   }
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${colorCls}`}>
-      {val.toFixed(1)} mpg
+      {u.fmtEcon(u.economy(Number(dpv)))}
     </span>
   )
 }
@@ -104,6 +84,8 @@ function MpgBadge({ mpg, factoryHwy }) {
 
 export default function FuelLog() {
   const { selectedVehicleId, selectedVehicle, darkMode } = useApp()
+  const u = useUnits()
+  const capVol = u.volLong.charAt(0).toUpperCase() + u.volLong.slice(1)
 
   // Data state
   const [entries, setEntries] = useState([])
@@ -241,7 +223,7 @@ export default function FuelLog() {
 
     if (!form.date) { setFormError('Date is required'); return }
     if (form.odometer === '') { setFormError('Odometer is required'); return }
-    if (form.gallons === '') { setFormError('Gallons is required'); return }
+    if (form.gallons === '') { setFormError(`${capVol} are required`); return }
 
     setSaving(true)
     const payload = {
@@ -298,10 +280,10 @@ export default function FuelLog() {
     .trim() || (darkMode ? '#f97316' : '#ea580c')
 
   const lineChartData = {
-    labels: chartData.map(d => fmtOdoShort(d.odometer)),
+    labels: chartData.map(d => fmtOdoShort(d.odometer, u)),
     datasets: [
       {
-        data: chartData.map(d => d.mpg),
+        data: chartData.map(d => u.economy(d.mpg)),
         borderColor: accentColor,
         backgroundColor: accentColor + '28',
         borderWidth: 2,
@@ -321,7 +303,7 @@ export default function FuelLog() {
       legend: { display: false },
       tooltip: {
         callbacks: {
-          label: ctx => `${ctx.parsed.y.toFixed(1)} mpg`,
+          label: ctx => u.fmtEcon(ctx.parsed.y),
         },
       },
     },
@@ -335,10 +317,13 @@ export default function FuelLog() {
         grid: { color: darkMode ? '#ffffff10' : '#00000010' },
       },
       y: {
+        // Consumption (L/100 km) falls as economy improves; flip the axis so
+        // up still means better.
+        reverse: u.lowerIsBetter,
         ticks: {
           color: darkMode ? '#9ca3af' : '#6b7280',
           font: { size: 11 },
-          callback: val => val.toFixed(0) + ' mpg',
+          callback: val => `${Number(val).toFixed(0)} ${u.econ}`,
         },
         grid: { color: darkMode ? '#ffffff10' : '#00000010' },
       },
@@ -347,7 +332,8 @@ export default function FuelLog() {
 
   // ── MPG comparison ─────────────────────────────────────────────────────────
 
-  const avgMpg = stats?.avgMpg ? parseFloat(stats.avgMpg) : null
+  // stats.*Mpg hold stored distance÷volume; convert for display.
+  const avgMpg = stats?.avgMpg ? u.toMpgUs(parseFloat(stats.avgMpg)) : null
   const hasFactoryMpg = factoryMpg.city != null || factoryMpg.hwy != null
 
   // Your average is mixed driving, so compare it with EPA combined — the
@@ -358,9 +344,9 @@ export default function FuelLog() {
     : null
   let comparisonLine = null
   if (avgMpg != null && combinedMpg != null) {
-    const diff = avgMpg - combinedMpg
-    const sign = diff >= 0 ? '+' : ''
-    comparisonLine = `Your average: ${avgMpg.toFixed(1)} mpg vs. EPA combined: ${combinedMpg.toFixed(1)} mpg (${sign}${diff.toFixed(1)})`
+    const pct = Math.round(((avgMpg - combinedMpg) / combinedMpg) * 100)
+    const rel = pct === 0 ? 'right on it' : `${Math.abs(pct)}% ${pct > 0 ? 'better' : 'worse'}`
+    comparisonLine = `Your average: ${u.fmtEcon(u.economyFromMpg(avgMpg))} vs. EPA combined: ${u.fmtEcon(u.economyFromMpg(combinedMpg))} (${rel})`
   }
 
   // ── No vehicle guard ───────────────────────────────────────────────────────
@@ -404,36 +390,32 @@ export default function FuelLog() {
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <StatsCard
-            label="Avg MPG"
-            value={stats.avgMpg ? parseFloat(stats.avgMpg).toFixed(1) : '—'}
+            label={`Avg ${u.econName}`}
+            value={stats.avgMpg ? u.economy(parseFloat(stats.avgMpg)).toFixed(1) : '—'}
             sub={stats.entryCount ? `${stats.entryCount} fill-ups` : null}
             accent
           />
           <StatsCard
-            label="Best MPG"
-            value={stats.bestMpg ? parseFloat(stats.bestMpg).toFixed(1) : '—'}
-            sub={stats.worstMpg ? `Worst: ${parseFloat(stats.worstMpg).toFixed(1)}` : null}
+            label={`Best ${u.econName}`}
+            value={stats.bestMpg ? u.economy(parseFloat(stats.bestMpg)).toFixed(1) : '—'}
+            sub={stats.worstMpg ? `Worst: ${u.economy(parseFloat(stats.worstMpg)).toFixed(1)}` : null}
           />
           <StatsCard
             label="Total Fuel Cost"
             value={
               stats.totalCost != null
-                ? '$' + Number(stats.totalCost).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+                ? u.money0(stats.totalCost)
                 : '—'
             }
             sub={
               stats.costPerMile != null
-                ? `$${parseFloat(stats.costPerMile).toFixed(3)}/mi`
+                ? `${u.money3(stats.costPerMile)}${u.perDist}`
                 : null
             }
           />
           <StatsCard
-            label="Total Gallons"
-            value={
-              stats.totalGallons != null
-                ? Number(stats.totalGallons).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' gal'
-                : '—'
-            }
+            label={`Total ${capVol}`}
+            value={stats.totalGallons != null ? u.fmtVol(stats.totalGallons, 0) : '—'}
           />
         </div>
       )}
@@ -445,17 +427,17 @@ export default function FuelLog() {
           <div className="flex flex-wrap gap-4 text-sm">
             {factoryMpg.city != null && (
               <span className="text-raptor-secondary">
-                City: <span className="font-semibold text-raptor-primary">{factoryMpg.city} mpg</span>
+                City: <span className="font-semibold text-raptor-primary">{u.fmtEcon(u.economyFromMpg(Number(factoryMpg.city)))}</span>
               </span>
             )}
             {factoryMpg.hwy != null && (
               <span className="text-raptor-secondary">
-                Highway: <span className="font-semibold text-raptor-primary">{factoryMpg.hwy} mpg</span>
+                Highway: <span className="font-semibold text-raptor-primary">{u.fmtEcon(u.economyFromMpg(Number(factoryMpg.hwy)))}</span>
               </span>
             )}
             {combinedMpg != null && (
               <span className="text-raptor-secondary">
-                Combined: <span className="font-semibold text-raptor-primary">{combinedMpg.toFixed(1)} mpg</span>
+                Combined: <span className="font-semibold text-raptor-primary">{u.fmtEcon(u.economyFromMpg(combinedMpg))}</span>
               </span>
             )}
           </div>
@@ -471,7 +453,7 @@ export default function FuelLog() {
       {/* ── MPG trend chart ── */}
       {chartData.length >= 2 && (
         <div className="card p-4">
-          <div className="section-title mb-3">MPG Over Time</div>
+          <div className="section-title mb-3">{u.econName} over time</div>
           <div style={{ height: 180 }}>
             <Line data={lineChartData} options={lineChartOptions} />
           </div>
@@ -501,7 +483,7 @@ export default function FuelLog() {
 
             {/* Odometer */}
             <div>
-              <label className="label">Odometer (mi) *</label>
+              <label className="label">Odometer ({u.dist}) *</label>
               <input
                 type="number"
                 value={form.odometer}
@@ -516,13 +498,13 @@ export default function FuelLog() {
 
             {/* Gallons */}
             <div>
-              <label className="label">Gallons *</label>
+              <label className="label">{capVol} *</label>
               <input
                 type="number"
                 value={form.gallons}
                 onChange={e => handleGallonsOrPriceChange('gallons', e.target.value)}
                 className="input-field"
-                placeholder="e.g. 26.200"
+                placeholder={u.vol === 'L' ? 'e.g. 99.180' : 'e.g. 26.200'}
                 min="0"
                 step="0.001"
                 required
@@ -531,13 +513,13 @@ export default function FuelLog() {
 
             {/* Price per gallon */}
             <div>
-              <label className="label">Price per Gallon</label>
+              <label className="label">Price per {u.volLong === 'liters' ? 'Liter' : 'Gallon'} ({u.symbol})</label>
               <input
                 type="number"
                 value={form.price_per_gallon}
                 onChange={e => handleGallonsOrPriceChange('price_per_gallon', e.target.value)}
                 className="input-field"
-                placeholder="e.g. 3.459"
+                placeholder={u.vol === 'L' ? 'e.g. 1.899' : 'e.g. 3.459'}
                 min="0"
                 step="0.001"
               />
@@ -595,7 +577,7 @@ export default function FuelLog() {
               <label htmlFor="full_tank" className="label mb-0 cursor-pointer select-none">
                 Full tank
                 <span className="block font-normal text-raptor-muted" style={{ fontSize: '0.7rem' }}>
-                  MPG calculated only on full fills
+                  {u.econName} is measured only between full tanks
                 </span>
               </label>
             </div>
@@ -646,7 +628,7 @@ export default function FuelLog() {
             <FuelEntryRow
               key={entry.id}
               entry={entry}
-              factoryHwy={factoryMpg.hwy}
+              factoryCombinedMpg={combinedMpg}
               onEdit={() => openEdit(entry)}
               onDelete={() => setDeleteTarget(entry.id)}
             />
@@ -670,16 +652,13 @@ export default function FuelLog() {
 
 // ── Fuel Entry Row ────────────────────────────────────────────────────────────
 
-function FuelEntryRow({ entry, factoryHwy, onEdit, onDelete }) {
+function FuelEntryRow({ entry, factoryCombinedMpg, onEdit, onDelete }) {
+  const u = useUnits()
   const priceStr = entry.price_per_gallon != null
-    ? `$${parseFloat(entry.price_per_gallon).toFixed(3)}/gal`
+    ? `${u.money3(entry.price_per_gallon)}/${u.vol}`
     : null
-  const costStr = entry.total_cost != null
-    ? fmtMoney(entry.total_cost)
-    : null
-  const gallonsStr = entry.gallons != null
-    ? `${parseFloat(entry.gallons).toFixed(3)} gal`
-    : '—'
+  const costStr = entry.total_cost != null ? u.money(entry.total_cost) : null
+  const gallonsStr = entry.gallons != null ? u.fmtVol(entry.gallons, 3) : '—'
 
   return (
     <div className="card p-4">
@@ -689,8 +668,8 @@ function FuelEntryRow({ entry, factoryHwy, onEdit, onDelete }) {
           {/* Top row: date + odo + mpg badge */}
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-semibold text-raptor-primary">{fmtDate(entry.date)}</span>
-            <span className="text-xs text-raptor-muted">{fmtOdo(entry.odometer)}</span>
-            <MpgBadge mpg={entry.mpg} factoryHwy={factoryHwy} />
+            <span className="text-xs text-raptor-muted">{u.fmtDist(entry.odometer)}</span>
+            <MpgBadge dpv={entry.mpg} factoryCombinedMpg={factoryCombinedMpg} />
             {entry.trip_type && entry.trip_type !== 'mixed' && (
               <span className="text-xs text-raptor-muted capitalize px-1.5 py-0.5 rounded bg-raptor-elevated border border-raptor-border">
                 {entry.trip_type}

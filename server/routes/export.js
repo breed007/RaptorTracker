@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const { getDb } = require('../db');
 const { jsonList } = require('../lib/json');
+const units = require('../services/units');
 const router = express.Router();
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './data/uploads';
@@ -19,7 +20,7 @@ function formatDate(d) {
 
 function formatCurrency(n) {
   if (n == null) return '—';
-  return `$${parseFloat(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return units.formatMoney(parseFloat(n));
 }
 
 router.get('/pdf/:vehicle_id', (req, res) => {
@@ -214,7 +215,7 @@ router.get('/pdf/:vehicle_id', (req, res) => {
          .text(entry.service_type, 60, y, { width: 220 });
       doc.fillColor(MED_GRAY).fontSize(9).font('Helvetica')
          .text(formatDate(entry.date_performed), 290, y)
-         .text(entry.mileage ? `${entry.mileage.toLocaleString()} mi` : '—', 370, y)
+         .text(entry.mileage ? units.formatDistance(entry.mileage) : '—', 370, y)
          .text(formatCurrency(entry.cost), 450, y);
       y += 14;
       if (entry.notes) {
@@ -330,7 +331,12 @@ router.get('/csv/:type/:vehicle_id', (req, res) => {
     `SELECT ${cfg.cols.join(', ')} FROM ${cfg.table} WHERE user_vehicle_id = ? ORDER BY ${cfg.order}`
   ).all(vehicle_id);
 
-  const header = cfg.cols.join(',');
+  // Values are in the owner's units; name the volume columns to match so a
+  // metric export doesn't say 'gallons' over a column of liters. Import
+  // accepts either name.
+  const metricVolume = units.getUnits().volume === 'l';
+  const RENAME = metricVolume ? { gallons: 'liters', price_per_gallon: 'price_per_liter' } : {};
+  const header = cfg.cols.map(c => RENAME[c] || c).join(',');
   const body = rows.map(r => cfg.cols.map(c => csvCell(r[c])).join(',')).join('\r\n');
   const csv = header + '\r\n' + body + (body ? '\r\n' : '');
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import StatusBadge from './StatusBadge'
+import { currentUnits } from '../lib/units'
 
 const CATEGORY_META = {
   Suspension:      { dot: 'bg-blue-500',    label: 'Suspension' },
@@ -26,7 +27,7 @@ const CATEGORY_ORDER = [
 
 function fmt(cost) {
   if (cost == null) return '—'
-  return '$' + parseFloat(cost).toLocaleString('en-US', { minimumFractionDigits: 2 })
+  return currentUnits().money(cost)
 }
 
 export default function BuildSheet({ mods }) {

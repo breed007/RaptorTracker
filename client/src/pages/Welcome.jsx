@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useApp } from '../context/AppContext'
+import UnitsForm, { PRESETS, presetFor } from '../components/UnitsForm'
 
 // Valid VIN: 17 chars, no I O Q
 const VIN_RE = /^[A-HJ-NPR-Z0-9]{17}$/
@@ -10,7 +11,7 @@ const VIN_RE = /^[A-HJ-NPR-Z0-9]{17}$/
  * them into an empty dashboard.
  */
 export default function Welcome() {
-  const { refreshVehicles, selectVehicle } = useApp()
+  const { refreshVehicles, selectVehicle, refreshUnits } = useApp()
   const [refVehicles, setRefVehicles] = useState([])
   const [form, setForm] = useState({ vin: '', vehicle_id: '', nickname: '', model_year: '', color: '' })
   const [vinLoading, setVinLoading] = useState(false)
@@ -18,9 +19,19 @@ export default function Welcome() {
   const [vinError, setVinError] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  // Units are asked once, here, before there is any data to convert. The
+  // starting point comes from the browser's locale.
+  const [units, setUnits] = useState(null)
+  const [unitsOpen, setUnitsOpen] = useState(false)
 
   useEffect(() => {
     fetch('/api/vehicles').then(r => r.json()).then(setRefVehicles).catch(() => {})
+    fetch('/api/settings/units').then(r => r.json()).then(async (d) => {
+      if (d.chosen) return
+      const locale = navigator.language || 'en-US'
+      const s = await fetch(`/api/settings/units/suggest?locale=${encodeURIComponent(locale)}`).then(r => r.json())
+      setUnits(s.units)
+    }).catch(() => {})
   }, [])
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
@@ -56,6 +67,13 @@ export default function Welcome() {
     if (!form.model_year) { setError('Model year is required.'); return }
     setSaving(true)
     try {
+      if (units) {
+        const unitsRes = await fetch('/api/settings/units', {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(units),
+        })
+        if (!unitsRes.ok) { setError((await unitsRes.json().catch(() => ({}))).error || 'Could not save your units.'); return }
+        await refreshUnits()
+      }
       const res = await fetch('/api/user-vehicles', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, vin: form.vin || null }),
@@ -136,6 +154,22 @@ export default function Welcome() {
                 className="input-field" placeholder="e.g. Carbonized Gray" />
             </div>
           </div>
+
+          {units && (
+            <div className="pt-2 border-t border-raptor-border">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-sm text-raptor-secondary">
+                  Units: <span className="font-medium text-raptor-primary">
+                    {PRESETS.find(p => p.key === presetFor(units))?.label || 'Custom'}
+                  </span>, {units.currency}
+                </div>
+                <button type="button" onClick={() => setUnitsOpen(v => !v)} className="text-xs text-raptor-accent hover:underline" aria-expanded={unitsOpen}>
+                  {unitsOpen ? 'Done' : 'Change'}
+                </button>
+              </div>
+              {unitsOpen && <div className="mt-3"><UnitsForm value={units} onChange={setUnits} idPrefix="welcome-units" /></div>}
+            </div>
+          )}
 
           {error && <div className="text-sm text-red-500">{error}</div>}
 

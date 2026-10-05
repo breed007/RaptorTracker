@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
+import { currentUnits } from '../lib/units'
 import StatsCard from '../components/StatsCard'
 import SpendChart from '../components/SpendChart'
 import StatusBadge from '../components/StatusBadge'
@@ -8,8 +9,7 @@ import { internalPath } from '../lib/links'
 import { formatDue, monthYear } from '../lib/dates'
 import { logRecallAsService } from '../lib/recalls'
 
-const money = (v, dp = 0) =>
-  v == null ? '—' : '$' + Number(v).toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp })
+const money = (v, dp = 0) => (dp === 0 ? currentUnits().money0(v) : currentUnits().money(v))
 
 const fmtDate = (d) =>
   d ? new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
@@ -122,12 +122,12 @@ export default function Dashboard() {
             <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3 text-sm">
               {vehicle.current_mileage != null && (
                 <span className="text-raptor-secondary">
-                  <span className="text-raptor-primary font-semibold">{vehicle.current_mileage.toLocaleString()}</span> mi
+                  <span className="text-raptor-primary font-semibold">{Math.round(vehicle.current_mileage).toLocaleString()}</span> {currentUnits().dist}
                 </span>
               )}
               {vehicle.milesPerMonth != null && (
                 <span className="text-raptor-secondary">
-                  <span className="text-raptor-primary font-semibold">{Math.round(vehicle.milesPerMonth).toLocaleString()}</span> mi/mo
+                  <span className="text-raptor-primary font-semibold">{Math.round(vehicle.milesPerMonth).toLocaleString()}</span> {currentUnits().dist}/mo
                 </span>
               )}
               {overview.aux && (
@@ -213,12 +213,12 @@ export default function Dashboard() {
             <Link to="/maintenance" className="ml-auto text-xs text-raptor-accent hover:underline">Full forecast →</Link>
           </div>
           <div className="space-y-1.5">
-            {upcoming.map(u => (
-              <div key={u.id} className="flex items-center gap-3 text-sm">
-                <span className="flex-1 min-w-0 text-raptor-primary truncate">{u.service_type}</span>
-                {u.estimatedCost != null && <span className="text-xs text-raptor-secondary flex-shrink-0">~{money(u.estimatedCost)}</span>}
+            {upcoming.map(item => (
+              <div key={item.id} className="flex items-center gap-3 text-sm">
+                <span className="flex-1 min-w-0 text-raptor-primary truncate">{item.service_type}</span>
+                {item.estimatedCost != null && <span className="text-xs text-raptor-secondary flex-shrink-0">~{money(item.estimatedCost)}</span>}
                 <span className="text-xs text-raptor-muted flex-shrink-0 text-right">
-                  {formatDue(u.daysOut)}{u.daysOut >= 730 && u.projectedDate ? ` (${monthYear(u.projectedDate)})` : ''}
+                  {formatDue(item.daysOut)}{item.daysOut >= 730 && item.projectedDate ? ` (${monthYear(item.projectedDate)})` : ''}
                 </span>
               </div>
             ))}
@@ -295,7 +295,7 @@ export default function Dashboard() {
                   <div className="text-sm font-medium text-raptor-primary truncate">{r.service_type}</div>
                   <div className="text-xs text-raptor-muted mt-0.5">
                     {fmtDate(r.date_performed)}
-                    {r.mileage != null && <span className="ml-2">{r.mileage.toLocaleString()} mi</span>}
+                    {r.mileage != null && <span className="ml-2">{currentUnits().fmtDist(r.mileage)}</span>}
                     {r.vendor && <span className="ml-2">· {r.vendor}</span>}
                   </div>
                 </div>

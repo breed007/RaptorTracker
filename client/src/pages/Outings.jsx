@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext'
 import ConfirmModal from '../components/ConfirmModal'
 import StatsCard from '../components/StatsCard'
 import { localDate } from '../lib/dates'
+import { currentUnits } from '../lib/units'
 
 const DIFFICULTY_CLS = {
   easy: 'bg-green-500/15 text-green-600 dark:text-green-400',
@@ -132,8 +133,8 @@ export default function Outings() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatsCard label="Outings" value={s.count} accent />
           <StatsCard
-            label="Trail Miles"
-            value={s.totalMiles ? s.totalMiles.toLocaleString() : '—'}
+            label={`Trail ${currentUnits().distTitle}`}
+            value={s.totalMiles ? Math.round(s.totalMiles).toLocaleString() : '—'}
             sub={s.milesKnownFor < s.count ? `${s.count - s.milesKnownFor} without odometer` : null}
           />
           <StatsCard label="Days Out" value={s.daysOut} />
@@ -182,19 +183,19 @@ export default function Outings() {
               </select>
             </div>
             <div>
-              <label className="label">Odometer Start</label>
+              <label className="label">Odometer Start ({currentUnits().dist})</label>
               <input type="number" value={form.odometer_start} onChange={e => set('odometer_start', e.target.value)} className="input-field" placeholder="e.g. 24500" />
             </div>
             <div>
-              <label className="label">Odometer End</label>
+              <label className="label">Odometer End ({currentUnits().dist})</label>
               <input type="number" value={form.odometer_end} onChange={e => set('odometer_end', e.target.value)} className="input-field" placeholder="e.g. 24680" />
             </div>
             <div>
-              <label className="label">Aired-down PSI (front)</label>
+              <label className="label">Aired-down front ({currentUnits().pressure})</label>
               <input type="number" step="0.5" value={form.tire_psi_front} onChange={e => set('tire_psi_front', e.target.value)} className="input-field" placeholder="e.g. 18" />
             </div>
             <div>
-              <label className="label">Aired-down PSI (rear)</label>
+              <label className="label">Aired-down rear ({currentUnits().pressure})</label>
               <input type="number" step="0.5" value={form.tire_psi_rear} onChange={e => set('tire_psi_rear', e.target.value)} className="input-field" placeholder="e.g. 20" />
             </div>
             <div>
@@ -268,9 +269,9 @@ export default function Outings() {
 
                   <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-raptor-muted">
                     <span>{fmtDate(o.date)}{o.end_date ? ` → ${fmtDate(o.end_date)}` : ''}</span>
-                    {o.miles != null && <span>{o.miles.toLocaleString()} mi</span>}
+                    {o.miles != null && <span>{currentUnits().fmtDist(o.miles)}</span>}
                     {(o.tire_psi_front != null || o.tire_psi_rear != null) && (
-                      <span>Aired to {o.tire_psi_front ?? '—'}/{o.tire_psi_rear ?? '—'} psi</span>
+                      <span>Aired to {currentUnits().pressureNum(o.tire_psi_front)}/{currentUnits().pressureNum(o.tire_psi_rear)} {currentUnits().pressure}</span>
                     )}
                     {o.tire_set_name && <span>on {o.tire_set_name}</span>}
                     {o.companions && <span>with {o.companions}</span>}

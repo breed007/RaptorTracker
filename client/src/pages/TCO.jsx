@@ -5,6 +5,7 @@ import {
 } from 'chart.js'
 import { Line } from 'react-chartjs-2'
 import { useApp } from '../context/AppContext'
+import { currentUnits } from '../lib/units'
 import StatsCard from '../components/StatsCard'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler)
@@ -17,7 +18,8 @@ const OWNERSHIP = [
 
 function money(v, decimals = 0) {
   if (v == null || v === '') return '—'
-  return '$' + Number(v).toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
+  const u = currentUnits()
+  return decimals === 0 ? u.money0(v) : u.money(v)
 }
 
 const EMPTY_FIN = {
@@ -108,7 +110,7 @@ export default function TCO() {
     plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => money(c.parsed.y) } } },
     scales: {
       x: { ticks: { color: '#9ca3af', font: { size: 10 } }, grid: { display: false } },
-      y: { ticks: { color: '#9ca3af', font: { size: 10 }, callback: v => '$' + (v / 1000).toFixed(0) + 'k' }, grid: { color: '#ffffff10' } },
+      y: { ticks: { color: '#9ca3af', font: { size: 10 }, callback: v => currentUnits().money0(v / 1000) + 'k' }, grid: { color: '#ffffff10' } },
     },
   }
 
@@ -172,7 +174,7 @@ export default function TCO() {
                 <div><label className="label">Due at Signing</label><input type="number" step="0.01" value={fin.lease_down_payment} onChange={e => setF('lease_down_payment', e.target.value)} className="input-field" /></div>
                 <div><label className="label">Term (months)</label><input type="number" value={fin.lease_term_months} onChange={e => setF('lease_term_months', e.target.value)} className="input-field" placeholder="e.g. 36" /></div>
                 <div><label className="label">First Payment Date</label><input type="date" value={fin.lease_start_date} onChange={e => setF('lease_start_date', e.target.value)} className="input-field" /></div>
-                <div><label className="label">Mileage Allowance / yr</label><input type="number" value={fin.lease_mileage_allowance} onChange={e => setF('lease_mileage_allowance', e.target.value)} className="input-field" placeholder="e.g. 12000" /></div>
+                <div><label className="label">Allowance ({currentUnits().dist}/yr)</label><input type="number" value={fin.lease_mileage_allowance} onChange={e => setF('lease_mileage_allowance', e.target.value)} className="input-field" placeholder="e.g. 12000" /></div>
                 <div><label className="label">Buyout / Residual</label><input type="number" step="0.01" value={fin.lease_buyout} onChange={e => setF('lease_buyout', e.target.value)} className="input-field" /></div>
               </div>
             )}
@@ -190,8 +192,8 @@ export default function TCO() {
           {/* Headline stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <StatsCard label="Total Cost of Ownership" value={money(s.total)} sub="acquisition + running" accent />
-            <StatsCard label="Cost / Mile" value={data.costPerMile != null ? '$' + data.costPerMile.toFixed(2) : '—'} sub={data.operatingCostPerMile != null ? `$${data.operatingCostPerMile.toFixed(2)} operating` : null} />
-            <StatsCard label="Miles Driven" value={data.milesDriven != null ? data.milesDriven.toLocaleString() : '—'} sub={data.milesDriven == null ? 'set mileage in Maintenance' : 'since purchase'} />
+            <StatsCard label={`Cost / ${currentUnits().distOneTitle}`} value={data.costPerMile != null ? currentUnits().money(data.costPerMile) : '—'} sub={data.operatingCostPerMile != null ? `${currentUnits().money(data.operatingCostPerMile)} operating` : null} />
+            <StatsCard label={`${currentUnits().distTitle} Driven`} value={data.milesDriven != null ? Math.round(data.milesDriven).toLocaleString() : '—'} sub={data.milesDriven == null ? 'set mileage in Maintenance' : 'since purchase'} />
             <StatsCard label="Running Costs" value={money(s.operating)} sub="mods + service + fuel" />
           </div>
 

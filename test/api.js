@@ -91,6 +91,29 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
       eq(Array.isArray(r.body) ? r.body.length : -1, 0, 'vehicle count');
     });
 
+    // --- First-run units --------------------------------------------------
+    r = await req('GET', '/api/settings/units');
+    check('a fresh install has not picked units yet', () => {
+      eq(r.status, 200, 'status');
+      eq(r.body.chosen, false, 'chosen');
+      eq(r.body.units.distance, 'mi', 'default distance');
+    });
+    r = await req('GET', '/api/settings/units/suggest?locale=en-GB');
+    check('a British browser is offered miles, liters, and pounds', () => {
+      eq(r.body.units.distance, 'mi', 'distance'); eq(r.body.units.volume, 'l', 'volume'); eq(r.body.units.currency, 'GBP', 'currency');
+    });
+    r = await req('PUT', '/api/settings/units', { distance: 'mi', volume: 'gal', economy: 'mpg', pressure: 'psi', currency: 'USD' });
+    check('picking units on an empty install saves without a snapshot', () => {
+      eq(r.status, 200, 'status'); eq(r.body.snapshot, null, 'snapshot');
+    });
+    r = await req('PUT', '/api/settings/units', { distance: 'km' });
+    check('switching with nothing stored skips the snapshot', () => {
+      eq(r.status, 200, 'status'); eq(r.body.snapshot, null, 'snapshot'); eq(r.body.converted, 0, 'converted');
+    });
+    await req('PUT', '/api/settings/units', { distance: 'mi' });
+    r = await req('GET', '/api/settings/units');
+    check('units count as chosen once saved', () => eq(r.body.chosen, true, 'chosen'));
+
     r = await req('GET', '/api/vehicles');
     check('reference vehicles are seeded', () => {
       eq(r.status, 200, 'status');
@@ -332,6 +355,55 @@ function truthy(v, what) { if (!v) throw new Error(`${what}: expected a value, g
       });
       r = await req('PUT', '/api/recalls/state', { vehicle_id: vid, campaign: '22V253000', state: 'ignored' });
       check('an unknown recall state is refused', () => eq(r.status, 400, 'status'));
+    }
+
+    // --- Units: switch to metric and back ------------------------------------
+    {
+      const Database = require('better-sqlite3');
+      const snap = () => {
+        const db = new Database(path.join(tmp, 'raptortracker.db'), { readonly: true });
+        const v = db.prepare('SELECT current_mileage FROM user_vehicles WHERE id = ?').get(vid);
+        const f = db.prepare('SELECT gallons, price_per_gallon FROM fuel_log WHERE user_vehicle_id = ? AND price_per_gallon IS NOT NULL ORDER BY id LIMIT 1').get(vid)
+          || db.prepare('SELECT gallons, price_per_gallon FROM fuel_log WHERE user_vehicle_id = ? ORDER BY id LIMIT 1').get(vid);
+        db.close();
+        return { mileage: v.current_mileage, gallons: f.gallons, ppg: f.price_per_gallon };
+      };
+      await req('POST', '/api/fuel', { user_vehicle_id: vid, date: '2024-06-23', odometer: 26200, gallons: 20, price_per_gallon: 3.8, full_tank: true });
+      const before = snap();
+
+      r = await req('PUT', '/api/settings/units', { distance: 'km', volume: 'l', pressure: 'kpa', economy: 'l100km', currency: 'CAD' });
+      check('switching to metric converts stored values', () => {
+        eq(r.status, 200, `status ${JSON.stringify(r.body)}`);
+        truthy(r.body.converted > 0, 'values converted');
+        truthy(/^before-units-/.test(r.body.snapshot || ''), 'snapshot taken first');
+        truthy(fs.existsSync(path.join(tmp, 'backups', r.body.snapshot)), 'snapshot file on disk');
+        const after = snap();
+        const near = (a, b, tol, w) => { if (Math.abs(a - b) > tol) throw new Error(`${w}: ${a} vs ${b}`); };
+        near(after.mileage, before.mileage * 1.609344, 0.05, 'odometer in km');
+        near(after.gallons, before.gallons * 3.785411784, 0.0005, 'volume in liters');
+        if (before.ppg != null) near(after.ppg, before.ppg / 3.785411784, 0.00005, 'price per liter');
+        eq(after.mileage, Math.round(after.mileage * 10) / 10, 'odometer rounded to 0.1 km');
+      });
+
+      r = await req('GET', `/api/export/csv/fuel/${vid}`);
+      check('a metric CSV export names the volume column liters', () => {
+        truthy(/^date,odometer,liters,price_per_liter/.test(r.text), `header: ${r.text.split('\n')[0]}`);
+      });
+      r = await req('GET', `/api/share/build-sheet?vehicle_id=${vid}&format=text&mileage=true`);
+      check('the build sheet says kilometers', () => truthy(/kilometers/.test(r.body.content), 'kilometers in build sheet'));
+
+      r = await req('PUT', '/api/settings/units', { currency: 'CDN' });
+      check('a made-up currency code is refused', () => eq(r.status, 400, 'status'));
+
+      r = await req('PUT', '/api/settings/units', { distance: 'mi', volume: 'gal', pressure: 'psi', economy: 'mpg', currency: 'USD' });
+      check('switching back restores every value to within rounding', () => {
+        eq(r.status, 200, 'status');
+        const back = snap();
+        const near = (a, b, tol, w) => { if (Math.abs(a - b) > tol) throw new Error(`${w}: ${a} vs ${b}`); };
+        near(back.mileage, before.mileage, 0.1, 'mileage');
+        near(back.gallons, before.gallons, 0.001, 'gallons');
+        if (before.ppg != null) near(back.ppg, before.ppg, 0.001, 'price per gallon');
+      });
     }
 
     // --- Cross-cutting reads ----------------------------------------------

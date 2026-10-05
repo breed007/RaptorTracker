@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
+import { currentUnits } from '../lib/units'
 import ConfirmModal from '../components/ConfirmModal'
 import { localDate } from '../lib/dates'
 
@@ -15,9 +16,7 @@ function fmtDate(dateStr) {
 
 function fmtMoney(val) {
   if (val == null || val === '') return null
-  return '$' + Number(val).toLocaleString('en-US', {
-    minimumFractionDigits: 0, maximumFractionDigits: 0,
-  })
+  return currentUnits().money0(val)
 }
 
 // Returns { label, colorCls, daysLeft } for a given expiration date string
@@ -420,7 +419,7 @@ export default function Warranty() {
 
             {/* Term Miles */}
             <div>
-              <label className="label">Term (miles)</label>
+              <label className="label">Term ({currentUnits().distLong})</label>
               <input
                 type="number"
                 value={vwForm.term_miles}
@@ -587,7 +586,7 @@ function VehicleWarrantyCard({ warranty: w, onEdit, onDelete }) {
 
   const termStr = [
     w.term_years ? `${w.term_years} yr` : null,
-    w.term_miles ? `${Number(w.term_miles).toLocaleString()} mi` : null,
+    w.term_miles ? currentUnits().fmtDist(w.term_miles) : null,
   ].filter(Boolean).join(' / ')
 
   return (

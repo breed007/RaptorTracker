@@ -154,8 +154,14 @@ router.post('/load-factory', (req, res) => {
   const ins = db.prepare(
     'INSERT INTO service_intervals (user_vehicle_id, service_type, interval_miles, interval_months, notes, is_factory) VALUES (?, ?, ?, ?, ?, 1)'
   );
+  // Ford publishes these in miles. A metric install stores kilometers, so
+  // convert and round to the nearest 500 km — 10,000 mi reads as 16,000 km,
+  // the way a km-based service schedule is written, not 16,093.
+  const { getUnits, factor } = require('../services/units');
+  const f = factor('distance', 'mi', getUnits().distance);
+  const toStored = (mi) => (mi == null ? null : f === 1 ? mi : Math.round((mi * f) / 500) * 500);
   for (const fi of factoryList) {
-    ins.run(vehicle_id, fi.service_type, fi.interval_miles, fi.interval_months, fi.notes);
+    ins.run(vehicle_id, fi.service_type, toStored(fi.interval_miles), fi.interval_months, fi.notes);
   }
   res.json({ ok: true, count: factoryList.length });
 });

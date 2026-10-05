@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
+import { currentUnits } from '../lib/units'
 import { localDate } from '../lib/dates'
 
 const SERVICE_TYPES = [
@@ -178,7 +179,7 @@ export default function QuickAdd() {
   // Examples read as examples, not as values already filled in; the odometer
   // hint is this truck's last reading rather than a made-up number.
   const lastOdo = selectedVehicle?.current_mileage
-  const odoHint = lastOdo ? `Last: ${Number(lastOdo).toLocaleString()}` : 'e.g. 31,900'
+  const odoHint = lastOdo ? `Last: ${Math.round(Number(lastOdo)).toLocaleString()}` : 'e.g. 31,900'
 
   return (
     <div className="max-w-md mx-auto space-y-4">
@@ -213,20 +214,20 @@ export default function QuickAdd() {
       {tab === 'fuel' && (
         <form onSubmit={submitFuel} className="card p-4 space-y-3">
           <div>
-            <label className="label">Odometer *</label>
+            <label className="label">Odometer ({currentUnits().dist}) *</label>
             <input type="number" inputMode="numeric" value={fuel.odometer} onChange={e => setFuel(f => ({ ...f, odometer: e.target.value }))} className={field} placeholder={odoHint} required />
           </div>
           <div>
-            <label className="label">Gallons *</label>
-            <input type="number" inputMode="decimal" step="0.001" value={fuel.gallons} onChange={e => setFuel(f => ({ ...f, gallons: e.target.value }))} className={field} placeholder="e.g. 26.2" required />
+            <label className="label">{currentUnits().volLong[0].toUpperCase() + currentUnits().volLong.slice(1)} *</label>
+            <input type="number" inputMode="decimal" step="0.001" value={fuel.gallons} onChange={e => setFuel(f => ({ ...f, gallons: e.target.value }))} className={field} placeholder={currentUnits().vol === 'L' ? 'e.g. 99.2' : 'e.g. 26.2'} required />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label">$ / gal</label>
-              <input type="number" inputMode="decimal" step="0.001" value={fuel.price_per_gallon} onChange={e => setFuel(f => ({ ...f, price_per_gallon: e.target.value }))} className={field} placeholder="e.g. 3.459" />
+              <label className="label">{currentUnits().perVol}</label>
+              <input type="number" inputMode="decimal" step="0.001" value={fuel.price_per_gallon} onChange={e => setFuel(f => ({ ...f, price_per_gallon: e.target.value }))} className={field} placeholder={currentUnits().vol === 'L' ? 'e.g. 1.899' : 'e.g. 3.459'} />
             </div>
             <div>
-              <label className="label">Total $</label>
+              <label className="label">Total ({currentUnits().symbol})</label>
               <input type="number" inputMode="decimal" step="0.01" value={fuel.total_cost} onChange={e => setFuel(f => ({ ...f, total_cost: e.target.value }))} className={field} placeholder="Calculated" />
             </div>
           </div>
@@ -249,7 +250,7 @@ export default function QuickAdd() {
             />
             <span>
               <span className="block text-sm text-raptor-primary">Filled the tank</span>
-              <span className="block text-xs text-raptor-muted">Turn off for a partial fill. MPG is only measured between full tanks.</span>
+              <span className="block text-xs text-raptor-muted">Turn off for a partial fill. Economy is only measured between full tanks.</span>
             </span>
           </label>
           <button type="submit" disabled={saving} className="btn-primary w-full py-3 text-base disabled:opacity-50">
@@ -261,7 +262,7 @@ export default function QuickAdd() {
       {tab === 'odometer' && (
         <form onSubmit={submitOdo} className="card p-4 space-y-3">
           <div>
-            <label className="label">Odometer *</label>
+            <label className="label">Odometer ({currentUnits().dist}) *</label>
             <input type="number" inputMode="numeric" value={odo.odometer} onChange={e => setOdo(o => ({ ...o, odometer: e.target.value }))} className={field} placeholder={odoHint} required />
           </div>
           <div>
@@ -293,7 +294,7 @@ export default function QuickAdd() {
               <input type="date" value={svc.date_performed} onChange={e => setSvc(s => ({ ...s, date_performed: e.target.value }))} className={field} required />
             </div>
             <div>
-              <label className="label">Mileage</label>
+              <label className="label">Odometer ({currentUnits().dist})</label>
               <input type="number" inputMode="numeric" value={svc.mileage} onChange={e => setSvc(s => ({ ...s, mileage: e.target.value }))} className={field} placeholder={odoHint} />
             </div>
           </div>

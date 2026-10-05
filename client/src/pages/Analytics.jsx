@@ -5,13 +5,13 @@ import {
 } from 'chart.js'
 import { Line } from 'react-chartjs-2'
 import { useApp } from '../context/AppContext'
+import { currentUnits } from '../lib/units'
 import StatsCard from '../components/StatsCard'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler)
 
 function money(v) {
-  if (v == null) return '—'
-  return '$' + Number(v).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+  return currentUnits().money0(v)
 }
 function fmtDate(d) {
   if (!d) return '—'
@@ -86,7 +86,7 @@ export default function Analytics() {
   }
   const chartOpts = {
     responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `${c.parsed.y.toLocaleString()} mi` } } },
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => currentUnits().fmtDist(c.parsed.y) } } },
     scales: {
       x: { ticks: { color: '#9ca3af', font: { size: 10 }, maxTicksLimit: 8 }, grid: { display: false } },
       y: { ticks: { color: '#9ca3af', font: { size: 10 }, callback: v => (v / 1000).toFixed(0) + 'k' }, grid: { color: '#ffffff10' } },
@@ -101,15 +101,15 @@ export default function Analytics() {
 
       {/* Headline stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatsCard label="Miles / Month" value={data?.milesPerMonth != null ? Math.round(data.milesPerMonth).toLocaleString() : '—'} sub="tracked average" accent />
-        <StatsCard label="Miles Tracked" value={data?.totalMilesTracked != null ? data.totalMilesTracked.toLocaleString() : '—'} sub="first → last reading" />
-        <StatsCard label="Fuel Logged" value={data?.fuel ? `${data.fuel.gallons.toLocaleString()} gal` : '—'} sub={data?.fuel ? `${data.fuel.fills} fill-ups` : null} />
+        <StatsCard label={`${currentUnits().distTitle} / Month`} value={data?.milesPerMonth != null ? Math.round(data.milesPerMonth).toLocaleString() : '—'} sub="tracked average" accent />
+        <StatsCard label={`${currentUnits().distTitle} Tracked`} value={data?.totalMilesTracked != null ? Math.round(data.totalMilesTracked).toLocaleString() : '—'} sub="first → last reading" />
+        <StatsCard label="Fuel Logged" value={data?.fuel ? currentUnits().fmtVol(data.fuel.gallons, 0) : '—'} sub={data?.fuel ? `${data.fuel.fills} fill-ups` : null} />
         <StatsCard label="Fuel Spend" value={data?.fuel ? money(data.fuel.cost) : '—'} />
       </div>
 
       {/* Mileage trend */}
       <div className="card p-5">
-        <div className="section-title mb-3">Mileage Over Time</div>
+        <div className="section-title mb-3">Odometer Over Time</div>
         {trend.length >= 2 ? (
           <div style={{ height: 200 }}><Line data={chartData} options={chartOpts} /></div>
         ) : (
@@ -166,7 +166,7 @@ export default function Analytics() {
           <div className="space-y-1.5">
             {readings.map(r => (
               <div key={r.id} className="flex items-center gap-3 text-sm py-1 border-b border-raptor-border last:border-0">
-                <span className="text-raptor-primary font-medium w-28">{r.odometer.toLocaleString()} mi</span>
+                <span className="text-raptor-primary font-medium w-28">{currentUnits().fmtDist(r.odometer)}</span>
                 <span className="text-raptor-muted">{fmtDate(r.date)}</span>
                 {r.note && <span className="text-raptor-secondary truncate">{r.note}</span>}
                 <button onClick={() => deleteReading(r.id)} className="ml-auto text-raptor-muted hover:text-red-500" title="Delete">

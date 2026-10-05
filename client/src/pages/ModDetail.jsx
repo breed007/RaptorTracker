@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext'
 import StatusBadge from '../components/StatusBadge'
 import PhotoGrid from '../components/PhotoGrid'
 import ConfirmModal from '../components/ConfirmModal'
+import { currentUnits } from '../lib/units'
 
 const CATEGORIES = ['Armor','Audio','Bed_Accessories','Bumpers','Electrical','Engine','Interior','Lighting','Performance','Recovery','Suspension','Tires_Wheels','Other']
 const STATUSES = ['Researching','Ordered','In_Transit','Installed','Removed']
@@ -214,7 +215,7 @@ export default function ModDetail({ isNew }) {
           <div className="section-title">Purchase & Install</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="label">Cost (USD)</label>
+              <label className="label">Cost ({currentUnits().currency})</label>
               <input type="number" value={form.cost} onChange={e => set('cost', e.target.value)} className="input-field" placeholder="0.00" step="0.01" min="0" />
             </div>
             <div>
@@ -226,7 +227,7 @@ export default function ModDetail({ isNew }) {
               <input type="date" value={form.install_date} onChange={e => set('install_date', e.target.value)} className="input-field" />
             </div>
             <div>
-              <label className="label">Mileage at Install</label>
+              <label className="label">Odometer at Install ({currentUnits().dist})</label>
               <input type="number" value={form.mileage_at_install} onChange={e => set('mileage_at_install', e.target.value)} className="input-field" placeholder="e.g. 8420" min="0" step="1" />
             </div>
           </div>

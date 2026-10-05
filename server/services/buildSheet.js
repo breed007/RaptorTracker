@@ -19,7 +19,8 @@ const CATEGORY_ORDER = [
 ];
 
 const label = (c) => String(c || 'Other').replace(/_/g, ' ');
-const money = (n) => `$${Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+const units = require('./units');
+const money = (n) => units.formatMoney(n, undefined, { decimals: 0 });
 const num = (n) => Number(n).toLocaleString('en-US');
 
 function orderCategories(cats) {
@@ -69,7 +70,7 @@ function subtitleParts(v, opts) {
   const parts = [];
   if (v.generation) parts.push(v.generation);
   if (v.color) parts.push(v.color);
-  if (opts.includeMileage && v.current_mileage) parts.push(`${num(v.current_mileage)} miles`);
+  if (opts.includeMileage && v.current_mileage) parts.push(units.formatDistance(v.current_mileage, undefined, { long: true }));
   return parts;
 }
 

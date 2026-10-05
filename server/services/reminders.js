@@ -4,6 +4,7 @@
 const { getDb } = require('../db');
 const { getSetting, isTrue } = require('./settings');
 const { sendMail, isConfigured } = require('./mailer');
+const { getUnits, dueSoonFloor } = require('./units');
 
 const DAY_MS = 86400000;
 
@@ -26,7 +27,8 @@ function intervalStatus(interval, currentMileage) {
   if (interval.interval_miles && interval.last_mileage != null && currentMileage != null) {
     const remaining = (interval.last_mileage + interval.interval_miles) - currentMileage;
     if (remaining <= 0) statuses.push('overdue');
-    else if (remaining <= Math.max(interval.interval_miles * 0.1, 500)) statuses.push('due_soon');
+    // 10% of the interval, but never less than 500 mi (800 km).
+    else if (remaining <= Math.max(interval.interval_miles * 0.1, dueSoonFloor(getUnits()))) statuses.push('due_soon');
   }
   if (interval.interval_months && interval.last_date) {
     const due = new Date(interval.last_date + 'T12:00:00');
@@ -168,6 +170,10 @@ function gatherReminders(db = getDb(), opts = {}) {
   return items;
 }
 
+// Names come from the owner's records (a part called 'Lights <LED>' or
+// 'Wheels & Tires'); escape them before they go into the HTML email.
+const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 function renderEmail(items) {
   const byVehicle = {};
   for (const it of items) {
@@ -177,11 +183,11 @@ function renderEmail(items) {
   const htmlParts = [];
   for (const [vehicle, list] of Object.entries(byVehicle)) {
     lines.push(`\n${vehicle}`);
-    htmlParts.push(`<h3 style="margin:16px 0 4px">${vehicle}</h3><ul>`);
+    htmlParts.push(`<h3 style="margin:16px 0 4px">${escapeHtml(vehicle)}</h3><ul>`);
     for (const it of list) {
       const tag = it.state === 'overdue' || it.state === 'expired' ? '[!]' : '[~]';
       lines.push(`  ${tag} ${it.title} — ${it.detail}`);
-      htmlParts.push(`<li><strong>${it.title}</strong> — ${it.detail}</li>`);
+      htmlParts.push(`<li><strong>${escapeHtml(it.title)}</strong> — ${escapeHtml(it.detail)}</li>`);
     }
     htmlParts.push('</ul>');
   }

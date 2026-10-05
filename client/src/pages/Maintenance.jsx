@@ -1,20 +1,21 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useApp } from '../context/AppContext'
+import { useApp, useUnits } from '../context/AppContext'
 import ConfirmModal from '../components/ConfirmModal'
 import Lightbox from '../components/Lightbox'
 import { formatDue } from '../lib/dates'
 
 // ── Interval status helpers ──────────────────────────────────────────────────
 
-function calcIntervalStatus(interval, lastDate, lastMileage, currentMileage) {
+function calcIntervalStatus(interval, lastDate, lastMileage, currentMileage, u) {
   const statuses = []
 
   if (interval.interval_miles && lastMileage != null && currentMileage != null) {
     const dueMi = lastMileage + interval.interval_miles
     const remaining = dueMi - currentMileage
     if (remaining <= 0) statuses.push('overdue')
-    else if (remaining <= Math.max(interval.interval_miles * 0.1, 500)) statuses.push('due_soon')
+    // 10% of the interval, but never less than 500 mi / 800 km (matches the email reminders)
+    else if (remaining <= Math.max(interval.interval_miles * 0.1, u && u.dist === 'km' ? 800 : 500)) statuses.push('due_soon')
     else statuses.push('ok')
   }
 
@@ -47,9 +48,9 @@ function IntervalStatusBadge({ status }) {
   )
 }
 
-function fmtInterval(miles, months) {
+function fmtInterval(miles, months, u) {
   const parts = []
-  if (miles) parts.push(`${miles.toLocaleString()} mi`)
+  if (miles) parts.push(u.fmtDist(miles))
   if (months) parts.push(`${months} mo`)
   return parts.length ? `Every ${parts.join(' or ')}` : '—'
 }
@@ -57,6 +58,7 @@ function fmtInterval(miles, months) {
 // ── ServiceIntervals component ───────────────────────────────────────────────
 
 function ServiceIntervals({ vehicleId }) {
+  const u = useUnits()
   const [data, setData]           = useState(null)       // { intervals, currentMileage }
   const [loading, setLoading]     = useState(true)
   const [expanded, setExpanded]   = useState(false)
@@ -144,8 +146,8 @@ function ServiceIntervals({ vehicleId }) {
   const intervals = data?.intervals || []
   const currentMileage = data?.currentMileage
 
-  const overdue  = intervals.filter(i => calcIntervalStatus(i, i.last_date, i.last_mileage, currentMileage) === 'overdue')
-  const dueSoon  = intervals.filter(i => calcIntervalStatus(i, i.last_date, i.last_mileage, currentMileage) === 'due_soon')
+  const overdue  = intervals.filter(i => calcIntervalStatus(i, i.last_date, i.last_mileage, currentMileage, u) === 'overdue')
+  const dueSoon  = intervals.filter(i => calcIntervalStatus(i, i.last_date, i.last_mileage, currentMileage, u) === 'due_soon')
 
   return (
     <div className="card overflow-hidden">
@@ -195,7 +197,7 @@ function ServiceIntervals({ vehicleId }) {
                   onClick={() => { setMileageVal(currentMileage ?? ''); setMileageEdit(true) }}
                   className="text-xs font-semibold text-raptor-accent hover:underline"
                 >
-                  {currentMileage ? `${currentMileage.toLocaleString()} mi` : 'Set mileage'}
+                  {currentMileage ? u.fmtDist(currentMileage) : 'Set mileage'}
                 </button>
               )}
             </div>
@@ -235,7 +237,7 @@ function ServiceIntervals({ vehicleId }) {
                   <input type="text" value={form.service_type} onChange={e => setForm(f => ({ ...f, service_type: e.target.value }))} className="input-field" required placeholder="e.g. Diff Fluid" />
                 </div>
                 <div>
-                  <label className="label">Every (miles)</label>
+                  <label className="label">Every ({u.distLong})</label>
                   <input type="number" value={form.interval_miles} onChange={e => setForm(f => ({ ...f, interval_miles: e.target.value }))} className="input-field" placeholder="e.g. 10000" />
                 </div>
                 <div>
@@ -278,7 +280,7 @@ function ServiceIntervals({ vehicleId }) {
                 </thead>
                 <tbody>
                   {intervals.map(item => {
-                    const status = calcIntervalStatus(item, item.last_date, item.last_mileage, currentMileage)
+                    const status = calcIntervalStatus(item, item.last_date, item.last_mileage, currentMileage, u)
                     const lastDoneStr = item.last_date
                       ? new Date(item.last_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                       : '—'
@@ -287,14 +289,14 @@ function ServiceIntervals({ vehicleId }) {
                         <td className="px-5 py-3">
                           <div className="font-medium text-raptor-primary">{item.service_type}</div>
                           {item.is_factory ? <span className="text-xs text-raptor-muted">Ford factory</span> : <span className="text-xs text-raptor-muted">Custom</span>}
-                          {item.notes ? <div className="text-xs text-raptor-muted mt-0.5 sm:hidden">{fmtInterval(item.interval_miles, item.interval_months)}</div> : null}
+                          {item.notes ? <div className="text-xs text-raptor-muted mt-0.5 sm:hidden">{fmtInterval(item.interval_miles, item.interval_months, u)}</div> : null}
                         </td>
                         <td className="px-3 py-3 text-raptor-secondary hidden sm:table-cell">
-                          {fmtInterval(item.interval_miles, item.interval_months)}
+                          {fmtInterval(item.interval_miles, item.interval_months, u)}
                         </td>
                         <td className="px-3 py-3 text-raptor-secondary hidden md:table-cell">
                           {lastDoneStr}
-                          {item.last_mileage && <div className="text-xs text-raptor-muted">{item.last_mileage.toLocaleString()} mi</div>}
+                          {item.last_mileage && <div className="text-xs text-raptor-muted">{u.fmtDist(item.last_mileage)}</div>}
                         </td>
                         <td className="px-3 py-3">
                           <IntervalStatusBadge status={status} />
@@ -339,6 +341,7 @@ function ServiceIntervals({ vehicleId }) {
 // ── Service forecast ─────────────────────────────────────────────────────────
 
 function ServiceForecast({ vehicleId }) {
+  const u = useUnits()
   const [data, setData] = useState(null)
   const [expanded, setExpanded] = useState(false)
 
@@ -352,7 +355,7 @@ function ServiceForecast({ vehicleId }) {
 
   if (!data || !data.items?.length) return null
 
-  const money = (v) => v == null ? null : '$' + Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })
+  const money = (v) => v == null ? null : u.money0(v)
   const fmtDate = (d) => d ? new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—'
   const shown = expanded ? data.items : data.items.filter(i => i.projectedDate).slice(0, 5)
 
@@ -389,8 +392,8 @@ function ServiceForecast({ vehicleId }) {
           </div>
         ) : (
           <div className="px-5 py-2 text-xs text-raptor-muted">
-            Based on about {Math.round(data.milesPerMonth).toLocaleString()} miles/month
-            {data.currentMileage ? ` at ${data.currentMileage.toLocaleString()} mi` : ''}.
+            Based on about {Math.round(data.milesPerMonth).toLocaleString()} {u.distLong}/month
+            {data.currentMileage ? ` at ${u.fmtDist(data.currentMileage)}` : ''}.
           </div>
         )}
 
@@ -402,7 +405,7 @@ function ServiceForecast({ vehicleId }) {
                 {item.projectedDate ? (
                   <span className="block text-xs text-raptor-muted">
                     {item.overdue ? 'Overdue now' : formatDue(item.daysOut)}
-                    {item.milesRemaining != null && ` · ${Math.round(item.milesRemaining).toLocaleString()} mi to go`}
+                    {item.milesRemaining != null && ` · ${u.fmtDist(item.milesRemaining)} to go`}
                     {item.basis === 'time' && ' · time-based'}
                   </span>
                 ) : (
@@ -503,6 +506,7 @@ function AttachmentThumb({ src, onRemove }) {
 
 export default function Maintenance() {
   const { selectedVehicleId } = useApp()
+  const u = useUnits()
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(false)
   const [editId, setEditId] = useState(null)
@@ -802,11 +806,11 @@ export default function Maintenance() {
                           {new Date(r.date_performed + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                         {r.mileage != null && (
-                          <span className="text-xs text-raptor-muted">{r.mileage.toLocaleString()} mi</span>
+                          <span className="text-xs text-raptor-muted">{u.fmtDist(r.mileage)}</span>
                         )}
                         {r.cost != null && (
                           <span className="text-sm text-raptor-accent font-semibold">
-                            ${parseFloat(r.cost).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            {u.money(r.cost)}
                           </span>
                         )}
                       </div>
@@ -919,7 +923,7 @@ export default function Maintenance() {
             <div className="text-sm text-raptor-secondary px-1">
               Total maintenance spend:{' '}
               <span className="text-raptor-primary font-semibold">
-                ${totalCost.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                {u.money(totalCost)}
               </span>
             </div>
           )}

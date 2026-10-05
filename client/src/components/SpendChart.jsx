@@ -2,6 +2,7 @@ import React from 'react'
 import { Bar } from 'react-chartjs-2'
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Tooltip } from 'chart.js'
 import { useApp } from '../context/AppContext'
+import { currentUnits } from '../lib/units'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip)
 
@@ -46,7 +47,7 @@ export default function SpendChart({ data }) {
       legend: { display: false },
       tooltip: {
         callbacks: {
-          label: ctx => ` $${ctx.parsed.x.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+          label: ctx => ` ${currentUnits().money(ctx.parsed.x)}`
         },
         backgroundColor: tooltipBg,
         borderColor: tooltipBorder,

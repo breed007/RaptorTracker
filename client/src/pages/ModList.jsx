@@ -5,6 +5,7 @@ import StatusBadge from '../components/StatusBadge'
 import BuildSheet from '../components/BuildSheet'
 import BuildTimeline from '../components/BuildTimeline'
 import ModDetailPanel from '../components/ModDetailPanel'
+import { currentUnits } from '../lib/units'
 
 const CATEGORIES = ['Armor','Audio','Bed_Accessories','Bumpers','Electrical','Engine','Interior','Lighting','Performance','Recovery','Suspension','Tires_Wheels','Other']
 const STATUSES = ['Researching','Ordered','In_Transit','Installed','Removed']
@@ -355,7 +356,7 @@ export default function ModList() {
                             Installed <SortIcon field="install_date" />
                           </th>
                           <th className="px-4 py-3 text-raptor-secondary font-medium hidden lg:table-cell">
-                            Mileage
+                            Odometer
                           </th>
                           <th className="px-4 py-3 w-10" />
                         </tr>
@@ -397,13 +398,13 @@ export default function ModList() {
                                 <StatusBadge status={mod.status} />
                               </td>
                               <td className="px-4 py-3 text-raptor-secondary hidden md:table-cell tabular-nums">
-                                {mod.cost != null ? `$${parseFloat(mod.cost).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '—'}
+                                {currentUnits().money(mod.cost)}
                               </td>
                               <td className="px-4 py-3 text-raptor-muted text-xs hidden lg:table-cell">
                                 {mod.install_date ? new Date(mod.install_date + 'T12:00:00').toLocaleDateString() : '—'}
                               </td>
                               <td className="px-4 py-3 text-raptor-muted text-xs hidden lg:table-cell tabular-nums">
-                                {mod.mileage_at_install != null ? mod.mileage_at_install.toLocaleString() + ' mi' : '—'}
+                                {currentUnits().fmtDist(mod.mileage_at_install)}
                               </td>
                               <td className="px-4 py-3 text-raptor-muted" onClick={e => e.stopPropagation()}>
                                 <Link
@@ -428,10 +429,10 @@ export default function ModList() {
                 <div className="flex flex-wrap gap-4 text-sm text-raptor-secondary px-1">
                   <span>{sorted.length} mod{sorted.length !== 1 ? 's' : ''} shown</span>
                   {totalCost > 0 && (
-                    <span>Total: <span className="text-raptor-primary font-semibold tabular-nums">${totalCost.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></span>
+                    <span>Total: <span className="text-raptor-primary font-semibold tabular-nums">{currentUnits().money(totalCost)}</span></span>
                   )}
                   {installedCost > 0 && status !== 'Installed' && (
-                    <span>Installed: <span className="text-raptor-accent font-semibold tabular-nums">${installedCost.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span></span>
+                    <span>Installed: <span className="text-raptor-accent font-semibold tabular-nums">{currentUnits().money(installedCost)}</span></span>
                   )}
                 </div>
               </>

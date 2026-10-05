@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import ConfirmModal from '../components/ConfirmModal'
 import { localDate } from '../lib/dates'
+import { currentUnits } from '../lib/units'
 
 const CheckIcon = () => (
   <svg className="w-4 h-4 text-raptor-accent flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -257,7 +258,7 @@ export default function Export() {
         <div>
           <div className="text-xs text-raptor-muted uppercase tracking-wide">Total Spend</div>
           <div className="text-2xl font-display font-bold text-raptor-primary mt-0.5">
-            ${totalSpend.toLocaleString('en-US', { minimumFractionDigits: 0 })}
+            {currentUnits().money0(totalSpend)}
           </div>
         </div>
       </div>
@@ -318,7 +319,8 @@ export default function Export() {
           Bringing history from a spreadsheet or another app? Pick what you're importing and choose a
           file — nothing is written until you review the preview. Column names are matched loosely
           (<code>Odo</code>, <code>Miles</code>, and <code>Odometer</code> all work), and dates like
-          <code> 12/4/25</code> are read as month-first.
+          <code> 12/4/25</code> are read as month-first. Distances and volumes are read as{' '}
+          {currentUnits().distLong} and {currentUnits().volLong}, the units this install uses.
         </p>
 
         <div className="flex flex-wrap items-end gap-3">

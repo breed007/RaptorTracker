@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import ConfirmModal from '../components/ConfirmModal'
+import { currentUnits } from '../lib/units'
 
 const EMPTY = {
   name: '', tire_brand: '', tire_model: '', tire_size: '', wheel_brand: '', wheel_size: '',
@@ -15,7 +16,7 @@ function fmtDate(d) {
 }
 function money(v) {
   if (v == null || v === '') return null
-  return '$' + Number(v).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+  return currentUnits().money0(v)
 }
 
 export default function TireSets() {
@@ -114,12 +115,12 @@ export default function TireSets() {
             <div><label className="label">Quantity</label><input type="number" value={form.quantity} onChange={e => set('quantity', e.target.value)} className="input-field" placeholder="4" /></div>
             <div><label className="label">Wheel Brand</label><input value={form.wheel_brand} onChange={e => set('wheel_brand', e.target.value)} className="input-field" placeholder="e.g. Method" /></div>
             <div><label className="label">Wheel Size</label><input value={form.wheel_size} onChange={e => set('wheel_size', e.target.value)} className="input-field" placeholder='e.g. 17x8.5' /></div>
-            <div><label className="label">Cost (set)</label><input type="number" step="0.01" value={form.cost} onChange={e => set('cost', e.target.value)} className="input-field" placeholder="0.00" /></div>
+            <div><label className="label">Cost for the set ({currentUnits().symbol})</label><input type="number" step="0.01" value={form.cost} onChange={e => set('cost', e.target.value)} className="input-field" placeholder="0.00" /></div>
             <div><label className="label">Purchase Date</label><input type="date" value={form.purchase_date} onChange={e => set('purchase_date', e.target.value)} className="input-field" /></div>
             <div><label className="label">Installed Date</label><input type="date" value={form.install_date} onChange={e => set('install_date', e.target.value)} className="input-field" /></div>
             <div><label className="label">Removed Date</label><input type="date" value={form.removed_date} onChange={e => set('removed_date', e.target.value)} className="input-field" /></div>
-            <div><label className="label">Odometer at Install</label><input type="number" value={form.odometer_installed} onChange={e => set('odometer_installed', e.target.value)} className="input-field" placeholder="e.g. 8000" /></div>
-            <div><label className="label">Odometer at Removal</label><input type="number" value={form.odometer_removed} onChange={e => set('odometer_removed', e.target.value)} className="input-field" placeholder="leave blank if still on" /></div>
+            <div><label className="label">Odometer at Install ({currentUnits().dist})</label><input type="number" value={form.odometer_installed} onChange={e => set('odometer_installed', e.target.value)} className="input-field" placeholder="e.g. 8000" /></div>
+            <div><label className="label">Odometer at Removal ({currentUnits().dist})</label><input type="number" value={form.odometer_removed} onChange={e => set('odometer_removed', e.target.value)} className="input-field" placeholder="leave blank if still on" /></div>
             <div className="flex items-center gap-3 pt-6">
               <input id="is_active" type="checkbox" checked={form.is_active} onChange={e => set('is_active', e.target.checked)} className="w-4 h-4 rounded accent-raptor-accent cursor-pointer" />
               <label htmlFor="is_active" className="label mb-0 cursor-pointer">Currently on the truck</label>
@@ -163,7 +164,7 @@ export default function TireSets() {
                     <div className="text-xs text-raptor-muted">Wheels: {[s.wheel_brand, s.wheel_size].filter(Boolean).join(' ')}</div>
                   )}
                   <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-raptor-secondary pt-1">
-                    {s.miles_on_set != null && <span><span className="text-raptor-muted">Miles on set:</span> {s.miles_on_set.toLocaleString()}</span>}
+                    {s.miles_on_set != null && <span><span className="text-raptor-muted">On this set:</span> {currentUnits().fmtDist(s.miles_on_set)}</span>}
                     {money(s.cost) && <span><span className="text-raptor-muted">Cost:</span> {money(s.cost)}</span>}
                     {s.quantity && <span><span className="text-raptor-muted">Qty:</span> {s.quantity}</span>}
                   </div>

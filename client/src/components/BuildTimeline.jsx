@@ -1,6 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import StatusBadge from './StatusBadge'
+import { currentUnits } from '../lib/units'
 
 const CATEGORY_META = {
   Suspension:      { dot: 'bg-blue-500',    pill: 'bg-blue-500',    label: 'Suspension' },
@@ -20,7 +21,7 @@ const CATEGORY_META = {
 
 function fmt(cost) {
   if (cost == null) return null
-  return '$' + parseFloat(cost).toLocaleString('en-US', { minimumFractionDigits: 2 })
+  return currentUnits().money(cost)
 }
 
 function groupByYearMonth(mods) {
@@ -58,7 +59,7 @@ function ModCard({ mod, pipeline }) {
             )}
             {mod.mileage_at_install != null && (
               <span className="text-xs text-raptor-muted">
-                · {mod.mileage_at_install.toLocaleString()} mi
+                · {currentUnits().fmtDist(mod.mileage_at_install)}
               </span>
             )}
             {mod.vendor_url && (

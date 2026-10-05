@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
+import { currentUnits } from '../lib/units'
 
-const money = (v, dp = 0) =>
-  v == null ? '—' : '$' + Number(v).toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp })
+const money = (v, dp = 0) => (dp === 0 ? currentUnits().money0(v) : currentUnits().money(v))
 
 const fmtMonth = (d) =>
   d ? new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '—'
@@ -83,18 +83,15 @@ export default function PurchasePlan({ vehicleId, refreshKey }) {
       {/* Budget entry */}
       <div className="flex flex-wrap items-end gap-3 pt-1">
         <div>
-          <label className="label">Monthly vehicle budget</label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-raptor-muted text-sm">$</span>
-            <input
-              type="number" min="0" step="10"
-              value={budgetInput}
-              onChange={e => setBudgetInput(e.target.value)}
-              onBlur={saveBudget}
-              className="input-field pl-7 w-40"
-              placeholder="e.g. 800"
-            />
-          </div>
+          <label className="label">Monthly vehicle budget ({currentUnits().symbol})</label>
+          <input
+            type="number" min="0" step="10"
+            value={budgetInput}
+            onChange={e => setBudgetInput(e.target.value)}
+            onBlur={saveBudget}
+            className="input-field w-40"
+            placeholder="e.g. 800"
+          />
         </div>
         {monthlyBudget != null && (
           <div className="pb-2">

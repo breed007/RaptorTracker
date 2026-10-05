@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import StatusBadge from './StatusBadge'
 import Lightbox from './Lightbox'
+import { currentUnits } from '../lib/units'
 
 function InfoRow({ label, value }) {
   if (value == null || value === '') return null
@@ -37,8 +38,8 @@ export default function ModDetailPanel({ modId, onClose }) {
 
   const fmt = {
     date: s => s ? new Date(s + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null,
-    currency: n => n != null ? `$${parseFloat(n).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : null,
-    miles: n => n != null ? `${n.toLocaleString()} mi` : null,
+    currency: n => n != null ? currentUnits().money(n) : null,
+    miles: n => n != null ? currentUnits().fmtDist(n) : null,
   }
 
   return (
@@ -130,7 +131,7 @@ export default function ModDetailPanel({ modId, onClose }) {
                 <InfoRow label="Cost" value={fmt.currency(mod.cost)} />
                 <InfoRow label="Purchased" value={fmt.date(mod.purchase_date)} />
                 <InfoRow label="Installed" value={fmt.date(mod.install_date)} />
-                <InfoRow label="Mileage at Install" value={fmt.miles(mod.mileage_at_install)} />
+                <InfoRow label="Odometer at Install" value={fmt.miles(mod.mileage_at_install)} />
                 {(mod.aux_switches?.length > 0 || mod.aux_switch) && (
                   <InfoRow
                     label={`AUX Switch${(mod.aux_switches?.length > 1) ? 'es' : ''}`}

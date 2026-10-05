@@ -134,6 +134,42 @@ try {
     }
   });
 
+  // Every stored column that carries a unit must be in the conversion map;
+  // one left out would silently keep its old units when an owner switches.
+  check('every unit-bearing column is converted when units change', () => {
+    const { COLUMNS } = require('../server/services/units');
+    const listed = new Set(Object.values(COLUMNS).flat().map(([t, c]) => `${t}.${c}`));
+    // Columns that look like units but aren't stored distances/volumes/pressures.
+    const NOT_UNITS = new Set(['vehicles.mpg_city', 'vehicles.mpg_highway']);
+    const missing = [];
+    for (const { name: t } of db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all()) {
+      for (const { name: c } of db.prepare(`PRAGMA table_info(${t})`).all()) {
+        if (/mile|odometer|gallon|liter|litre|psi|kpa|pressure|tread|_km\b|kilomet/i.test(c) && !listed.has(`${t}.${c}`) && !NOT_UNITS.has(`${t}.${c}`)) {
+          missing.push(`${t}.${c}`);
+        }
+      }
+    }
+    if (missing.length) throw new Error(`not in units.COLUMNS: ${missing.join(', ')}`);
+  });
+
+  check('unit conversions are exact both ways', () => {
+    const u = require('../server/services/units');
+    const near = (a, b, what) => { if (Math.abs(a - b) > 1e-9 * Math.max(1, Math.abs(b))) throw new Error(`${what}: ${a} vs ${b}`); };
+    near(u.factor('distance', 'mi', 'km') * u.factor('distance', 'km', 'mi'), 1, 'mi<->km');
+    near(u.factor('volume', 'gal', 'l') * u.factor('volume', 'l', 'gal'), 1, 'gal<->l');
+    near(u.factor('pressure', 'psi', 'kpa') * u.factor('pressure', 'kpa', 'bar') * u.factor('pressure', 'bar', 'psi'), 1, 'psi->kpa->bar->psi');
+    near(u.factor('distance', 'mi', 'km') * 100, 160.9344, '100 mi');
+    // Economy: 20 US mpg is 11.76 L/100 km, 8.50 km/L, 24.02 UK mpg.
+    const mpg20 = { distance: 'mi', volume: 'gal' };
+    near(Math.round(u.economyFrom(20, { ...mpg20, economy: 'l100km' }) * 100) / 100, 11.76, 'L/100km');
+    near(Math.round(u.economyFrom(20, { ...mpg20, economy: 'kml' }) * 100) / 100, 8.50, 'km/L');
+    near(Math.round(u.economyFrom(20, { ...mpg20, economy: 'mpg_imp' }) * 100) / 100, 24.02, 'UK mpg');
+    // Stored in km and liters: 8.5 km/L is still ~20 US mpg.
+    near(Math.round(u.economyFrom(8.5032, { distance: 'km', volume: 'l', economy: 'mpg' }) * 10) / 10, 20, 'km/L stored -> mpg');
+    if (u.formatMoney(1234.5, { currency: 'CAD' }) !== 'CA$1,234.50') throw new Error(`CAD: ${u.formatMoney(1234.5, { currency: 'CAD' })}`);
+    if (u.unitsForLocale('en-AU').distance !== 'km' || u.unitsForLocale('en-GB').economy !== 'mpg_imp') throw new Error('locale defaults');
+  });
+
   closeDb();
 
   // 7) Every route/service module loads without throwing
@@ -143,7 +179,7 @@ try {
     'routes/vehicleTransfer', 'routes/intervals', 'routes/wishlist', 'routes/fuel',
     'routes/warranty', 'routes/tco', 'routes/notifications', 'routes/tires', 'routes/recalls',
     'routes/backup', 'routes/logbook', 'routes/mileage', 'routes/analytics', 'routes/search', 'routes/import', 'routes/auxCapacity', 'routes/forecast', 'routes/budget', 'routes/documents', 'routes/specs', 'routes/overview', 'routes/outings', 'routes/share', 'config',
-    'services/settings', 'services/mailer', 'services/reminders', 'services/backupArchive', 'services/csvImport', 'services/mileageStats', 'services/auxCapacity', 'services/buildSheet', 'services/auxLayout', 'scheduler',
+    'services/settings', 'services/mailer', 'services/reminders', 'services/backupArchive', 'services/csvImport', 'services/mileageStats', 'services/auxCapacity', 'services/buildSheet', 'services/auxLayout', 'services/units', 'routes/settings', 'scheduler',
   ];
   for (const m of modules) check(`require ${m}`, () => { require(`../server/${m}`); });
 

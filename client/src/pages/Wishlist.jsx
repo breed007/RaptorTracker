@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import ConfirmModal from '../components/ConfirmModal'
 import PurchasePlan from '../components/PurchasePlan'
+import { currentUnits } from '../lib/units'
 
 const CATEGORIES = [
   'Lighting', 'Armor', 'Suspension', 'Wheels & Tires', 'Performance',
@@ -526,7 +527,7 @@ export default function Wishlist() {
                         {/* Estimated cost */}
                         {item.estimated_cost != null && (
                           <span className="text-sm font-semibold text-raptor-accent tabular-nums">
-                            ${parseFloat(item.estimated_cost).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            {currentUnits().money(item.estimated_cost)}
                           </span>
                         )}
 
@@ -584,7 +585,7 @@ export default function Wishlist() {
             <span>
               Estimated budget:{' '}
               <span className="text-raptor-primary font-semibold tabular-nums">
-                ${totalBudget.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                {currentUnits().money(totalBudget)}
               </span>
             </span>
           )}

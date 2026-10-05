@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react'
+import { makeUnits, DEFAULT_UNITS, setCurrentUnits } from '../lib/units'
 
 const AppContext = createContext(null)
 
@@ -80,7 +81,19 @@ export function AppProvider({ children }) {
   useEffect(() => {
     if (!user) { setVehiclesLoaded(false); return }
     refreshVehicles()
+    refreshUnits()
   }, [user])
+
+  // Units of measure and currency, loaded once at sign-in and again after the
+  // owner changes them. Every page labels and formats through useUnits().
+  const [rawUnits, setRawUnits] = useState(DEFAULT_UNITS)
+  const refreshUnits = async () => {
+    try {
+      const r = await fetch('/api/settings/units')
+      if (r.ok) setRawUnits((await r.json()).units)
+    } catch (_) { /* keep what we have */ }
+  }
+  const units = useMemo(() => { const m = makeUnits(rawUnits); setCurrentUnits(m); return m }, [rawUnits])
 
   const selectVehicle = (id) => {
     setSelectedVehicleId(id)
@@ -99,6 +112,7 @@ export function AppProvider({ children }) {
   return (
     <AppContext.Provider value={{
       user, setUser, authLoading, refreshUser,
+      units, refreshUnits,
       userVehicles, setUserVehicles, vehiclesLoaded, refreshVehicles,
       selectedVehicleId, selectedVehicle,
       selectVehicle, logout,
@@ -114,4 +128,9 @@ export function useApp() {
   const ctx = useContext(AppContext)
   if (!ctx) throw new Error('useApp must be used within AppProvider')
   return ctx
+}
+
+// Labels and formatters for the owner's units: u.dist, u.fmtDist(n), u.money(n), u.economy(dpv)…
+export function useUnits() {
+  return useContext(AppContext).units
 }
